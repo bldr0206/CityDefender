@@ -24,11 +24,15 @@ namespace Multitool.SelectVisible
         public const string PrefKeyShowBounds = "Multitool.SelectVisible.ShowBounds";
         public const string PrefKeyShowName = "Multitool.SelectVisible.ShowName";
         public const string PrefKeyOverlayClipBypass = "Multitool.SelectVisible.OverlayClipBypass";
+        public const string PrefKeyBoundsOutlineAlpha = "Multitool.SelectVisible.BoundsOutlineAlpha";
         private const string PREF_OVERLAY_ENABLED = "SV_OverlayEnabled";
         private const string PREF_OVERLAY_EXPANDED = "SV_OverlayExpanded";
 
 
         private const float AlphaThreshold = 0.1f;
+        private const float DefaultBoundsOutlineAlpha = 0.8f;
+        private const float FlatBoundsRelativeThreshold = 0.025f;
+        private const float FlatBoundsAbsoluteThreshold = 0.0005f;
 
         public static bool OverlayEnabled
         {
@@ -241,6 +245,16 @@ namespace Multitool.SelectVisible
         public static bool OverlayClipBypassEnabled()
         {
             return EditorPrefs.GetBool(PrefKeyOverlayClipBypass, true);
+        }
+
+        public static float BoundsOutlineAlpha()
+        {
+            return EditorPrefs.GetFloat(PrefKeyBoundsOutlineAlpha, DefaultBoundsOutlineAlpha);
+        }
+
+        public static void SetBoundsOutlineAlpha(float alpha)
+        {
+            EditorPrefs.SetFloat(PrefKeyBoundsOutlineAlpha, Mathf.Clamp01(alpha));
         }
 
         // Для обратной совместимости возвращает true, если включены границы или имя
@@ -1121,8 +1135,8 @@ namespace Multitool.SelectVisible
             if (!showBounds && !showName)
                 return;
 
-            // Базовая рамка: светло-серый вместо жёлтого
-            Handles.color = new Color(0.82f, 0.82f, 0.82f, 0.8f);
+            float outlineAlpha = BoundsOutlineAlpha();
+            Handles.color = new Color(0.82f, 0.82f, 0.82f, outlineAlpha);
             Handles.zTest = UnityEngine.Rendering.CompareFunction.Always;
 
             Renderer renderer = go.GetComponent<Renderer>();
@@ -1135,8 +1149,7 @@ namespace Multitool.SelectVisible
             {
                 if (renderer != null)
                 {
-                    Bounds bounds = renderer.bounds;
-                    screenRect = DrawBoundsSquare(bounds, sceneView);
+                    screenRect = DrawRendererOutline(renderer, sceneView);
                 }
                 else if (rectTransform != null)
                 {
@@ -1215,6 +1228,202 @@ namespace Multitool.SelectVisible
             }
         }
 
+#region Outline Geometry
+
+        private static Rect? DrawRendererOutline(Renderer renderer, SceneView sceneView)
+        {
+            Mesh mesh = GetRendererMesh(renderer, out Matrix4x4 matrix);
+            if (mesh == null)
+                return DrawBoundsSquare(renderer.bounds, sceneView);
+
+            Bounds meshBounds = mesh.bounds;
+            if (meshBounds.size.sqrMagnitude <= Mathf.Epsilon)
+                return DrawBoundsSquare(renderer.bounds, sceneView);
+
+            if (TryGetFlatFrameWorldCorners(meshBounds, matrix, out Vector3[] flatFrameCorners))
+            {
+                DrawWireQuad(flatFrameCorners);
+                return CalculateScreenRect(flatFrameCorners, sceneView);
+            }
+
+            Vector3[] worldCorners = GetWorldBoundsCorners(meshBounds, matrix);
+            DrawWireBounds(worldCorners);
+            return CalculateScreenRect(worldCorners, sceneView);
+        }
+
+        private static Vector3[] GetWorldBoundsCorners(Bounds bounds, Matrix4x4 matrix)
+        {
+            Vector3 min = bounds.min;
+            Vector3 max = bounds.max;
+
+            return new Vector3[8]
+            {
+                matrix.MultiplyPoint3x4(new Vector3(min.x, min.y, min.z)),
+                matrix.MultiplyPoint3x4(new Vector3(max.x, min.y, min.z)),
+                matrix.MultiplyPoint3x4(new Vector3(max.x, max.y, min.z)),
+                matrix.MultiplyPoint3x4(new Vector3(min.x, max.y, min.z)),
+                matrix.MultiplyPoint3x4(new Vector3(min.x, min.y, max.z)),
+                matrix.MultiplyPoint3x4(new Vector3(max.x, min.y, max.z)),
+                matrix.MultiplyPoint3x4(new Vector3(max.x, max.y, max.z)),
+                matrix.MultiplyPoint3x4(new Vector3(min.x, max.y, max.z))
+            };
+        }
+
+        private static bool TryGetFlatFrameWorldCorners(Bounds bounds, Matrix4x4 matrix, out Vector3[] worldCorners)
+        {
+            worldCorners = null;
+
+            int flatAxis = GetFlatAxisIndex(bounds.size);
+            if (flatAxis < 0)
+                return false;
+
+            Vector3 min = bounds.min;
+            Vector3 max = bounds.max;
+            Vector3 center = bounds.center;
+            Vector3[] localCorners;
+
+            switch (flatAxis)
+            {
+                case 0:
+                    localCorners = new Vector3[4]
+                    {
+                        new Vector3(center.x, min.y, min.z),
+                        new Vector3(center.x, max.y, min.z),
+                        new Vector3(center.x, max.y, max.z),
+                        new Vector3(center.x, min.y, max.z)
+                    };
+                    break;
+
+                case 1:
+                    localCorners = new Vector3[4]
+                    {
+                        new Vector3(min.x, center.y, min.z),
+                        new Vector3(max.x, center.y, min.z),
+                        new Vector3(max.x, center.y, max.z),
+                        new Vector3(min.x, center.y, max.z)
+                    };
+                    break;
+
+                default:
+                    localCorners = new Vector3[4]
+                    {
+                        new Vector3(min.x, min.y, center.z),
+                        new Vector3(max.x, min.y, center.z),
+                        new Vector3(max.x, max.y, center.z),
+                        new Vector3(min.x, max.y, center.z)
+                    };
+                    break;
+            }
+
+            worldCorners = new Vector3[4];
+            for (int i = 0; i < localCorners.Length; i++)
+            {
+                worldCorners[i] = matrix.MultiplyPoint3x4(localCorners[i]);
+            }
+
+            return true;
+        }
+
+        private static int GetFlatAxisIndex(Vector3 size)
+        {
+            float x = Mathf.Abs(size.x);
+            float y = Mathf.Abs(size.y);
+            float z = Mathf.Abs(size.z);
+            float maxSize = Mathf.Max(x, Mathf.Max(y, z));
+            if (maxSize <= FlatBoundsAbsoluteThreshold)
+                return -1;
+
+            float minSize = x;
+            int axis = 0;
+
+            if (y < minSize)
+            {
+                minSize = y;
+                axis = 1;
+            }
+
+            if (z < minSize)
+            {
+                minSize = z;
+                axis = 2;
+            }
+
+            float flatThreshold = Mathf.Max(maxSize * FlatBoundsRelativeThreshold, FlatBoundsAbsoluteThreshold);
+            return minSize <= flatThreshold ? axis : -1;
+        }
+
+        private static void DrawWireBounds(Vector3[] worldCorners)
+        {
+            if (worldCorners == null || worldCorners.Length != 8)
+                return;
+
+            DrawLinePair(worldCorners, 0, 1);
+            DrawLinePair(worldCorners, 1, 2);
+            DrawLinePair(worldCorners, 2, 3);
+            DrawLinePair(worldCorners, 3, 0);
+
+            DrawLinePair(worldCorners, 4, 5);
+            DrawLinePair(worldCorners, 5, 6);
+            DrawLinePair(worldCorners, 6, 7);
+            DrawLinePair(worldCorners, 7, 4);
+
+            DrawLinePair(worldCorners, 0, 4);
+            DrawLinePair(worldCorners, 1, 5);
+            DrawLinePair(worldCorners, 2, 6);
+            DrawLinePair(worldCorners, 3, 7);
+        }
+
+        private static void DrawWireQuad(Vector3[] worldCorners)
+        {
+            if (worldCorners == null || worldCorners.Length != 4)
+                return;
+
+            DrawLinePair(worldCorners, 0, 1);
+            DrawLinePair(worldCorners, 1, 2);
+            DrawLinePair(worldCorners, 2, 3);
+            DrawLinePair(worldCorners, 3, 0);
+        }
+
+        private static void DrawLinePair(Vector3[] worldCorners, int startIndex, int endIndex)
+        {
+            Handles.DrawLine(worldCorners[startIndex], worldCorners[endIndex]);
+        }
+
+        private static Rect? CalculateScreenRect(Vector3[] worldCorners, SceneView sceneView)
+        {
+            if (sceneView == null || sceneView.camera == null || worldCorners == null || worldCorners.Length == 0)
+                return null;
+
+            Camera cam = sceneView.camera;
+            float minX = float.MaxValue;
+            float minY = float.MaxValue;
+            float maxX = float.MinValue;
+            float maxY = float.MinValue;
+            bool hasVisiblePoints = false;
+
+            for (int i = 0; i < worldCorners.Length; i++)
+            {
+                Vector3 worldCorner = worldCorners[i];
+                Vector3 screenPos = cam.WorldToScreenPoint(worldCorner);
+                if (screenPos.z < 0f)
+                    continue;
+
+                Vector2 guiPos = HandleUtility.WorldToGUIPoint(worldCorner);
+                minX = Mathf.Min(minX, guiPos.x);
+                minY = Mathf.Min(minY, guiPos.y);
+                maxX = Mathf.Max(maxX, guiPos.x);
+                maxY = Mathf.Max(maxY, guiPos.y);
+                hasVisiblePoints = true;
+            }
+
+            if (!hasVisiblePoints)
+                return null;
+
+            return new Rect(minX, minY, maxX - minX, maxY - minY);
+        }
+
+#endregion
+
         private static Rect? DrawBoundsSquare(Bounds bounds, SceneView sceneView)
         {
             if (sceneView == null || sceneView.camera == null)
@@ -1271,20 +1480,18 @@ namespace Multitool.SelectVisible
 
             Rect rect = new Rect(minX, minY, maxX - minX, maxY - minY);
 
-            // Рисуем контур прямоугольника (тонкая рамка)
-            Color outlineColor = new Color(0.8f, 0.8f, 0.8f, 0.5f);
-            Color shadowColor = new Color(0f, 0f, 0f, 0.25f);
+            float a = BoundsOutlineAlpha();
+            Color outlineColor = new Color(0.8f, 0.8f, 0.8f, a);
+            Color shadowColor = new Color(0f, 0f, 0f, 0.25f * a);
             const float thickness = 1f;
             const float shadowOffset = 1f;
 
-            // Рисуем черную тень (сдвиг по диагонали вниз-вправо)
             Rect shadowRect = new Rect(rect.xMin + shadowOffset, rect.yMin + shadowOffset, rect.width, rect.height);
             EditorGUI.DrawRect(new Rect(shadowRect.xMin, shadowRect.yMin, shadowRect.width, thickness), shadowColor); // верх
             EditorGUI.DrawRect(new Rect(shadowRect.xMin, shadowRect.yMax - thickness, shadowRect.width, thickness), shadowColor); // низ
             EditorGUI.DrawRect(new Rect(shadowRect.xMin, shadowRect.yMin, thickness, shadowRect.height), shadowColor); // лево
             EditorGUI.DrawRect(new Rect(shadowRect.xMax - thickness, shadowRect.yMin, thickness, shadowRect.height), shadowColor); // право
 
-            // Рисуем желтую рамку поверх тени
             EditorGUI.DrawRect(new Rect(rect.xMin, rect.yMin, rect.width, thickness), outlineColor); // верх
             EditorGUI.DrawRect(new Rect(rect.xMin, rect.yMax - thickness, rect.width, thickness), outlineColor); // низ
             EditorGUI.DrawRect(new Rect(rect.xMin, rect.yMin, thickness, rect.height), outlineColor); // лево
@@ -1297,76 +1504,10 @@ namespace Multitool.SelectVisible
 
         private static Rect? DrawRectTransformSquare(RectTransform rectTransform, SceneView sceneView)
         {
-            if (sceneView == null || sceneView.camera == null)
-            {
-                Vector3[] corners = new Vector3[4];
-                rectTransform.GetWorldCorners(corners);
-                Handles.DrawLine(corners[0], corners[1]);
-                Handles.DrawLine(corners[1], corners[2]);
-                Handles.DrawLine(corners[2], corners[3]);
-                Handles.DrawLine(corners[3], corners[0]);
-                return null;
-            }
-
-            Camera cam = sceneView.camera;
-
-            // Получаем углы RectTransform
             Vector3[] worldCorners = new Vector3[4];
             rectTransform.GetWorldCorners(worldCorners);
-
-            // Проецируем все углы в экранные координаты
-            float minX = float.MaxValue, minY = float.MaxValue;
-            float maxX = float.MinValue, maxY = float.MinValue;
-            bool hasVisiblePoints = false;
-
-            foreach (Vector3 worldCorner in worldCorners)
-            {
-                Vector3 screenPos = cam.WorldToScreenPoint(worldCorner);
-
-                // Пропускаем точки за камерой
-                if (screenPos.z < 0)
-                    continue;
-
-                // Конвертируем в GUI координаты SceneView
-                Vector2 guiPos = HandleUtility.WorldToGUIPoint(worldCorner);
-
-                if (guiPos.x < minX) minX = guiPos.x;
-                if (guiPos.x > maxX) maxX = guiPos.x;
-                if (guiPos.y < minY) minY = guiPos.y;
-                if (guiPos.y > maxY) maxY = guiPos.y;
-                hasVisiblePoints = true;
-            }
-
-            if (!hasVisiblePoints)
-                return null;
-
-            // Рисуем прямоугольник в экранном пространстве без перспективных искажений
-            Handles.BeginGUI();
-
-            Rect rect = new Rect(minX, minY, maxX - minX, maxY - minY);
-
-            // Рисуем контур прямоугольника (тонкая рамка)
-            Color outlineColor = new Color(0.8f, 0.8f, 0.8f, 0.5f);
-            Color shadowColor = new Color(0f, 0f, 0f, 0.25f);
-            const float thickness = 1f;
-            const float shadowOffset = 2f;
-
-            // Рисуем черную тень (сдвиг по диагонали вниз-вправо)
-            Rect shadowRect = new Rect(rect.xMin + shadowOffset, rect.yMin + shadowOffset, rect.width, rect.height);
-            EditorGUI.DrawRect(new Rect(shadowRect.xMin, shadowRect.yMin, shadowRect.width, thickness), shadowColor); // верх
-            EditorGUI.DrawRect(new Rect(shadowRect.xMin, shadowRect.yMax - thickness, shadowRect.width, thickness), shadowColor); // низ
-            EditorGUI.DrawRect(new Rect(shadowRect.xMin, shadowRect.yMin, thickness, shadowRect.height), shadowColor); // лево
-            EditorGUI.DrawRect(new Rect(shadowRect.xMax - thickness, shadowRect.yMin, thickness, shadowRect.height), shadowColor); // право
-
-            // Рисуем желтую рамку поверх тени
-            EditorGUI.DrawRect(new Rect(rect.xMin, rect.yMin, rect.width, thickness), outlineColor); // верх
-            EditorGUI.DrawRect(new Rect(rect.xMin, rect.yMax - thickness, rect.width, thickness), outlineColor); // низ
-            EditorGUI.DrawRect(new Rect(rect.xMin, rect.yMin, thickness, rect.height), outlineColor); // лево
-            EditorGUI.DrawRect(new Rect(rect.xMax - thickness, rect.yMin, thickness, rect.height), outlineColor); // право
-
-            Handles.EndGUI();
-
-            return rect;
+            DrawWireQuad(worldCorners);
+            return CalculateScreenRect(worldCorners, sceneView);
         }
 
         private static Bounds? CalculatePrefabBounds(GameObject prefabRoot)
@@ -1482,20 +1623,18 @@ namespace Multitool.SelectVisible
 
             Rect rect = new Rect(minX, minY, maxX - minX, maxY - minY);
 
-            // Рисуем контур прямоугольника голубым цветом (толщина 2 пикселя)
-            Color outlineColor = new Color(0.2f, 0.85f, 1f, 0.5f); // Яркий голубой
-            Color shadowColor = new Color(0f, 0f, 0f, 0.25f);
+            float a = BoundsOutlineAlpha();
+            Color outlineColor = new Color(0.2f, 0.85f, 1f, a);
+            Color shadowColor = new Color(0f, 0f, 0f, 0.25f * a);
             const float thickness = 1f;
             const float shadowOffset = 1f;
 
-            // Рисуем черную тень (сдвиг по диагонали вниз-вправо)
             Rect shadowRect = new Rect(rect.xMin + shadowOffset, rect.yMin + shadowOffset, rect.width, rect.height);
             EditorGUI.DrawRect(new Rect(shadowRect.xMin, shadowRect.yMin, shadowRect.width, thickness), shadowColor); // верх
             EditorGUI.DrawRect(new Rect(shadowRect.xMin, shadowRect.yMax - thickness, shadowRect.width, thickness), shadowColor); // низ
             EditorGUI.DrawRect(new Rect(shadowRect.xMin, shadowRect.yMin, thickness, shadowRect.height), shadowColor); // лево
             EditorGUI.DrawRect(new Rect(shadowRect.xMax - thickness, shadowRect.yMin, thickness, shadowRect.height), shadowColor); // право
 
-            // Рисуем голубую рамку поверх тени
             EditorGUI.DrawRect(new Rect(rect.xMin, rect.yMin, rect.width, thickness), outlineColor); // верх
             EditorGUI.DrawRect(new Rect(rect.xMin, rect.yMax - thickness, rect.width, thickness), outlineColor); // низ
             EditorGUI.DrawRect(new Rect(rect.xMin, rect.yMin, thickness, rect.height), outlineColor); // лево
@@ -1568,8 +1707,7 @@ namespace Multitool.SelectVisible
         private const float Padding = 1f;
         private const float Spacing = 1f;
         private const float PanelWidth = 150f;
-        // Увеличили высоту, чтобы влезал новый чекбокс
-        private const float PanelHeightExpanded = 150f;
+        private const float PanelHeightExpanded = 200f;
         private const float PanelHeightCollapsed = 60f;
         private static GUIStyle _labelStyle;
 
@@ -1649,6 +1787,15 @@ namespace Multitool.SelectVisible
                 {
                     EditorPrefs.SetBool(VisibleSelection.PrefKeyShowBounds, newShowBounds);
                     VisibleSelection.SyncMenuChecks();
+                    SceneView.RepaintAll();
+                }
+
+                float outlineAlpha = VisibleSelection.BoundsOutlineAlpha();
+                EditorGUI.BeginChangeCheck();
+                float newOutlineAlpha = EditorGUILayout.Slider(outlineAlpha, 0f, 1f, GUILayout.Height(14f));
+                if (EditorGUI.EndChangeCheck())
+                {
+                    VisibleSelection.SetBoundsOutlineAlpha(newOutlineAlpha);
                     SceneView.RepaintAll();
                 }
 

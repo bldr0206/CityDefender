@@ -41,7 +41,7 @@ namespace Multitool.RectTransformSnapper
             GUILayout.BeginHorizontal();
             bool en = EditorGUILayout.Toggle(new GUIContent("Enabled"), RectTransformSnapperEngine.Enabled);
             GUILayout.FlexibleSpace();
-            if (GUILayout.Button(EditorGUIUtility.IconContent("winbtn_win_close"), GUIStyle.none, GUILayout.Width(16), GUILayout.Height(16)))
+            if (GUILayout.Button(new GUIContent("\u00d7", "Close"), EditorStyles.miniButton, GUILayout.Width(18), GUILayout.Height(16)))
             {
                 OverlayEnabled = false;
                 RepaintMainWindow();

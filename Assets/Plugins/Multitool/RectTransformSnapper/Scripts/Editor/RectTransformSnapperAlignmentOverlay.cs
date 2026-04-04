@@ -48,7 +48,7 @@ namespace Multitool.RectTransformSnapper
             GUILayout.BeginHorizontal();
             bool alignToCanvas = EditorGUILayout.ToggleLeft(new GUIContent("Align to Canvas", "Align to Canvas boundaries instead of the selection bounding box."), RectTransformSnapperEngine.AlignToCanvas);
             GUILayout.FlexibleSpace();
-            if (GUILayout.Button(EditorGUIUtility.IconContent("winbtn_win_close"), GUIStyle.none, GUILayout.Width(16), GUILayout.Height(16)))
+            if (GUILayout.Button(new GUIContent("\u00d7", "Close"), EditorStyles.miniButton, GUILayout.Width(18), GUILayout.Height(16)))
             {
                 OverlayEnabled = false;
                 GUILayout.EndHorizontal();
