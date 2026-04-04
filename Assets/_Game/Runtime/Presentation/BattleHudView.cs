@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -17,15 +18,25 @@ namespace ColorChargeTD.Presentation
         [SerializeField] private GameObject chargeWarningRoot;
         [SerializeField] private GameObject startWaveRoot;
         [SerializeField] private Button startWaveButton;
+        [SerializeField] private RectTransform resourcePulseRoot;
 
         #endregion
 
         #region StartWave
 
         private Action onStartWaveClicked;
+        private Vector3 resourcePulseBaseScale = Vector3.one;
+        private float lastResourcePulseUnscaledTime = -100f;
+        private Coroutine resourcePulseRoutine;
+        private const float ResourcePulseCooldownSeconds = 0.12f;
 
         private void Awake()
         {
+            if (resourcePulseRoot != null)
+            {
+                resourcePulseBaseScale = resourcePulseRoot.localScale;
+            }
+
             if (startWaveButton != null)
             {
                 startWaveButton.onClick.AddListener(OnStartWaveButtonClicked);
@@ -61,6 +72,22 @@ namespace ColorChargeTD.Presentation
             if (startWaveButton != null)
             {
                 startWaveButton.gameObject.SetActive(visible);
+            }
+        }
+
+        public void SetStartWaveButtonVisible(bool visible)
+        {
+            if (startWaveButton != null)
+            {
+                startWaveButton.gameObject.SetActive(visible);
+            }
+        }
+
+        public void SetPlaceTowerHintVisible(bool visible)
+        {
+            if (chargeWarningRoot != null)
+            {
+                chargeWarningRoot.SetActive(visible);
             }
         }
 
@@ -134,12 +161,61 @@ namespace ColorChargeTD.Presentation
             slotsText.text = $"Slots: {free} / {total}";
         }
 
-        public void SetChargeWarningVisible(bool value)
+        public void PlayResourceEarnPulse()
         {
-            if (chargeWarningRoot != null)
+            if (resourcePulseRoot == null)
             {
-                chargeWarningRoot.SetActive(value);
+                return;
             }
+
+            float now = Time.unscaledTime;
+            if (now - lastResourcePulseUnscaledTime < ResourcePulseCooldownSeconds)
+            {
+                return;
+            }
+
+            lastResourcePulseUnscaledTime = now;
+
+            if (resourcePulseRoutine != null)
+            {
+                StopCoroutine(resourcePulseRoutine);
+            }
+
+            resourcePulseRoutine = StartCoroutine(ResourcePulseRoutine());
+        }
+
+        #endregion
+
+        #region ResourcePulse
+
+        private IEnumerator ResourcePulseRoutine()
+        {
+            RectTransform rt = resourcePulseRoot;
+            Vector3 baseScale = resourcePulseBaseScale;
+            float half = 0.09f;
+
+            float t = 0f;
+            while (t < half)
+            {
+                t += Time.unscaledDeltaTime;
+                float u = Mathf.Clamp01(t / half);
+                float k = 1f + 0.08f * Mathf.Sin(u * Mathf.PI * 0.5f);
+                rt.localScale = baseScale * k;
+                yield return null;
+            }
+
+            t = 0f;
+            while (t < half)
+            {
+                t += Time.unscaledDeltaTime;
+                float u = Mathf.Clamp01(t / half);
+                float k = 1.08f - 0.08f * Mathf.Sin(u * Mathf.PI * 0.5f);
+                rt.localScale = baseScale * k;
+                yield return null;
+            }
+
+            rt.localScale = baseScale;
+            resourcePulseRoutine = null;
         }
 
         #endregion

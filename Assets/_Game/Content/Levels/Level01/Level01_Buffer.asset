@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: Level01_Buffer
   m_EditorClassIdentifier: 
   levelId: level-01
-  displayName: Level 1 - Buffer Exists
+  displayName: Level 1
   tutorialFocus: Teach that towers fire in bursts and depend on stored charge.
   layoutPrefab: {fileID: 2079319166859687428, guid: 80de7f6d7988a154ebb74fda58d6c576, type: 3}
   waveSet: {fileID: 11400000, guid: 38d711488d8d2d84c85d0ffc8cca2466, type: 2}
@@ -23,4 +23,4 @@ MonoBehaviour:
   reward:
     softCurrency: 25
     firstCompletionBonus: 10
-  startingResourceOverride: 125
+  startingResourceOverride: 100

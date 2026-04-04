@@ -41,6 +41,7 @@ namespace ColorChargeTD.Product
         bool IsLevelUnlocked(string levelId);
         bool TryPurchaseUpgrade(UpgradeDefinition upgradeDefinition);
         BattleResultModel ApplyBattleResult(LevelDefinition levelDefinition, BattleOutcome outcome, int awardedCurrency);
+        bool TryResolveNextLevelAfterVictory(string completedLevelId, out string nextLevelId);
     }
 
     public interface IGameNavigationService
@@ -281,79 +282,84 @@ namespace ColorChargeTD.Product
             return true;
         }
 
+        public bool TryResolveNextLevelAfterVictory(string completedLevelId, out string nextLevelId)
+        {
+            nextLevelId = string.Empty;
+            if (string.IsNullOrWhiteSpace(completedLevelId))
+            {
+                return false;
+            }
+
+            LevelCatalogDefinition catalog = contentService.LevelCatalog;
+            if (catalog == null)
+            {
+                return false;
+            }
+
+            string completedNormalized = completedLevelId.Trim();
+            string resolved = string.Empty;
+            bool unlocked = false;
+            profileService.Update(profile =>
+            {
+                resolved = LevelProgressionResolver.ResolveNextAfterCompletion(completedNormalized, profile, catalog, ref unlocked);
+            });
+
+            nextLevelId = resolved;
+            return !string.IsNullOrWhiteSpace(nextLevelId);
+        }
+
         public BattleResultModel ApplyBattleResult(LevelDefinition levelDefinition, BattleOutcome outcome, int awardedCurrency)
         {
-            BattleResultModel result = new BattleResultModel
-            {
-                LevelId = levelDefinition != null ? levelDefinition.LevelId : string.Empty,
-                Outcome = outcome,
-                AwardedSoftCurrency = awardedCurrency,
-                UnlockedNextLevel = false,
-                NextLevelId = string.Empty,
-            };
-
             if (levelDefinition == null)
             {
-                return result;
+                return new BattleResultModel
+                {
+                    LevelId = string.Empty,
+                    Outcome = outcome,
+                    AwardedSoftCurrency = awardedCurrency,
+                    UnlockedNextLevel = false,
+                    NextLevelId = string.Empty,
+                };
             }
+
+            string levelId = levelDefinition.LevelId;
+            string nextLevelId = string.Empty;
+            bool unlockedNextLevel = false;
+            int finalAwarded = awardedCurrency;
 
             profileService.Update(profile =>
             {
-                bool firstCompletion = profile.ApplyLevelResult(levelDefinition.LevelId, outcome, awardedCurrency);
-                profile.LastSelectedLevelId = levelDefinition.LevelId;
+                bool firstCompletion = profile.ApplyLevelResult(levelId, outcome, awardedCurrency);
+                profile.LastSelectedLevelId = levelId;
 
                 if (outcome != BattleOutcome.Victory)
                 {
                     return;
                 }
 
-                string nextLevelId = TryUnlockNextLevel(levelDefinition.LevelId, profile, out bool unlockedNextLevel);
-                result.NextLevelId = nextLevelId;
-                result.UnlockedNextLevel = unlockedNextLevel;
+                LevelCatalogDefinition catalog = contentService.LevelCatalog;
+                string completedNormalized = (levelId ?? string.Empty).Trim();
+                nextLevelId = LevelProgressionResolver.ResolveNextAfterCompletion(
+                    completedNormalized,
+                    profile,
+                    catalog,
+                    ref unlockedNextLevel);
 
                 if (firstCompletion)
                 {
                     profile.SoftCurrency += levelDefinition.Reward.FirstCompletionBonus;
-                    result.AwardedSoftCurrency += levelDefinition.Reward.FirstCompletionBonus;
+                    finalAwarded += levelDefinition.Reward.FirstCompletionBonus;
                 }
             });
 
-            return result;
-        }
-
-        private string TryUnlockNextLevel(string completedLevelId, PlayerProfileData profile, out bool unlockedNextLevel)
-        {
-            unlockedNextLevel = false;
-
-            LevelCatalogDefinition catalog = contentService.LevelCatalog;
-            if (catalog == null)
+            return new BattleResultModel
             {
-                return string.Empty;
-            }
-
-            for (int i = 0; i < catalog.Levels.Count; i++)
-            {
-                LevelDefinition candidate = catalog.Levels[i];
-                if (candidate == null)
-                {
-                    continue;
-                }
-
-                if (!string.Equals(candidate.UnlockRule.RequiredLevelId, completedLevelId, StringComparison.Ordinal))
-                {
-                    continue;
-                }
-
-                if (!profile.IsUnlocked(candidate.LevelId))
-                {
-                    profile.UnlockLevel(candidate.LevelId);
-                    unlockedNextLevel = true;
-                }
-
-                return candidate.LevelId;
-            }
-
-            return string.Empty;
+                LevelId = levelId,
+                Outcome = outcome,
+                AwardedSoftCurrency = finalAwarded,
+                UnlockedNextLevel = unlockedNextLevel,
+                NextLevelId = nextLevelId,
+            };
         }
     }
 
@@ -362,41 +368,44 @@ namespace ColorChargeTD.Product
         private readonly ISceneLoader sceneLoader;
         private readonly IGameStateMachine stateMachine;
         private readonly ILevelSelectionService levelSelectionService;
-
-        private MonoBehaviour runner;
+        private readonly NavigationSceneCoroutineHost sceneCoroutineHost;
 
         public GameNavigationService(
             ISceneLoader sceneLoader,
             IGameStateMachine stateMachine,
-            ILevelSelectionService levelSelectionService)
+            ILevelSelectionService levelSelectionService,
+            NavigationSceneCoroutineHost sceneCoroutineHost)
         {
             this.sceneLoader = sceneLoader;
             this.stateMachine = stateMachine;
             this.levelSelectionService = levelSelectionService;
+            this.sceneCoroutineHost = sceneCoroutineHost;
         }
 
         public BattleResultModel LastBattleResult { get; private set; }
 
-        public void Initialize(MonoBehaviour runner)
+        public void Initialize(MonoBehaviour _)
         {
-            this.runner = runner;
         }
 
         public void OpenMainMenu()
         {
-            stateMachine.Enter(GameFlowState.Menu);
-            LoadScene(GameSceneIds.MainMenu);
+            OpenHubScene(GameFlowState.Menu);
         }
 
         public void OpenLevelSelect()
         {
-            stateMachine.Enter(GameFlowState.Menu);
-            LoadScene(GameSceneIds.MainMenu);
+            OpenHubScene(GameFlowState.Menu);
         }
 
         public void OpenMeta()
         {
-            stateMachine.Enter(GameFlowState.Meta);
+            OpenHubScene(GameFlowState.Meta);
+        }
+
+        private void OpenHubScene(GameFlowState hubState)
+        {
+            stateMachine.Enter(hubState);
             LoadScene(GameSceneIds.Meta);
         }
 
@@ -421,13 +430,13 @@ namespace ColorChargeTD.Product
 
         private void LoadScene(string sceneName, Action onLoaded = null)
         {
-            if (runner == null)
+            if (sceneCoroutineHost == null)
             {
-                Debug.LogWarning("Navigation runner is not initialized.");
+                Debug.LogWarning("Navigation scene coroutine host is missing.");
                 return;
             }
 
-            sceneLoader.LoadScene(runner, sceneName, LoadSceneMode.Single, onLoaded);
+            sceneLoader.LoadScene(sceneCoroutineHost, sceneName, LoadSceneMode.Single, onLoaded);
         }
     }
 }

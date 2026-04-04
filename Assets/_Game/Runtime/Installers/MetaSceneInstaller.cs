@@ -1,3 +1,4 @@
+using ColorChargeTD.Presentation;
 using Zenject;
 
 namespace ColorChargeTD.Installers
@@ -6,7 +7,7 @@ namespace ColorChargeTD.Installers
     {
         public override void InstallBindings()
         {
-            // Meta scene consumes the same project services as menu and result flows.
+            Container.Bind<NavigationCommandRouter>().FromComponentInHierarchy().AsSingle();
         }
     }
 }

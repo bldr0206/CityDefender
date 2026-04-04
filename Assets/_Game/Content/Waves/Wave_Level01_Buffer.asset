@@ -12,6 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 55394d73d139c964e99b27d53c6b60e4, type: 3}
   m_Name: Wave_Level01_Buffer
   m_EditorClassIdentifier: 
+  chainGroupsWithoutPlayerAck: 0
   groups:
   - enemy: {fileID: 11400000, guid: 504252b760217bf4db4290dfbf59768e, type: 2}
     pathId: path-main

@@ -19,9 +19,12 @@ namespace ColorChargeTD.Battle
         [SerializeField] private LevelDefinition levelDefinitionOverride;
         [SerializeField] private LevelLayoutAuthoring layoutOverride;
         [SerializeField] private bool autoStartSelectedLevel = true;
+        [SerializeField] [Min(0.05f)] private float waveProgressFillSpeed = 2.5f;
 
         [Header("Optional Views")]
         [SerializeField] private BattleHudView hudView;
+        [SerializeField] private BattleCoinFlyoutPresenter coinFlyoutPresenter;
+        [SerializeField] private BattleDamageFlyoutPresenter damageFlyoutPresenter;
 
         private readonly List<TowerRuntimeModel> towers = new List<TowerRuntimeModel>();
         private readonly List<EnemyRuntimeModel> enemies = new List<EnemyRuntimeModel>();
@@ -43,6 +46,7 @@ namespace ColorChargeTD.Battle
         private readonly List<BuildSlotWorldHandle> buildSlotHandles = new List<BuildSlotWorldHandle>();
         private GameObject buildSlotHandlesRoot;
         private BattleTowerRadialMenu radialBuildMenu;
+        private float smoothedWaveProgress;
 
         [Inject] private IGameContentService contentService;
         [Inject] private ILevelSelectionService levelSelectionService;
@@ -71,6 +75,11 @@ namespace ColorChargeTD.Battle
                 return;
             }
 
+            if (Time.timeScale <= 0f)
+            {
+                return;
+            }
+
             HandleBuildSlotInput();
 
             float deltaTime = Time.deltaTime;
@@ -78,7 +87,7 @@ namespace ColorChargeTD.Battle
             enemyPathSystem.Tick(deltaTime, enemies, session);
             towerChargeSystem.Tick(deltaTime, towers);
             projectileHitScheduler.Tick(deltaTime);
-            towerTargetingSystem.Tick(towers, enemies, damageResolver, projectileHitScheduler, HandleTowerFiredForPresentation);
+            towerTargetingSystem.Tick(deltaTime, towers, enemies, damageResolver, projectileHitScheduler, HandleTowerFiredForPresentation);
             presentationSystem.Sync(towers, enemies);
 
             UpdateHud();
@@ -135,8 +144,8 @@ namespace ColorChargeTD.Battle
                 ResolveStartingResource(levelDefinition));
 
             waveSpawnerSystem = new WaveSpawnerSystem(levelDefinition.WaveSet, layoutDefinition);
-            enemyPathSystem = new EnemyPathSystem();
-            damageResolver = new DamageResolver(contentService.BalanceConfig);
+            enemyPathSystem = new EnemyPathSystem(HandleEnemyKilledForCoinFlyout, RegisterWaveKillForHud);
+            damageResolver = new DamageResolver(contentService.BalanceConfig, HandleEnemyDamagedForFlyout);
             projectileHitScheduler = new ProjectileHitScheduler(damageResolver);
             towerChargeSystem = new TowerChargeSystem();
             towerTargetingSystem = new TowerTargetingSystem();
@@ -175,7 +184,7 @@ namespace ColorChargeTD.Battle
             }
 
             session.OccupySlot(slot.SlotId);
-            TowerRuntimeModel tower = new TowerRuntimeModel(towerDefinition, slot, session.StartingChargeNormalized);
+            TowerRuntimeModel tower = new TowerRuntimeModel(towerDefinition, slot, 1f);
             towers.Add(tower);
             session.CurrentResource -= towerDefinition.BuildCost;
             presentationSystem.Sync(towers, enemies);
@@ -308,11 +317,22 @@ namespace ColorChargeTD.Battle
             if (waveSpawnerSystem != null)
             {
                 hudView.SetWaveLabel(waveSpawnerSystem.DisplayWaveNumber, waveSpawnerSystem.TotalWaveGroups);
-                hudView.SetWaveProgress(waveSpawnerSystem.ProgressNormalized);
+                float targetWaveProgress = waveSpawnerSystem.ProgressNormalized;
+                if (waveSpawnerSystem.IsComplete && enemies.Count == 0)
+                {
+                    targetWaveProgress = 1f;
+                }
+
+                smoothedWaveProgress = Mathf.MoveTowards(
+                    smoothedWaveProgress,
+                    targetWaveProgress,
+                    waveProgressFillSpeed * Time.deltaTime);
+                hudView.SetWaveProgress(smoothedWaveProgress);
             }
             else
             {
                 hudView.SetWaveLabel(0, 0);
+                smoothedWaveProgress = 0f;
                 hudView.SetWaveProgress(0f);
             }
 
@@ -320,15 +340,20 @@ namespace ColorChargeTD.Battle
             int freeSlots = totalSlots - session.OccupiedBuildSlotCount;
             hudView.SetSlots(freeSlots, totalSlots);
 
-            hudView.SetChargeWarningVisible(towers.Count == 0);
+            bool waitingForWaveStart = waveSpawnerSystem != null && waveSpawnerSystem.NeedsPlayerStart;
+            bool hasTowers = towers.Count > 0;
 
-            if (waveSpawnerSystem != null)
+            if (waitingForWaveStart)
             {
-                hudView.SetStartWaveVisible(waveSpawnerSystem.NeedsPlayerStart);
+                hudView.SetStartWaveVisible(true);
+                hudView.SetPlaceTowerHintVisible(!hasTowers);
+                hudView.SetStartWaveButtonVisible(hasTowers);
             }
             else
             {
                 hudView.SetStartWaveVisible(false);
+                hudView.SetPlaceTowerHintVisible(false);
+                hudView.SetStartWaveButtonVisible(false);
             }
         }
         #endregion
@@ -452,9 +477,34 @@ namespace ColorChargeTD.Battle
             }
         }
 
+        public void CloseRadialBuildMenuIfOpen()
+        {
+            DisposeRadialBuildMenu();
+        }
+
         #endregion
 
         #region StartWave
+
+        private void HandleEnemyKilledForCoinFlyout(Vector3 worldPosition, int reward)
+        {
+            coinFlyoutPresenter?.OnEnemyKilled(worldPosition, reward);
+        }
+
+        private void RegisterWaveKillForHud()
+        {
+            waveSpawnerSystem?.RegisterEnemyKill();
+        }
+
+        private void HandleEnemyDamagedForFlyout(EnemyRuntimeModel enemy, int damage)
+        {
+            if (enemy == null)
+            {
+                return;
+            }
+
+            damageFlyoutPresenter?.ShowDamage(enemy.Position, damage);
+        }
 
         private void HandleTowerFiredForPresentation(TowerRuntimeModel tower, EnemyRuntimeModel enemy)
         {
@@ -491,6 +541,7 @@ namespace ColorChargeTD.Battle
         private void ResetSessionState()
         {
             isConfigured = false;
+            smoothedWaveProgress = 0f;
             towers.Clear();
             enemies.Clear();
             session = null;

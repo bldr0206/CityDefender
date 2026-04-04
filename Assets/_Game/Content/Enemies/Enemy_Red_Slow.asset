@@ -17,5 +17,5 @@ MonoBehaviour:
   color: 0
   hitPoints: 3
   speed: 1
-  baseReward: 1
+  baseReward: 5
   prefab: {fileID: 3232023951885223497, guid: 0c8676d100bb7ec49b2f34b7994f47a8, type: 3}

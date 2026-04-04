@@ -24,6 +24,14 @@ namespace ColorChargeTD.Installers
             Container.Bind<ISceneLoader>().To<UnitySceneLoader>().AsSingle();
             Container.Bind<IGameStateMachine>().To<GameStateMachine>().AsSingle();
             Container.Bind<ILevelSelectionService>().To<LevelSelectionService>().AsSingle();
+
+            NavigationSceneCoroutineHost sceneCoroutineHost = GetComponent<NavigationSceneCoroutineHost>();
+            if (sceneCoroutineHost == null)
+            {
+                sceneCoroutineHost = gameObject.AddComponent<NavigationSceneCoroutineHost>();
+            }
+
+            Container.BindInstance(sceneCoroutineHost).AsSingle();
             Container.Bind<IProgressionService>().To<ProgressionService>().AsSingle();
             Container.Bind<IGameNavigationService>().To<GameNavigationService>().AsSingle();
         }

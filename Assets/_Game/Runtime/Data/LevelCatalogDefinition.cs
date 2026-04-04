@@ -13,10 +13,16 @@ namespace ColorChargeTD.Data
 
         public LevelDefinition GetLevelById(string levelId)
         {
+            if (string.IsNullOrWhiteSpace(levelId))
+            {
+                return null;
+            }
+
+            string needle = levelId.Trim();
             for (int i = 0; i < levels.Count; i++)
             {
                 LevelDefinition level = levels[i];
-                if (level != null && string.Equals(level.LevelId, levelId, StringComparison.Ordinal))
+                if (level != null && string.Equals(level.LevelId, needle, StringComparison.OrdinalIgnoreCase))
                 {
                     return level;
                 }
@@ -27,6 +33,11 @@ namespace ColorChargeTD.Data
 
         public void ValidateInto(List<ContentValidationMessage> messages)
         {
+            if (levels.Count < 2)
+            {
+                messages.Add(ContentValidationMessage.Warning(name, "Level catalog has fewer than 2 levels (MVP expects a linear sequence)."));
+            }
+
             HashSet<string> uniqueLevelIds = new HashSet<string>(StringComparer.Ordinal);
 
             for (int i = 0; i < levels.Count; i++)

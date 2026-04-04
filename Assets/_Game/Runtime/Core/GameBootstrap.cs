@@ -46,6 +46,8 @@ namespace ColorChargeTD.Core
 
         private static IEnumerator LoadSceneRoutine(string sceneName, LoadSceneMode loadSceneMode, Action onLoaded)
         {
+            Time.timeScale = 1f;
+
             AsyncOperation operation = SceneManager.LoadSceneAsync(sceneName, loadSceneMode);
             if (operation == null)
             {
@@ -85,7 +87,7 @@ namespace ColorChargeTD.Core
 
         public void SelectLevel(string levelId)
         {
-            SelectedLevelId = levelId ?? string.Empty;
+            SelectedLevelId = string.IsNullOrWhiteSpace(levelId) ? string.Empty : levelId.Trim();
         }
     }
 }

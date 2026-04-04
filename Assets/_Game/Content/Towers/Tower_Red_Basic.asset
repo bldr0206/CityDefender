@@ -18,7 +18,7 @@ MonoBehaviour:
   buildCost: 50
   damagePerShot: 1
   capacity: 3
-  productionPerSecond: 3
+  productionPerSecond: 0.33333334
   fireRatePerSecond: 1
   range: 4
   overchargeMultiplier: 2

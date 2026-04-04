@@ -6,13 +6,28 @@ namespace ColorChargeTD.Battle
 {
     public sealed class TowerWorldPresenter : MonoBehaviour
     {
+        private static Sprite cachedWhiteSprite;
+
         [SerializeField] private Transform turretYawRoot;
         [SerializeField] private Transform muzzlePoint;
         [SerializeField] private Canvas statusCanvas;
-        [SerializeField] private Image chargeFill;
-        [SerializeField] private Text ammoLabel;
-        [SerializeField] private Text productionLabel;
         [SerializeField] private Transform magazineSlotsRoot;
+
+        [Header("Regen radial HUD")]
+        [Tooltip("World-space UI prefab (root: Canvas + RegenBackdrop / RegenTrack / RegenFill). Edit layout and colors in the prefab.")]
+        [SerializeField] private GameObject regenRadialHudPrefab;
+        [Tooltip("Optional: assign RegenFill Image directly instead of using the prefab.")]
+        [SerializeField] private Image regenRadialFill;
+        [SerializeField] private Transform regenHudAnchor;
+        [SerializeField] private Vector3 regenHudLocalOffset = new Vector3(0.9f, 1.05f, 0f);
+        [Tooltip("Used only when the HUD is built at runtime (no prefab and no RegenFill reference).")]
+        [SerializeField] private float regenHudPixelSize = 112f;
+        [Tooltip("Used only when the HUD is built at runtime.")]
+        [SerializeField] private float regenHudWorldScale = 0.007f;
+
+        private GameObject regenHudInstance;
+        private Vector3 regenFillColorRgb = new Vector3(0.25f, 0.82f, 0.95f);
+        private bool regenFillBaseCaptured;
         private GameObject[] magazineBallRoots;
         private Camera mainCamera;
         private bool builtRuntimeUi;
@@ -49,6 +64,7 @@ namespace ColorChargeTD.Battle
 
             canvasTransform.rotation = Quaternion.LookRotation(-forward.normalized, Vector3.up);
         }
+
         #endregion
 
         #region Setup
@@ -72,7 +88,7 @@ namespace ColorChargeTD.Battle
 
             if (muzzlePoint == null && turretYawRoot != null)
             {
-                Transform existing = turretYawRoot.Find("Muzzle");
+                Transform existing = FindDeepChildByName(turretYawRoot, "Muzzle");
                 if (existing != null)
                 {
                     muzzlePoint = existing;
@@ -86,10 +102,7 @@ namespace ColorChargeTD.Battle
                 }
             }
 
-            if (statusCanvas == null && !builtRuntimeUi)
-            {
-                BuildRuntimeStatusHud();
-            }
+            ResolveRegenHud();
 
             if (magazineSlotsRoot == null)
             {
@@ -97,15 +110,88 @@ namespace ColorChargeTD.Battle
             }
         }
 
-        private void BuildRuntimeStatusHud()
+        private void ResolveRegenHud()
+        {
+            if (regenRadialFill == null && regenRadialHudPrefab != null && regenHudInstance == null)
+            {
+                Transform parent = regenHudAnchor != null ? regenHudAnchor : transform;
+                regenHudInstance = Instantiate(regenRadialHudPrefab, parent);
+                regenHudInstance.name = regenRadialHudPrefab.name;
+                regenHudInstance.transform.localPosition = regenHudLocalOffset;
+                regenHudInstance.transform.localRotation = Quaternion.identity;
+                regenRadialFill = regenHudInstance.transform.Find("RegenFill")?.GetComponent<Image>();
+                if (statusCanvas == null)
+                {
+                    statusCanvas = regenHudInstance.GetComponent<Canvas>();
+                }
+            }
+
+            if (regenRadialFill == null)
+            {
+                Transform legacyFill = transform.Find("TowerRegenRadial/RegenFill");
+                if (legacyFill != null)
+                {
+                    regenRadialFill = legacyFill.GetComponent<Image>();
+                }
+            }
+
+            if (regenRadialFill != null)
+            {
+                if (statusCanvas == null)
+                {
+                    statusCanvas = regenRadialFill.GetComponentInParent<Canvas>();
+                }
+
+                EnsureRadialImagesUseProceduralWhite(regenRadialFill.transform.root);
+                CaptureRegenFillBaseIfNeeded();
+            }
+            else if (!builtRuntimeUi)
+            {
+                BuildRuntimeRegenHud();
+                CaptureRegenFillBaseIfNeeded();
+            }
+        }
+
+        private void CaptureRegenFillBaseIfNeeded()
+        {
+            if (regenFillBaseCaptured || regenRadialFill == null)
+            {
+                return;
+            }
+
+            Color c = regenRadialFill.color;
+            regenFillColorRgb = new Vector3(c.r, c.g, c.b);
+            regenFillBaseCaptured = true;
+        }
+
+        private static void EnsureRadialImagesUseProceduralWhite(Transform hudRoot)
+        {
+            if (hudRoot == null)
+            {
+                return;
+            }
+
+            Graphic[] graphics = hudRoot.GetComponentsInChildren<Graphic>(true);
+            Sprite white = GetOrCreateWhiteSprite();
+            for (int i = 0; i < graphics.Length; i++)
+            {
+                if (graphics[i] is Image img && img.sprite == null)
+                {
+                    img.sprite = white;
+                }
+            }
+        }
+
+        private void BuildRuntimeRegenHud()
         {
             builtRuntimeUi = true;
 
-            GameObject canvasGo = new GameObject("TowerStatusCanvas");
-            canvasGo.transform.SetParent(transform, false);
-            canvasGo.transform.localPosition = new Vector3(0f, 1.35f, 0f);
+            Transform parent = regenHudAnchor != null ? regenHudAnchor : transform;
+            GameObject canvasGo = new GameObject("TowerRegenRadial");
+            canvasGo.transform.SetParent(parent, false);
+            canvasGo.transform.localPosition = regenHudLocalOffset;
             canvasGo.transform.localRotation = Quaternion.identity;
-            canvasGo.transform.localScale = Vector3.one * 0.008f;
+            canvasGo.transform.localScale = Vector3.one * regenHudWorldScale;
 
             statusCanvas = canvasGo.AddComponent<Canvas>();
             statusCanvas.renderMode = RenderMode.WorldSpace;
@@ -113,40 +199,74 @@ namespace ColorChargeTD.Battle
             canvasGo.AddComponent<GraphicRaycaster>();
 
             RectTransform canvasRect = canvasGo.GetComponent<RectTransform>();
-            canvasRect.sizeDelta = new Vector2(180f, 70f);
+            float size = Mathf.Max(32f, regenHudPixelSize);
+            canvasRect.sizeDelta = new Vector2(size, size);
 
-            GameObject panelGo = CreateUiChild(canvasRect, "Panel", new Vector2(0f, 0f), new Vector2(170f, 60f));
-            Image panelImage = panelGo.AddComponent<Image>();
-            panelImage.color = new Color(0f, 0f, 0f, 0.55f);
+            Sprite white = GetOrCreateWhiteSprite();
 
-            GameObject fillGo = CreateUiChild(panelGo.GetComponent<RectTransform>(), "ChargeFill", new Vector2(0f, 12f), new Vector2(150f, 14f));
-            chargeFill = fillGo.AddComponent<Image>();
-            chargeFill.type = Image.Type.Filled;
-            chargeFill.fillMethod = Image.FillMethod.Horizontal;
-            chargeFill.color = new Color(0.85f, 0.35f, 0.25f, 1f);
+            GameObject backdropGo = CreateUiChild(canvasRect, "RegenBackdrop", Vector2.zero, new Vector2(size, size));
+            Image backdrop = backdropGo.AddComponent<Image>();
+            backdrop.sprite = white;
+            backdrop.type = Image.Type.Simple;
+            backdrop.color = new Color(0f, 0f, 0f, 0.35f);
+            backdrop.raycastTarget = false;
 
-            GameObject ammoGo = CreateUiChild(panelGo.GetComponent<RectTransform>(), "AmmoText", new Vector2(0f, -6f), new Vector2(160f, 22f));
-            ammoLabel = ammoGo.AddComponent<Text>();
-            ammoLabel.fontSize = 18;
-            ammoLabel.alignment = TextAnchor.MiddleCenter;
-            ammoLabel.color = Color.white;
+            GameObject trackGo = CreateUiChild(canvasRect, "RegenTrack", Vector2.zero, new Vector2(size * 0.92f, size * 0.92f));
+            Image track = trackGo.AddComponent<Image>();
+            track.sprite = white;
+            track.type = Image.Type.Filled;
+            track.fillMethod = Image.FillMethod.Radial360;
+            track.fillOrigin = (int)Image.Origin360.Top;
+            track.fillAmount = 1f;
+            track.color = new Color(0.12f, 0.12f, 0.14f, 0.85f);
+            track.raycastTarget = false;
 
-            GameObject prodGo = CreateUiChild(panelGo.GetComponent<RectTransform>(), "ProductionText", new Vector2(0f, -28f), new Vector2(160f, 18f));
-            productionLabel = prodGo.AddComponent<Text>();
-            Font hudFont = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
-            if (hudFont == null)
+            GameObject fillGo = CreateUiChild(canvasRect, "RegenFill", Vector2.zero, new Vector2(size * 0.92f, size * 0.92f));
+            regenRadialFill = fillGo.AddComponent<Image>();
+            regenRadialFill.sprite = white;
+            regenRadialFill.type = Image.Type.Filled;
+            regenRadialFill.fillMethod = Image.FillMethod.Radial360;
+            regenRadialFill.fillOrigin = (int)Image.Origin360.Top;
+            regenRadialFill.fillClockwise = true;
+            regenRadialFill.color = new Color(regenFillColorRgb.x, regenFillColorRgb.y, regenFillColorRgb.z, 1f);
+            regenRadialFill.fillAmount = 0f;
+            regenRadialFill.raycastTarget = false;
+        }
+
+        private static Sprite GetOrCreateWhiteSprite()
+        {
+            if (cachedWhiteSprite != null)
             {
-                hudFont = Resources.GetBuiltinResource<Font>("Arial.ttf");
+                return cachedWhiteSprite;
             }
 
-            if (hudFont != null)
+            Texture2D tex = Texture2D.whiteTexture;
+            cachedWhiteSprite = Sprite.Create(
+                tex,
+                new Rect(0f, 0f, tex.width, tex.height),
+                new Vector2(0.5f, 0.5f),
+                100f);
+            return cachedWhiteSprite;
+        }
+
+        private static Transform FindDeepChildByName(Transform parent, string childName)
+        {
+            for (int i = 0; i < parent.childCount; i++)
             {
-                ammoLabel.font = hudFont;
-                productionLabel.font = hudFont;
+                Transform child = parent.GetChild(i);
+                if (child.name == childName)
+                {
+                    return child;
+                }
+
+                Transform nested = FindDeepChildByName(child, childName);
+                if (nested != null)
+                {
+                    return nested;
+                }
             }
-            productionLabel.fontSize = 14;
-            productionLabel.alignment = TextAnchor.MiddleCenter;
-            productionLabel.color = new Color(0.75f, 0.9f, 0.75f, 1f);
+
+            return null;
         }
 
         private static GameObject CreateUiChild(RectTransform parent, string name, Vector2 anchoredPosition, Vector2 size)
@@ -174,55 +294,40 @@ namespace ColorChargeTD.Battle
             EnsureReferences();
             TowerDefinition definition = tower.Definition;
 
-            if (chargeFill != null)
+            if (regenRadialFill != null)
             {
-                float normalized = definition.Capacity > 0 ? Mathf.Clamp01(tower.Charge / definition.Capacity) : 0f;
-                chargeFill.fillAmount = normalized;
-            }
+                float fill;
+                if (tower.Charge >= definition.Capacity)
+                {
+                    fill = 1f;
+                }
+                else
+                {
+                    fill = Mathf.Clamp01(tower.Charge - Mathf.Floor(tower.Charge));
+                }
 
-            if (ammoLabel != null)
-            {
-                int ready = Mathf.FloorToInt(tower.Charge);
-                ammoLabel.text = ready + "/" + definition.Capacity;
-            }
-
-            if (productionLabel != null)
-            {
-                productionLabel.text = "+" + definition.ProductionPerSecond.ToString("0.#") + "/s gen";
+                regenRadialFill.fillAmount = fill;
+                Color c;
+                c.r = regenFillColorRgb.x;
+                c.g = regenFillColorRgb.y;
+                c.b = regenFillColorRgb.z;
+                c.a = 1f;
+                regenRadialFill.color = c;
             }
 
             UpdateMagazineSphereVisuals(tower);
 
-            if (chargeFill != null)
-            {
-                Color c = chargeFill.color;
-                c.a = tower.HasCharge ? 1f : 0.35f;
-                chargeFill.color = c;
-            }
-
-            EnemyRuntimeModel aim = tower.CurrentAimTarget;
-            if (aim != null)
-            {
-                ApplyYawToward(aim.Position, tower.Slot.Position);
-            }
+            ApplyTurretYawFromSimulation(tower);
         }
 
-        private void ApplyYawToward(Vector3 targetWorld, Vector3 towerWorld)
+        private void ApplyTurretYawFromSimulation(TowerRuntimeModel tower)
         {
             if (turretYawRoot == null)
             {
                 return;
             }
 
-            Vector3 delta = targetWorld - towerWorld;
-            delta.y = 0f;
-            if (delta.sqrMagnitude < 0.0001f)
-            {
-                return;
-            }
-
-            Quaternion look = Quaternion.LookRotation(delta.normalized, Vector3.up);
-            turretYawRoot.rotation = look;
+            turretYawRoot.rotation = Quaternion.Euler(0f, tower.TurretYawDegrees, 0f);
         }
 
         private void ResolveMagazineBallsIfNeeded()
@@ -238,18 +343,44 @@ namespace ColorChargeTD.Battle
                 return;
             }
 
-            int slotCount = magazineSlotsRoot.childCount;
-            if (magazineBallRoots != null && magazineBallRoots.Length == slotCount)
+            int ballSlotCount = CountTransformsWithChildren(magazineSlotsRoot);
+            if (ballSlotCount == 0)
+            {
+                magazineBallRoots = null;
+                return;
+            }
+
+            if (magazineBallRoots != null && magazineBallRoots.Length == ballSlotCount)
             {
                 return;
             }
 
-            magazineBallRoots = new GameObject[slotCount];
-            for (int i = 0; i < slotCount; i++)
+            magazineBallRoots = new GameObject[ballSlotCount];
+            int write = 0;
+            for (int i = 0; i < magazineSlotsRoot.childCount; i++)
             {
                 Transform slot = magazineSlotsRoot.GetChild(i);
-                magazineBallRoots[i] = slot.childCount > 0 ? slot.GetChild(0).gameObject : null;
+                if (slot.childCount == 0)
+                {
+                    continue;
+                }
+
+                magazineBallRoots[write++] = slot.GetChild(0).gameObject;
             }
+        }
+
+        private static int CountTransformsWithChildren(Transform parent)
+        {
+            int count = 0;
+            for (int i = 0; i < parent.childCount; i++)
+            {
+                if (parent.GetChild(i).childCount > 0)
+                {
+                    count++;
+                }
+            }
+
+            return count;
         }
 
         private void UpdateMagazineSphereVisuals(TowerRuntimeModel tower)

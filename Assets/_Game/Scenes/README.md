@@ -1,11 +1,10 @@
 # Scene Workspace
 
-Editor bootstrap (scenes, `ProjectContext`, MVP level assets) is **not** run automatically on Unity load. Use **Unity MCP** or the menu when you intentionally want to (re)generate:
+Editor bootstrap (scenes, `ProjectContext`) is **not** run automatically on Unity load. Use **Unity MCP** or the menu when you intentionally want to (re)generate:
 
 - `Tools/Color Charge TD/Generate Bootstrap Scenes` — creates missing scenes/prefab wiring; **overwrites** `ProjectContext.prefab` if you run it again.
-- `Tools/Color Charge TD/Generate MVP Level 1` — full MVP content + layout prefab; **overwrites** those assets if you run it again.
 
-After the first generation, edit assets in the Editor; avoid re-running these menus unless you mean to reset.
+Level layouts and waves are authored as normal assets under `Assets/_Game/Content` and `Assets/_Game/Prefabs/Layouts`.
 
 ---
 

@@ -1,6 +1,8 @@
 using ColorChargeTD.Core;
 using ColorChargeTD.Data;
+using ColorChargeTD.Domain;
 using ColorChargeTD.Product;
+using ColorChargeTD.Profile;
 using System.Collections.Generic;
 using UnityEngine;
 using Zenject;
@@ -12,6 +14,7 @@ namespace ColorChargeTD.Presentation
         [Inject] private IGameNavigationService navigationService;
         [Inject] private ILevelSelectionService levelSelectionService;
         [Inject] private IGameContentService contentService;
+        [Inject] private IProgressionService progressionService;
 
         #region NavigationCommands
 
@@ -87,6 +90,30 @@ namespace ColorChargeTD.Presentation
 
             levelSelectionService.SelectLevel(nextLevelId);
             navigationService.StartSelectedLevel();
+        }
+
+        public void ContinueAfterVictory()
+        {
+            BattleResultModel last = navigationService.LastBattleResult;
+            if (last.Outcome != BattleOutcome.Victory)
+            {
+                return;
+            }
+
+            string nextId = last.NextLevelId;
+            if (string.IsNullOrWhiteSpace(nextId) && !string.IsNullOrWhiteSpace(last.LevelId))
+            {
+                progressionService.TryResolveNextLevelAfterVictory(last.LevelId, out nextId);
+            }
+
+            if (!string.IsNullOrWhiteSpace(nextId))
+            {
+                levelSelectionService.SelectLevel(nextId);
+                navigationService.StartSelectedLevel();
+                return;
+            }
+
+            StartFirstLevel();
         }
 
         #endregion

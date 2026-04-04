@@ -7,8 +7,10 @@ namespace ColorChargeTD.Data
     public sealed class WaveDefinition : ScriptableObject
     {
         [SerializeField] private List<WaveSpawnGroup> groups = new List<WaveSpawnGroup>();
+        [SerializeField] private bool chainGroupsWithoutPlayerAck;
 
         public IReadOnlyList<WaveSpawnGroup> Groups => groups;
+        public bool ChainGroupsWithoutPlayerAck => chainGroupsWithoutPlayerAck;
 
         public float GetTotalDuration()
         {
@@ -19,6 +21,17 @@ namespace ColorChargeTD.Data
                 WaveSpawnGroup group = groups[i];
                 total += group.StartDelay;
                 total += Mathf.Max(0, group.Count - 1) * group.SpawnInterval;
+            }
+
+            return total;
+        }
+
+        public int GetTotalPlannedEnemyCount()
+        {
+            int total = 0;
+            for (int i = 0; i < groups.Count; i++)
+            {
+                total += Mathf.Max(0, groups[i].Count);
             }
 
             return total;

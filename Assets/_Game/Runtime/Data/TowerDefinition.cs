@@ -22,6 +22,8 @@ namespace ColorChargeTD.Data
         [SerializeField] private float range = 4f;
         [SerializeField] private float overchargeMultiplier = 2f;
         [SerializeField] private float projectileTravelTime = 0.25f;
+        [SerializeField] private float turretTraverseDegreesPerSecond = 320f;
+        [SerializeField] private float turretFireAlignToleranceDegrees = 12f;
 
         [Header("Presentation")]
         [SerializeField] private GameObject prefab;
@@ -40,6 +42,8 @@ namespace ColorChargeTD.Data
         public float Range => Mathf.Max(0.1f, range);
         public float OverchargeMultiplier => Mathf.Max(1f, overchargeMultiplier);
         public float ProjectileTravelTime => Mathf.Max(0.01f, projectileTravelTime);
+        public float TurretTraverseDegreesPerSecond => Mathf.Max(30f, turretTraverseDegreesPerSecond);
+        public float TurretFireAlignToleranceDegrees => Mathf.Clamp(turretFireAlignToleranceDegrees, 1f, 45f);
         public GameObject Prefab => prefab;
         public GameObject ProjectilePrefab => projectilePrefab;
         public AudioClip FireSfx => fireSfx;

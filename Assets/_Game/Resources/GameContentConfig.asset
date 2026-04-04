@@ -18,4 +18,5 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 2e33a380d803f0e4a8ed142f09499d92, type: 2}
   enemies:
   - {fileID: 11400000, guid: 504252b760217bf4db4290dfbf59768e, type: 2}
+  - {fileID: 11400000, guid: f3a8c9d14b2a4c6e8d0e1f2a3b4c5d6, type: 2}
   upgrades: []

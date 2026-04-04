@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 49311885595511745ae0a33872c764ce, type: 3}
   m_Name: GameBalanceConfig
   m_EditorClassIdentifier: 
-  defaultStartingResource: 125
+  defaultStartingResource: 100
   defaultTowerCost: 50
   defaultTowerCapacity: 3
   defaultProductionPerSecond: 3

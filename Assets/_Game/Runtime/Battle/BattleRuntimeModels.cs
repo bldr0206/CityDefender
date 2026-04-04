@@ -118,6 +118,7 @@ namespace ColorChargeTD.Battle
             Definition = definition;
             Slot = slot;
             Charge = definition.Capacity * Mathf.Clamp01(startingChargeNormalized);
+            TurretYawDegrees = 0f;
         }
 
         public TowerDefinition Definition { get; }
@@ -125,6 +126,7 @@ namespace ColorChargeTD.Battle
         public float Charge { get; set; }
         public float FireCooldown { get; set; }
         public EnemyRuntimeModel CurrentAimTarget { get; set; }
+        public float TurretYawDegrees { get; set; }
 
         public bool HasCharge => Charge >= 1f;
         public bool IsFull => Charge >= Definition.Capacity;
@@ -132,18 +134,22 @@ namespace ColorChargeTD.Battle
 
     public sealed class WaveSpawnerSystem
     {
+        #region Fields
         private readonly WaveDefinition waveDefinition;
+        private readonly int plannedEnemyTotal;
         private readonly Dictionary<string, LevelPathRuntimeDefinition> pathsById = new Dictionary<string, LevelPathRuntimeDefinition>(StringComparer.Ordinal);
 
         private int groupIndex;
         private float elapsedInGroup;
         private int spawnedInGroup;
-        private float totalElapsed;
         private bool awaitingPlayerAck = true;
+        private int waveKillCount;
+        #endregion
 
         public WaveSpawnerSystem(WaveDefinition waveDefinition, LevelLayoutRuntimeDefinition layoutDefinition)
         {
             this.waveDefinition = waveDefinition;
+            plannedEnemyTotal = waveDefinition != null ? waveDefinition.GetTotalPlannedEnemyCount() : 0;
 
             LevelPathRuntimeDefinition[] paths = layoutDefinition.Paths;
             for (int i = 0; i < paths.Length; i++)
@@ -166,6 +172,19 @@ namespace ColorChargeTD.Battle
             }
 
             awaitingPlayerAck = false;
+        }
+
+        public void RegisterEnemyKill()
+        {
+            if (plannedEnemyTotal <= 0)
+            {
+                return;
+            }
+
+            if (waveKillCount < plannedEnemyTotal)
+            {
+                waveKillCount++;
+            }
         }
 
         public bool IsComplete => waveDefinition == null || groupIndex >= waveDefinition.Groups.Count;
@@ -201,8 +220,12 @@ namespace ColorChargeTD.Battle
                     return 1f;
                 }
 
-                float duration = Mathf.Max(0.01f, waveDefinition.GetTotalDuration());
-                return Mathf.Clamp01(totalElapsed / duration);
+                if (plannedEnemyTotal <= 0)
+                {
+                    return 1f;
+                }
+
+                return Mathf.Clamp01((float)waveKillCount / plannedEnemyTotal);
             }
         }
 
@@ -218,7 +241,6 @@ namespace ColorChargeTD.Battle
                 return;
             }
 
-            totalElapsed += deltaTime;
             elapsedInGroup += deltaTime;
 
             WaveSpawnGroup group = waveDefinition.Groups[groupIndex];
@@ -245,7 +267,7 @@ namespace ColorChargeTD.Battle
 
             if (groupIndex < waveDefinition.Groups.Count)
             {
-                awaitingPlayerAck = true;
+                awaitingPlayerAck = !waveDefinition.ChainGroupsWithoutPlayerAck;
             }
         }
 
@@ -267,6 +289,17 @@ namespace ColorChargeTD.Battle
 
     public sealed class EnemyPathSystem
     {
+        #region Fields
+        private readonly Action<Vector3, int> onEnemyKilled;
+        private readonly Action onEnemyDefeatedByDamage;
+        #endregion
+
+        public EnemyPathSystem(Action<Vector3, int> onEnemyKilled = null, Action onEnemyDefeatedByDamage = null)
+        {
+            this.onEnemyKilled = onEnemyKilled;
+            this.onEnemyDefeatedByDamage = onEnemyDefeatedByDamage;
+        }
+
         public void Tick(float deltaTime, List<EnemyRuntimeModel> enemies, LevelSessionRuntime session)
         {
             for (int i = enemies.Count - 1; i >= 0; i--)
@@ -276,7 +309,15 @@ namespace ColorChargeTD.Battle
                 {
                     if (enemy.CurrentHitPoints <= 0 && enemy.Definition != null)
                     {
-                        session.AccumulatedKillReward += enemy.Definition.BaseReward;
+                        onEnemyDefeatedByDamage?.Invoke();
+                        int reward = enemy.Definition.BaseReward;
+                        if (reward > 0)
+                        {
+                            session.AccumulatedKillReward += reward;
+                            session.CurrentResource += reward;
+                            Vector3 flyoutOrigin = enemy.Position + Vector3.up * 0.5f;
+                            onEnemyKilled?.Invoke(flyoutOrigin, reward);
+                        }
                     }
 
                     enemies.RemoveAt(i);
@@ -334,6 +375,7 @@ namespace ColorChargeTD.Battle
     public sealed class TowerTargetingSystem
     {
         public void Tick(
+            float deltaTime,
             List<TowerRuntimeModel> towers,
             List<EnemyRuntimeModel> enemies,
             DamageResolver damageResolver,
@@ -348,6 +390,11 @@ namespace ColorChargeTD.Battle
 
             for (int i = 0; i < towers.Count; i++)
             {
+                UpdateTurretTowardTarget(towers[i], deltaTime);
+            }
+
+            for (int i = 0; i < towers.Count; i++)
+            {
                 TowerRuntimeModel tower = towers[i];
                 if (!tower.HasCharge || tower.FireCooldown > 0f)
                 {
@@ -356,6 +403,11 @@ namespace ColorChargeTD.Battle
 
                 EnemyRuntimeModel target = tower.CurrentAimTarget;
                 if (target == null)
+                {
+                    continue;
+                }
+
+                if (!IsTowerAimedWithinTolerance(tower, target))
                 {
                     continue;
                 }
@@ -390,15 +442,67 @@ namespace ColorChargeTD.Battle
 
             return null;
         }
+
+        private static void UpdateTurretTowardTarget(TowerRuntimeModel tower, float deltaTime)
+        {
+            EnemyRuntimeModel target = tower.CurrentAimTarget;
+            if (target == null || tower.Definition == null)
+            {
+                return;
+            }
+
+            if (!TryComputeHorizontalDesiredYaw(tower.Slot.Position, target.Position, out float desiredYaw))
+            {
+                return;
+            }
+
+            float current = tower.TurretYawDegrees;
+            float maxStep = tower.Definition.TurretTraverseDegreesPerSecond * deltaTime;
+            float deltaYaw = Mathf.DeltaAngle(current, desiredYaw);
+            float step = Mathf.Clamp(deltaYaw, -maxStep, maxStep);
+            tower.TurretYawDegrees = Mathf.Repeat(current + step, 360f);
+        }
+
+        private static bool IsTowerAimedWithinTolerance(TowerRuntimeModel tower, EnemyRuntimeModel target)
+        {
+            if (tower.Definition == null)
+            {
+                return false;
+            }
+
+            if (!TryComputeHorizontalDesiredYaw(tower.Slot.Position, target.Position, out float desiredYaw))
+            {
+                return false;
+            }
+
+            float error = Mathf.Abs(Mathf.DeltaAngle(tower.TurretYawDegrees, desiredYaw));
+            return error <= tower.Definition.TurretFireAlignToleranceDegrees;
+        }
+
+        private static bool TryComputeHorizontalDesiredYaw(Vector3 originWorld, Vector3 targetWorld, out float yawDegrees)
+        {
+            Vector3 delta = targetWorld - originWorld;
+            delta.y = 0f;
+            if (delta.sqrMagnitude < 0.0001f)
+            {
+                yawDegrees = 0f;
+                return false;
+            }
+
+            yawDegrees = Quaternion.LookRotation(delta.normalized, Vector3.up).eulerAngles.y;
+            return true;
+        }
     }
 
     public sealed class DamageResolver
     {
         private readonly GameBalanceConfig balanceConfig;
+        private readonly Action<EnemyRuntimeModel, int> onEnemyDamaged;
 
-        public DamageResolver(GameBalanceConfig balanceConfig)
+        public DamageResolver(GameBalanceConfig balanceConfig, Action<EnemyRuntimeModel, int> onEnemyDamaged = null)
         {
             this.balanceConfig = balanceConfig;
+            this.onEnemyDamaged = onEnemyDamaged;
         }
 
         public int ComputeShotDamage(TowerRuntimeModel tower)
@@ -419,17 +523,7 @@ namespace ColorChargeTD.Battle
 
         public void ApplyDelayedDamage(EnemyRuntimeModel enemy, int damage, ColorCharge towerColor)
         {
-            if (enemy == null || !enemy.IsAlive || enemy.Definition == null)
-            {
-                return;
-            }
-
-            if (enemy.Definition.Color != towerColor)
-            {
-                return;
-            }
-
-            enemy.ApplyDamage(damage);
+            TryApplyMatchingDamage(enemy, damage, towerColor);
         }
 
         public void ResolveShot(TowerRuntimeModel tower, EnemyRuntimeModel enemy)
@@ -444,8 +538,29 @@ namespace ColorChargeTD.Battle
                 return;
             }
 
-            int damage = ComputeShotDamage(tower);
-            enemy.ApplyDamage(damage);
+            TryApplyMatchingDamage(enemy, ComputeShotDamage(tower), tower.Definition.Color);
+        }
+
+        private void TryApplyMatchingDamage(EnemyRuntimeModel enemy, int damage, ColorCharge towerColor)
+        {
+            if (enemy == null || !enemy.IsAlive || enemy.Definition == null)
+            {
+                return;
+            }
+
+            if (enemy.Definition.Color != towerColor)
+            {
+                return;
+            }
+
+            int dmg = Mathf.Max(0, damage);
+            if (dmg <= 0)
+            {
+                return;
+            }
+
+            enemy.ApplyDamage(dmg);
+            onEnemyDamaged?.Invoke(enemy, dmg);
         }
     }
 
