@@ -1,0 +1,419 @@
+RectTransform Snapper Manual
+Version: 1.4.0
+Last updated: 2025-12-25
+Asset: Multitool / RectTransform Snapper (Unity Editor Tool)
+Target Unity: 2021.3+ (tested with URP templates)
+
+================================================================================
+TABLE OF CONTENTS
+================================================================================
+
+1. Overview
+2. Requirements
+3. Installation
+4. Quick Start
+5. Features Overview
+6. Step-by-Step Setup Tutorial
+7. Hotkeys
+8. Advanced Features
+9. Troubleshooting
+10. FAQ
+11. Uninstall
+12. Changelog
+13. Support
+
+================================================================================
+1. OVERVIEW
+================================================================================
+
+RectTransform Snapper is a Unity Editor tool that helps you create perfectly
+aligned UI layouts by snapping RectTransform elements to a visual grid while
+you move or resize them. It provides:
+
+- Real-time grid overlay with customizable appearance
+- Smart snapping that considers object edges and center points
+- Group transformations for multiple objects
+- Reference image overlay for design implementation
+- Canvas boundary snapping
+- Automatic detection of the active canvas when selecting any object
+- Proportional child scaling
+- Undo/Redo support
+- Hotkey shortcuts for quick adjustments
+- Align multiple objects
+
+The tool automatically disables Unity's built-in grid and snap settings when
+active, ensuring clean operation without conflicts.
+
+================================================================================
+2. REQUIREMENTS
+================================================================================
+
+- Unity 2021.3 LTS or newer
+- Built-in UGUI (UI Toolkit not supported)
+- Editor permissions to write EditorPrefs
+- Scene with Canvas and RectTransform objects
+
+================================================================================
+3. INSTALLATION
+================================================================================
+
+1. Import the package into your project
+2. Ensure the folder appears at: Assets/Plugins/Multitool/RectTransformSnapper
+3. Open the window: Window > Multitool > Rect Snapper
+
+================================================================================
+4. QUICK START
+================================================================================
+
+1. Open: Tools > Multitool > RectTransformSnapper > Open Settings Window
+2. Create a canvas or select an existing one
+3. Set Grid Step (e.g., 16, 32, 64) - this controls snapping precision
+4. Optionally set Subdivisions (e.g., 2, 4, 8) for finer grid control
+5. Select any UI element (RectTransform) and drag with Move or Rect tool
+6. Objects snap to grid points (center and edges)
+7. Use hotkeys for quick adjustments (see Hotkeys section)
+
+================================================================================
+5. FEATURES OVERVIEW
+================================================================================
+
+5.1 Grid System
+    - Visual dot grid overlay in Scene View
+    - Customizable grid step (main spacing)
+    - Subdivisions for finer control
+    - Grid offset for precise alignment
+    - Automatic LOD (Level of Detail) for performance
+    - Grid origin selection (9-point system)
+
+5.2 Smart Snapping
+    - Snaps object center, left/right edges, and top/bottom edges
+    - Chooses the closest snap target automatically
+    - Works with both Move and Rect tools
+    - Respects axis locking when enabled
+    - Fit to Grid button
+
+5.3 Group Operations
+    - Select multiple RectTransforms to enter group mode
+    - Move entire groups while maintaining relative positions
+    - Scale groups proportionally
+    - Visual group bounds with handles
+
+5.4 Canvas Integration
+    - Assign any Canvas as the coordinate system
+    - Snap to Canvas boundaries (edges and center)
+    - Canvas boundary snapping (snaps automatically)
+    - Canvas origin selection for predictable alignment
+    - Grid automatically hides when Canvas is hidden via eye icon in hierarchy
+
+5.5 Reference Overlay
+    - Add semi-transparent reference images
+    - Automatic texture size optimization
+    - Fit Canvas to reference dimensions
+    - Fit Reference to Canvas 
+    - Easy removal and replacement
+    - Color and opacity controls (Reference Color, Opacity)
+    - Always On Top toggle (keeps the reference as the last Canvas child)
+    - Remove Ref button to delete the current reference overlay
+    - The Reference ObjectField auto-fills with the current reference sprite
+
+5.6 Advanced Features
+    - Axis locking (click gizmo arrows to constrain movement)
+    - Proportional child scaling
+    - Undo/Redo for all operations
+    - Persistent settings across editor sessions
+    - Hotkey support
+
+5.7 Alignment Features
+    - Alignment and distribution options
+    - Ability to align and distribute relative to canvas
+
+5.8 Shortcuts Support
+    - Ability to configure shortcuts in the Shortcuts menu
+    - Shortcut for fit to grid
+    - Shortcut for enable rect transform snapper
+
+5.9 Tools Menu
+    - All main settings are duplicated in the Tools menu
+    - Can work without opening the main window
+
+================================================================================
+6. STEP-BY-STEP SETUP TUTORIAL
+================================================================================
+
+6.1 Create or Select a Canvas
+    - Open the Rect Snapper window
+    - Select any object that is a child of the canvas, or the canvas itself, or press "New Canvas"
+    - The new Canvas is automatically configured with proper settings (for mobile)
+    - The assigned Canvas defines the coordinate system for snapping
+
+6.2 Configure Grid Settings
+    - Set "Grid Step" to your desired spacing (e.g., 16, 32, 64 pixels)
+    - Adjust "Subdivisions" for finer control (e.g., 2, 4, 8)
+    - Use ÷2 and ×2 buttons for quick adjustments
+    - The effective small step = Grid Step / Subdivisions
+
+6.3 Customize Grid Appearance
+    - Adjust "Dot Size" (1-4 pixels)
+    - Change "Dot Color" for better visibility
+    - Set "Grid Offset" X/Y for precise alignment (-1.0 to 1.0)
+    - Grid offset is measured as a fraction of the step size
+
+6.4 Choose Grid Origin
+    - Use the 3x3 origin grid to select where snapping occurs
+    - Options:
+        Top-Left,
+        Top-Center,
+        Top-Right,
+        Middle-Left,
+        Center,
+        Middle-Right,
+        Bottom-Left,
+        Bottom-Center,
+        Bottom-Right
+    - This affects how objects align relative to the Canvas
+
+6.5 Add Reference Overlay (Optional)
+    - Or click "Add Ref" to open the sprite picker
+    - A semi-transparent reference image is created under the Canvas
+    - Use "Fit to Ref" to match Canvas size to reference dimensions
+    - Use "Fit Ref to Canvas" to match Reference image to Canvas.
+        This resets the position, size, and anchor points, and stretches the image to fit the canvas dimensions.
+    - Adjust appearance using "Reference Color" and "Opacity"
+    - Enable "Always On Top" to keep the overlay above other UI (last sibling)
+    - Use "Remove Ref" to delete the current reference overlay
+
+6.6 Start Snapping
+    - Select any RectTransform in your Canvas
+    - Use Move tool to reposition with snapping
+    - Use Rect tool to resize with snapping
+    - Objects will snap to the nearest grid points automatically
+
+================================================================================
+7. HOTKEYS
+================================================================================
+
+Ctrl + ' (Quote)     - Toggle tool enable/disable
+Alt + F              - Fit selected objects to grid
+
+================================================================================
+8. ADVANCED FEATURES
+================================================================================
+
+8.1 Group Transformations
+    - Select multiple RectTransforms that share the same parent
+    - Group mode is automatically activated
+    - Move tool: Drag inside the group bounds to move all objects
+    - Rect tool: Drag edges/corners to scale the group proportionally
+    - Individual object positions are maintained relative to each other
+
+8.2 Proportional Child Scaling
+    - Enable "Resize Children" in the window
+    - When resizing a parent object, children scale proportionally
+    - Useful for maintaining aspect ratios in nested UI structures
+    - Children maintain their relative positions and sizes
+
+8.3 Canvas Boundary Snapping
+    - Enable "Snap to Boundaries" for automatic edge alignment
+    - Objects snap to Canvas edges and center when within threshold
+    - Adjustable snap distance for sensitivity control
+    - Works with both single objects and groups
+
+8.4 Undo/Redo Support
+    - All operations support Unity's standard Undo/Redo
+    - Grid settings changes are undoable
+    - Canvas assignments are undoable
+    - Reference overlay operations are undoable
+    - Use Ctrl+Z / Ctrl+Y as usual
+
+8.5 Always On Top (Reference Overlay)
+    - When enabled, the reference overlay is automatically kept as the last Canvas child
+    - Applies on creation and on any hierarchy changes
+
+8.6 Compact Scene Overlay windows
+    - Grid settings
+    - Reference overlay settings
+
+================================================================================
+9. TROUBLESHOOTING
+================================================================================
+
+Problem:    Grid not visible
+Solution:   Ensure "Enabled" is checked and a Canvas is assigned
+
+Problem:    Objects don't snap
+Solution:   Ensure "Enabled" is checked and a Canvas is assigned,
+            check grid settings to awoid small grid size and large subdivisions count
+
+Problem:    Too many grid dots
+Solution:   Increase "Grid Step" or decrease "Dot Size"
+
+
+Problem:    Reference doesn't match the canvas
+Solution:   You can fit the canvas to the reference using the "Fit Canvas to Ref" button
+            or fit the reference to the canvas using the "Fit Ref to Canvas" button 
+
+Problem:    Child objects are changing size
+Solution:   Uncheck "Resize children" to prevent child objects from changing size
+
+Problem:    Reference overlay not visible
+Solution:   Check if the reference image is behind other UI elements
+
+Problem:    Cannot snap precisely, object sticks anywhere but not to the grid
+Solution:   Uncheck "Snap to Rect Edges"
+
+Problem:    Alignment moves all objects to the canvas edge,
+            but I want to align selected objects relative to each other
+Solution:   Uncheck "AlignToCanvas"
+
+Problem:    Sometimes object dimensions have fractional numbers like 32.00001
+Solution:   Yes, sometimes this happens, it's a known bug.
+
+================================================================================
+10. FAQ
+================================================================================
+
+Q:  Does it work with UI Toolkit?
+A:  No, this tool is designed for the legacy UGUI system only.
+
+Q:  Can I change the default settings?
+A:  Yes, open the settings panel next to the Overview foldout and use the Save/Reset/Clear defaults buttons.
+
+Q:  Does it affect build performance?
+A:  No, this is an editor-only tool with no runtime code.
+
+Q:  Can I use it with multiple Canvases?
+A:  Yes, but you can only work with one Canvas at a time for snapping.
+
+Q:  How does the grid origin work?
+A:  It determines where the grid "starts" within the Canvas, affecting how objects align.
+
+Q:  Can I disable the grid but keep snapping?
+A:  Yes, set "Dot Color" to fully transparent (alpha = 0)
+    to hide the grid while keeping snapping enabled. Second Option is to use 
+    Fit To Grid button, this button works even Rect Ttransform Snapper is disabled
+
+Q:  Does it work well with rotated objects?
+A:  Works well from v1.4.0
+
+Q:  Can I snap to custom positions?
+A:  Use grid offset to shift the entire grid for custom alignment.
+
+Q:  How do I remove the reference overlay?
+A:  Click the "Remove Ref" button in the Reference Overlay section (or delete the "Reference_" GameObject).
+
+Q:  Can I use it with prefabs?
+A:  Yes, but snapping works on the prefab instance, not the prefab asset.
+
+================================================================================
+11. UNINSTALL
+================================================================================
+
+1. Close all Rect Snapper windows
+2. Delete the folder: Assets/Plugins/Multitool/RectTransformSnapper
+3. No runtime code remains in builds
+4. EditorPrefs settings can be manually cleared if desired
+
+================================================================================
+12. CHANGELOG
+================================================================================
+
+Version 1.4.0 (2025-13-25):
+- Added ability to set hotkeys in the shortcuts window
+- New feature: fit object to grid
+- Rewritten object snapping logic, now works perfectly with rotated objects and negative scale
+- Added ability to align selected objects relative to selection bounds or canvas
+- Added alignment overlay
+- All features duplicated in Tools menu, so you don't need to open the main settings window
+- Removed settings foldout
+- Removed "Clear Canvas Selection" button
+- Fixed issue when closing "reference" overlay menu opened main window
+- Removed Add reference field in Reference foldout
+
+
+Version 1.3.4 (2025-11-23):
+- Fixed gizmo display in Move tool
+- Snapping to other RectTransform objects
+- Fixed issues with negative scale
+
+Version 1.3.3 (2025-11-23):
+- Added close buttons to overlay windows
+- Rect Transform Snapper is now disabled by default
+
+Version 1.3.2 (2025-11-20):
+- Grid points and canvas bounds now automatically hide when Canvas is hidden via eye icon in hierarchy
+- Improved integration with Unity's scene visibility system
+
+Version 1.3.1 (2025-11-15):
+- Resize operations now account for object scale
+- Improved canvas boundary snapping algorithm
+- Fixed move tool hit zones to match Unity's arrow gizmos
+- Fixed issue where reset to defaults could not be undone
+- Reference overlay settings (color and opacity) now reset with reset to defaults
+- Changed "Reference" label to "Opacity" in reference overlay window
+- Changed multi-selection colors to Unity style
+- Removed grid increase/decrease hotkeys (overlay window available)
+- Fixed various undo-related issues
+- Fixed move tool behavior issues
+- changed old sprites with new
+
+Version 1.3 (2025-11-13):
+- Added "Fit Ref to Canvas" button that adjusts reference dimensions to match the canvas
+- Added small optional overlay windows for compact asset workflow
+- Added rounding of transform values to 0.0001
+- Fixed bug with snap threshold triggering
+- Fixed bug with cursor resetting to normal during resize operations
+- Fixed interaction fields, now there are no problems moving small objects
+
+Version 1.2 (2025-11-05):
+- Bug fixes
+- Automatic Canvas assignment (auto-selects Canvas)
+- Added two modular grid references (included in reference presets)
+- New default settings
+- Disabled reference manipulation buttons when no reference is set
+- Prevented assigning a reference when no Canvas is selected
+- Highlighted borders of the selected Canvas for better visibility
+
+Version 1.1.1 (2025-10-31):
+- Window layout made more compact with collapsible Overview and settings panel
+- Added rich tooltips throughout the UI to clarify controls
+- Fixed repeat warning loop that could freeze Unity when loading unsupported references
+- Introduced settings button with panel for advanced options
+- Moved Resize Children into settings panel and enabled it by default
+
+Version 1.1 (2025-01-09):
+- Added Undo/Redo support for all operations
+- Enhanced move snapping to consider edges and center
+- Added hotkey support (Ctrl+' to toggle)
+- Fixed object selection issues during drag operations
+- Improved cursor behavior during camera rotation
+- Added version display in window
+- Grid automatically hides when Canvas is disabled
+- Improved input handling and event processing
+- Reference Overlay: color and opacity controls
+- Reference Overlay: Always On Top option
+- Reference Overlay: Remove Ref button
+- Reference ObjectField auto-fills after adding/updating reference
+
+Version 1.0 (2025-09-30):
+- Initial release with core snapping functionality
+- Grid overlay with customizable appearance
+- Canvas boundary snapping
+- Group transformations
+- Reference overlay system
+- Axis locking for Move tool
+- Proportional child scaling
+
+================================================================================
+13. SUPPORT
+================================================================================
+
+For support and bug reports:
+- Use the Asset Store support link associated with the package
+- Include Unity version, reproduction steps, and screenshots
+- Check the troubleshooting section first
+
+Thank you for using RectTransform Snapper!
+
+================================================================================
+END OF MANUAL
+================================================================================

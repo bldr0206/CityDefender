@@ -1,0 +1,317 @@
+Group Ungroup Extract Tool Manual
+Version: 1.0
+Last updated: 2025-11-29
+Asset: Multitool / Group Ungroup Extract Tool (Unity Editor Tool)
+Target Unity: 2021.3+ (tested with URP templates)
+
+================================================================================
+TABLE OF CONTENTS
+================================================================================
+
+1. Overview
+2. Requirements
+3. Installation
+4. Quick Start
+5. Features Overview
+6. Step-by-Step Setup Tutorial
+7. Hotkeys
+8. Advanced Features
+9. Troubleshooting
+10. FAQ
+11. Uninstall
+12. Changelog
+13. Support
+
+================================================================================
+1. OVERVIEW
+================================================================================
+
+Group Ungroup Extract Tool brings familiar grouping functionality (like in 
+Photoshop, Figma, or Blender) to Unity Editor. It allows you to quickly:
+
+- Group selected objects into a new parent (Ctrl+G)
+- Ungroup objects by moving children up and deleting the parent (Alt+G)
+- Extract children without deleting the parent (Shift+Alt+G)
+
+The tool works in three contexts:
+- Hierarchy window (GameObjects)
+- Project window (files and folders)
+- Timeline window (tracks)
+
+Key features:
+- Smart UI support: automatically creates RectTransform groups for UI objects
+- Configurable pivot position for new groups
+- Optional auto-rename after grouping
+- Full Undo/Redo support
+- Customizable hotkeys
+- Prefab-aware with unpacking confirmation
+
+================================================================================
+2. REQUIREMENTS
+================================================================================
+
+- Unity 2021.3 LTS or newer
+- No additional packages required
+- Timeline package (optional, for Timeline grouping features)
+
+================================================================================
+3. INSTALLATION
+================================================================================
+
+1) Import the package into your Unity project
+2) The tool is ready to use immediately
+3) Access via:
+   - Menu: Window > Multitool > Group-Ungroup-Extract Tool
+   - Menu: Tools > Multitool > Group Ungroup Extract Tool
+   - Keyboard shortcuts (see Section 7)
+
+================================================================================
+4. QUICK START
+================================================================================
+
+GROUPING OBJECTS:
+1) Select one or more objects in the Hierarchy
+2) Press Ctrl+G (Cmd+G on Mac) or use Tools menu
+3) A new parent object is created containing your selection
+4) The group is automatically selected and ready for renaming
+
+UNGROUPING OBJECTS:
+1) Select a parent object that has children
+2) Press Alt+G or use Tools menu
+3) Children are moved up one level, parent is deleted
+
+EXTRACTING CHILDREN:
+1) Select a parent object that has children
+2) Press Shift+Alt+G or use Tools menu
+3) Children are moved up one level, parent is preserved
+
+================================================================================
+5. FEATURES OVERVIEW
+================================================================================
+
+GROUP (Ctrl+G)
+--------------
+Creates a new parent object containing all selected objects.
+
+In Hierarchy:
+- Creates "Group" or "UI Group" (for RectTransform objects)
+- Preserves sibling order (group inserted at last selected position)
+- Calculates appropriate pivot based on settings
+- For UI: automatically sizes the group to fit all children
+
+In Project:
+- Creates a new folder and moves selected assets into it
+- Works with both files and folders
+
+In Timeline:
+- Creates a new Group Track containing selected tracks
+
+UNGROUP (Alt+G)
+---------------
+Moves children up one level and deletes the parent object.
+
+In Hierarchy:
+- Moves all children to the parent's parent
+- Deletes the original parent object
+- Shows confirmation for prefabs (will unpack) or objects with components
+- Selects all extracted children after operation
+
+In Project:
+- Moves folder contents up one level
+- Deletes the empty folder
+
+In Timeline:
+- Moves tracks out of a Group Track
+- Deletes the Group Track
+
+EXTRACT (Shift+Alt+G)
+---------------------
+Like Ungroup, but keeps the parent object intact.
+
+In Hierarchy:
+- Moves all children up one level
+- Parent object remains (becomes childless)
+- Useful when parent has components you want to keep
+
+In Project:
+- Moves folder contents up one level
+- Folder remains (becomes empty)
+
+In Timeline:
+- Moves tracks out of a Group Track
+- Group Track remains (becomes empty)
+
+================================================================================
+6. STEP-BY-STEP SETUP TUTORIAL
+================================================================================
+
+OPENING THE SETTINGS WINDOW:
+1) Go to Window > Multitool > Group-Ungroup-Extract Tool
+2) A small window appears with settings and action buttons
+
+CONFIGURING PIVOT MODE:
+The "Pivot mode" dropdown controls where the new group's pivot is placed:
+
+- BoundsCenter: Center of the bounding box of all selected objects (default)
+- FirstSelected: Position of the first selected object
+- LastSelected: Position of the last selected object
+- Zero: World origin (0, 0, 0)
+
+CONFIGURING AUTO-RENAME:
+- Enable "Rename after group" to automatically start renaming the new group
+- This mimics behavior in Project window when creating new folders
+
+================================================================================
+7. HOTKEYS
+================================================================================
+
+Default keyboard shortcuts:
+
+GROUP:      Ctrl+G (Windows) / Cmd+G (Mac)
+UNGROUP:    Alt+G
+EXTRACT:    Shift+Alt+G
+
+CUSTOMIZING HOTKEYS:
+1) Go to Edit > Shortcuts
+2) Search for "GroupUngroupExtractTool"
+3) You will find three entries:
+   - Multitool/GroupUngroupExtractTool/Group
+   - Multitool/GroupUngroupExtractTool/Ungroup
+   - Multitool/GroupUngroupExtractTool/Extract
+4) Click on any entry to reassign the shortcut
+
+================================================================================
+8. ADVANCED FEATURES
+================================================================================
+
+UI / RECTTRANSFORM SUPPORT:
+When grouping UI objects (with RectTransform):
+- Creates a parent with RectTransform component
+- Automatically calculates size to encompass all children
+- Uses anchors at center (0.5, 0.5) for predictable behavior
+- Children maintain their visual positions
+
+PREFAB HANDLING:
+When ungrouping a prefab instance:
+- Shows confirmation dialog warning about unpacking
+- Completely unpacks the prefab to allow restructuring
+- Operation is undoable
+
+COMPONENT WARNING:
+When ungrouping an object that has components (not just Transform):
+- Shows dialog with three options:
+  - Extract (keep parent): moves children but keeps parent
+  - Delete parent: proceeds with full ungroup
+  - Cancel: aborts operation
+
+MULTI-CONTEXT AWARENESS:
+The tool automatically detects which context you're working in:
+- If Timeline window is focused with tracks selected → Timeline mode
+- If Project assets are selected → Project mode
+- Otherwise → Hierarchy mode
+
+SIBLING ORDER PRESERVATION:
+When grouping in Hierarchy:
+- New group is inserted at the sibling index of the last selected object
+- This maintains visual order in the hierarchy
+
+================================================================================
+9. TROUBLESHOOTING
+================================================================================
+
+PROBLEM: Hotkey doesn't work
+SOLUTION: 
+- Check Edit > Shortcuts for conflicts
+- Another tool may have claimed the same shortcut
+- Try using the menu instead
+
+PROBLEM: Can't group objects from different parents
+SOLUTION:
+- This is by design to maintain hierarchy integrity
+- First move objects to a common parent, then group them
+
+PROBLEM: Can't group parent with its child
+SOLUTION:
+- This is by design to prevent circular references
+- Select only objects at the same hierarchy level
+
+PROBLEM: Ungroup shows warning about components
+SOLUTION:
+- The parent object has components that will be lost
+- Choose "Extract" to keep the parent, or "Delete parent" to proceed
+
+PROBLEM: Group position is unexpected
+SOLUTION:
+- Check the "Pivot mode" setting in the tool window
+- Try different modes: BoundsCenter, FirstSelected, LastSelected, Zero
+
+PROBLEM: Timeline grouping not working
+SOLUTION:
+- Ensure Timeline package is installed
+- Select tracks in the Timeline window
+- The tool auto-detects Timeline context
+
+================================================================================
+10. FAQ
+================================================================================
+
+Q: Does this tool add anything to my builds?
+A: No. This is an Editor-only tool. No runtime code is included in builds.
+
+Q: Can I undo group/ungroup operations?
+A: Yes. All operations support Unity's Undo system (Ctrl+Z).
+
+Q: Does it work with nested prefabs?
+A: Yes, but ungrouping a prefab will unpack it first (with confirmation).
+
+Q: Can I group objects from different scenes?
+A: No. Objects must be in the same scene/hierarchy.
+
+Q: Why is the group named "UI Group" sometimes?
+A: When any selected object has a RectTransform, the tool creates a 
+   RectTransform-based group and names it "UI Group" for clarity.
+
+Q: Can I change the default group name?
+A: Currently no. The tool uses "Group" or "UI Group" and immediately 
+   starts rename mode so you can type your desired name.
+
+Q: Does Timeline grouping require specific Unity version?
+A: Timeline package must be installed. Works with Unity 2021.3+.
+
+================================================================================
+11. UNINSTALL
+================================================================================
+
+1) Close Unity Editor
+2) Delete the folder: Assets/Plugins/Multitool/Group Ungroup Extract Tool
+3) No runtime code remains in builds
+4) Shortcut assignments are cleared automatically
+
+================================================================================
+12. CHANGELOG
+================================================================================
+
+Version 1.0 (2025-11-29)
+- Initial release
+- Group, Ungroup, Extract operations
+- Hierarchy, Project, Timeline support
+- RectTransform/UI smart grouping
+- Configurable pivot modes
+- Auto-rename option
+- Full Undo/Redo support
+- Customizable keyboard shortcuts
+
+================================================================================
+13. SUPPORT
+================================================================================
+
+For support and bug reports:
+- Use the Asset Store support link associated with the package
+- Include Unity version, reproduction steps, and screenshots
+- Check the troubleshooting section first
+
+Thank you for using Group Ungroup Extract Tool!
+
+================================================================================
+END OF MANUAL
+================================================================================

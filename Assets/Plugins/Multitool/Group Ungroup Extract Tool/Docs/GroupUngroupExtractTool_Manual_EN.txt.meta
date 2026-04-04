@@ -1,0 +1,14 @@
+fileFormatVersion: 2
+guid: 109d52738f3778d48b244a8499d6711f
+TextScriptImporter:
+  externalObjects: {}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 347664
+  packageName: Group Ungroup Extract Tool
+  packageVersion: 1.0
+  assetPath: Assets/Plugins/Multitool/Group Ungroup Extract Tool/Docs/GroupUngroupExtractTool_Manual_EN.txt
+  uploadId: 826876

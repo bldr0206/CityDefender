@@ -1,0 +1,14 @@
+fileFormatVersion: 2
+guid: 7f0041073302a2e4988bf8a731b74a23
+TextScriptImporter:
+  externalObjects: {}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 334788
+  packageName: Rect Transform Snapper
+  packageVersion: 1.4.0
+  assetPath: Assets/Plugins/Multitool/RectTransformSnapper/Docs/RectTransformSnapper_Manual_EN.txt
+  uploadId: 837844

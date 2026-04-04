@@ -1,0 +1,18 @@
+fileFormatVersion: 2
+guid: 874c8d80ee9f41747bce51f33a482930
+MonoImporter:
+  externalObjects: {}
+  serializedVersion: 2
+  defaultReferences: []
+  executionOrder: 0
+  icon: {instanceID: 0}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 345898
+  packageName: MoveInHierarchy
+  packageVersion: 1.0
+  assetPath: Assets/Plugins/Multitool/MoveInHierarchy/Editor/MoveInHierarchyEditor.cs
+  uploadId: 823054

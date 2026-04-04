@@ -1,0 +1,135 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 2025852851, guid: bee868d855e9e4a41b15f32663751a44, type: 3}
+  m_Name: PVE Style Sheet
+  m_EditorClassIdentifier: 
+  styles:
+  - mInitialised: 1
+    matchMethod: 2
+    matchValue: 8b9328ab78cc830458dff65f8d34e706
+    priority: 0
+    recursive: 1
+    overrideIcon: 1
+    iconName: Asset - Script
+    overrideLabel: 1
+    labelColour: {r: 0.38875508, g: 1, b: 0.2783019, a: 1}
+    labelStyle: 1
+    overrideBackground: 1
+    backgroundName: Flat
+    backgroundColour: {r: 0, g: 0, b: 0, a: 0.25}
+    visibleInInspector: 1
+    styleFilteredInInspector: 0
+  - mInitialised: 1
+    matchMethod: 2
+    matchValue: 342a7dcb10d85ae46baa8301d935a960
+    priority: 0
+    recursive: 1
+    overrideIcon: 1
+    iconName: Colour - Bronze
+    overrideLabel: 1
+    labelColour: {r: 1.244524, g: 0.8500515, b: 0.4807048, a: 1}
+    labelStyle: 1
+    overrideBackground: 0
+    backgroundName: 
+    backgroundColour: {r: 0, g: 0, b: 0, a: 0}
+    visibleInInspector: 1
+    styleFilteredInInspector: 0
+  - mInitialised: 1
+    matchMethod: 2
+    matchValue: cf06b9573571eb44e808d0108f25631d
+    priority: 0
+    recursive: 1
+    overrideIcon: 1
+    iconName: Colour - Boston Blue
+    overrideLabel: 1
+    labelColour: {r: 0.47794366, g: 1.0169132, b: 1.2190269, a: 1}
+    labelStyle: 0
+    overrideBackground: 1
+    backgroundName: Flat
+    backgroundColour: {r: 0, g: 0, b: 0, a: 0.25}
+    visibleInInspector: 1
+    styleFilteredInInspector: 0
+  - mInitialised: 1
+    matchMethod: 2
+    matchValue: 2f9fee6508be8c54d92143866242f05c
+    priority: 0
+    recursive: 1
+    overrideIcon: 1
+    iconName: Colour - Shamrock
+    overrideLabel: 1
+    labelColour: {r: 0.38605326, g: 1.1241161, b: 0.9262988, a: 1}
+    labelStyle: 0
+    overrideBackground: 0
+    backgroundName: 
+    backgroundColour: {r: 0, g: 0, b: 0, a: 0}
+    visibleInInspector: 1
+    styleFilteredInInspector: 0
+  - mInitialised: 1
+    matchMethod: 2
+    matchValue: 84e55a5f5c4ade844be707ffe5715274
+    priority: 0
+    recursive: 1
+    overrideIcon: 1
+    iconName: Colour - Dark Orchid
+    overrideLabel: 1
+    labelColour: {r: 1.1762439, g: 0.6889343, b: 1.4097464, a: 1}
+    labelStyle: 0
+    overrideBackground: 0
+    backgroundName: 
+    backgroundColour: {r: 0, g: 0, b: 0, a: 0}
+    visibleInInspector: 1
+    styleFilteredInInspector: 0
+  - mInitialised: 1
+    matchMethod: 2
+    matchValue: 83b8f4d878f4c0c41af8a8b365d5fd91
+    priority: 0
+    recursive: 1
+    overrideIcon: 1
+    iconName: Colour - Red Violet
+    overrideLabel: 1
+    labelColour: {r: 1.3902069, g: 0.6782781, b: 0.98792267, a: 1}
+    labelStyle: 0
+    overrideBackground: 0
+    backgroundName: 
+    backgroundColour: {r: 0, g: 0, b: 0, a: 0}
+    visibleInInspector: 1
+    styleFilteredInInspector: 0
+  - mInitialised: 1
+    matchMethod: 2
+    matchValue: 9c53962885c2c4f449125a979d6ad240
+    priority: 0
+    recursive: 1
+    overrideIcon: 1
+    iconName: Colour - Cerulean Blue
+    overrideLabel: 1
+    labelColour: {r: 0.4292453, g: 0.569952, b: 1, a: 1}
+    labelStyle: 1
+    overrideBackground: 1
+    backgroundName: Flat
+    backgroundColour: {r: 0.059130434, g: 0.10840585, b: 0.255, a: 0.25}
+    visibleInInspector: 1
+    styleFilteredInInspector: 0
+  - mInitialised: 1
+    matchMethod: 2
+    matchValue: c1b97a1a5e651ba418913de36a0adc42
+    priority: 0
+    recursive: 1
+    overrideIcon: 1
+    iconName: Colour - Old Rose
+    overrideLabel: 1
+    labelColour: {r: 1.3985769, g: 0.68664795, b: 0.8363941, a: 1}
+    labelStyle: 1
+    overrideBackground: 1
+    backgroundName: 
+    backgroundColour: {r: 0.291, g: 0.08397014, b: 0.12740298, a: 0.25}
+    visibleInInspector: 1
+    styleFilteredInInspector: 0

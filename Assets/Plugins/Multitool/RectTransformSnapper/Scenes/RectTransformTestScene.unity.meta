@@ -1,0 +1,14 @@
+fileFormatVersion: 2
+guid: b109825b9f5e6ab47ac5aad1314b3a42
+DefaultImporter:
+  externalObjects: {}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 334788
+  packageName: Rect Transform Snapper
+  packageVersion: 1.4.0
+  assetPath: Assets/Plugins/Multitool/RectTransformSnapper/Scenes/RectTransformTestScene.unity
+  uploadId: 837844

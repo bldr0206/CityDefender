@@ -1,0 +1,14 @@
+fileFormatVersion: 2
+guid: 4848dcaea5133da4cb1cfdd125c54516
+TextScriptImporter:
+  externalObjects: {}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 345898
+  packageName: MoveInHierarchy
+  packageVersion: 1.0
+  assetPath: Assets/Plugins/Multitool/MoveInHierarchy/Docs/MoveInHierarchy_Manual_EN.txt
+  uploadId: 823054

@@ -1,0 +1,18 @@
+fileFormatVersion: 2
+guid: 7c67182ef03cf28499af779f788554fb
+MonoImporter:
+  externalObjects: {}
+  serializedVersion: 2
+  defaultReferences: []
+  executionOrder: 0
+  icon: {instanceID: 0}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 334788
+  packageName: Rect Transform Snapper
+  packageVersion: 1.4.0
+  assetPath: Assets/Plugins/Multitool/RectTransformSnapper/Scripts/Editor/RectTransformSnapperAlignmentOverlay.cs
+  uploadId: 837844

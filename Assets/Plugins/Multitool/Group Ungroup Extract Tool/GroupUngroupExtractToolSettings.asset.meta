@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: bb8bdea837837954fab79d1e2bdcb08d
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 11400000
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 347664
+  packageName: Group Ungroup Extract Tool
+  packageVersion: 1.0
+  assetPath: Assets/Plugins/Multitool/Group Ungroup Extract Tool/GroupUngroupExtractToolSettings.asset
+  uploadId: 826876

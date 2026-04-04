@@ -1,0 +1,18 @@
+fileFormatVersion: 2
+guid: 7f1216ade0273f649919b35004032a58
+MonoImporter:
+  externalObjects: {}
+  serializedVersion: 2
+  defaultReferences: []
+  executionOrder: 0
+  icon: {instanceID: 0}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 347664
+  packageName: Group Ungroup Extract Tool
+  packageVersion: 1.0
+  assetPath: Assets/Plugins/Multitool/Group Ungroup Extract Tool/Editor/Group/GroupUngroupExtractToolOperations.cs
+  uploadId: 826876

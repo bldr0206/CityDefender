@@ -1,0 +1,296 @@
+Mommy Tool Manual
+Version: 1.0
+Last updated: 2025-11-29
+Asset: Multitool / Mommy Tool (Hierarchy parenting helper)
+Target Unity: 2021.3+ (tested with URP templates)
+
+================================================================================
+TABLE OF CONTENTS
+================================================================================
+
+1. Overview
+2. Requirements
+3. Installation
+4. Quick Start
+5. Features Overview
+6. Step-by-Step Usage Tutorial
+7. Hotkeys
+8. Tips & Best Practices
+9. Troubleshooting
+10. FAQ
+11. Uninstall
+12. Changelog
+13. Support
+
+================================================================================
+1. OVERVIEW
+================================================================================
+
+Mommy Tool is a tiny but fun helper for managing parent/child relationships
+in the Unity Hierarchy. It adds two playful operations:
+
+- Make Mommy (M): set the last selected object as the parent ("mommy")
+  for the rest of the selected objects.
+- You're Not My Mommy (Alt+M): detach selected objects from their current
+  parent without changing their world position.
+
+The humor is optional, but the behavior is practical:
+- Speeds up creating and breaking parent relationships
+- Keeps selection focused on the children you just reparented
+- Plays nicely with Unity's Undo system
+
+================================================================================
+2. REQUIREMENTS
+================================================================================
+
+- Unity 2021.3 LTS or newer
+- No additional packages required
+- Works with any render pipeline (Built-in, URP, HDRP)
+
+================================================================================
+3. INSTALLATION
+================================================================================
+
+1) Import the package into your Unity project.
+2) The tool is ready to use immediately after compilation.
+3) Access via:
+   - Menu: Tools > Multitool > Mommy Tool > Make Mommy
+   - Menu: Tools > Multitool > Mommy Tool > You're Not My Mommy
+   - Menu: Window > Multitool > Mommy Tool
+   - Keyboard shortcuts (see Section 7)
+
+There is no runtime component. This is an Editor-only tool.
+
+================================================================================
+4. QUICK START
+================================================================================
+
+MAKE MOMMY (CREATE A MOMMY FOR CHILDREN):
+1) In the Hierarchy, select several objects.
+2) Make sure the object that should become the parent ("mommy") is selected LAST.
+   (The last selected object will be visually highlighted to help you identify it.)
+3) Press M (default hotkey), use Tools > Multitool > Mommy Tool > Make Mommy,
+   or use Window > Multitool > Mommy Tool and click the "Make Mommy" button.
+4) All other selected objects become children of the last selected object.
+5) The newly reparented children stay selected, and focus moves to the first one.
+
+YOU'RE NOT MY MOMMY (DETACH FROM CURRENT MOMMY):
+1) In the Hierarchy, select one or more objects that currently have a parent.
+2) Press Alt+M (default hotkey), use Tools > Multitool > Mommy Tool > You're Not My Mommy,
+   or use the "You're Not My Mommy" button in the Mommy Tool window.
+3) Objects are detached from their current parent and moved right under the
+   former parent in the Hierarchy for a clean layout.
+4) The selection stays on the detached objects, and focus moves to one of them.
+
+================================================================================
+5. FEATURES OVERVIEW
+================================================================================
+
+MAKE MOMMY (M)
+--------------
+- Uses the last selected object as the new parent.
+- Reparents all other selected objects under this parent.
+- Ignores:
+  - The parent itself (it is not reparented to anything)
+  - Any object that would create a cycle (the future parent is not allowed
+    to become a child of its own child).
+- Keeps Undo grouped under a clear label:
+  - "Mommy Tool - Make Mommy"
+- After the operation:
+  - Only the children that got a mommy are selected.
+  - The first child in that list receives focus in the Hierarchy.
+
+YOU'RE NOT MY MOMMY (ALT+M)
+---------------------------
+- Works on any selection that has a parent.
+- Moves selected objects one level up (to their grandparent or scene root).
+- Keeps sibling order by inserting them directly under their former parent.
+- If selected objects belong to a prefab instance, Mommy Tool asks whether
+  to unpack the prefab instance(s) before unparenting. Choosing Cancel leaves
+  everything unchanged.
+- Uses a unified Undo group:
+  - "Mommy Tool - You're Not My Mommy"
+- After the operation:
+  - One of the detached objects is focused in the Hierarchy
+    so you see where it moved.
+
+SELECTION & FOCUS BEHAVIOR
+--------------------------
+- Mommy Tool is selection-friendly:
+  - After Make Mommy: children remain selected, not the mommy.
+  - After You're Not My Mommy: detached objects are focused.
+- This keeps your workflow centered on the objects you are editing,
+  instead of losing them in a long Hierarchy list.
+
+VISUAL HIGHLIGHTING
+-------------------
+- When multiple objects are selected, Mommy Tool visually highlights
+  the last selected object in the Hierarchy.
+- This helps you identify which object will become the parent ("mommy")
+  before you execute the Make Mommy operation.
+- The highlight appears automatically when you have multiple selections
+  and disappears when you perform an operation or change selection.
+
+================================================================================
+6. STEP-BY-STEP USAGE TUTORIAL
+================================================================================
+
+OPENING THE MOMMY TOOL WINDOW:
+1) Go to Window > Multitool > Mommy Tool.
+2) A small window appears with two buttons and helper text.
+
+CREATING A MOMMY STEP BY STEP:
+1) In the Hierarchy, select several objects that should become children.
+2) LAST, select the object that should be their mommy (new parent).
+   Notice how the last selected object is visually highlighted in the Hierarchy.
+3) Press M, use Tools > Multitool > Mommy Tool > Make Mommy,
+   or in the Mommy Tool window, click "Make Mommy".
+4) Watch the Hierarchy:
+   - Children are now nested under the mommy.
+   - The children stay selected, and the first one is focused.
+
+BREAKING UP WITH A MOMMY STEP BY STEP:
+1) Select one or more objects that currently have a parent.
+2) Press Alt+M, use Tools > Multitool > Mommy Tool > You're Not My Mommy,
+   or in the Mommy Tool window, click "You're Not My Mommy".
+3) The objects move up one level:
+   - If the parent had a parent → children move under that grandparent.
+   - If the parent was a root object → children become root objects too.
+4) The selection stays on the moved objects, and one of them is focused.
+
+================================================================================
+7. HOTKEYS
+================================================================================
+
+Default keyboard shortcuts:
+
+MAKE MOMMY:          M
+YOU'RE NOT MY MOMMY: Alt+M
+
+CUSTOMIZING HOTKEYS:
+1) Go to Edit > Shortcuts.
+2) Search for "Mommy Tool".
+3) You will find two entries:
+   - Multitool/Mommy Tool/Make Mommy (M)
+   - Multitool/Mommy Tool/You're Not My Mommy (Alt+M)
+4) Click on any entry to reassign the shortcut if desired.
+
+Note: If you change the shortcuts, the labels in the Mommy Tool window
+will automatically show the updated key combinations.
+
+================================================================================
+8. TIPS & BEST PRACTICES
+================================================================================
+
+- Always select the mommy LAST.
+  This ensures the correct object becomes the parent.
+  The visual highlight on the last selected object helps you confirm
+  which object will become the parent before executing the operation.
+
+- Avoid mixing different branches of the hierarchy in one Make Mommy call
+  unless you intentionally want to reparent them under the same mommy.
+
+- Use You're Not My Mommy to quickly clean up temporary parenting
+  you created for animation or transformation purposes.
+
+- Remember that all operations are fully undoable (Ctrl+Z / Cmd+Z),
+  so you can experiment safely.
+
+================================================================================
+9. TROUBLESHOOTING
+================================================================================
+
+PROBLEM: Make Mommy does nothing.
+SOLUTION:
+- Ensure at least two objects are selected.
+- The last selected object must be a valid Transform.
+- Check that the future mommy is not a child of one of the other
+  selected objects (cycles are ignored).
+
+PROBLEM: You're Not My Mommy does nothing.
+SOLUTION:
+- Make sure the selected objects actually have a parent.
+- Objects that are already at the root of the scene cannot be detached further.
+- If the selection is inside a prefab instance, check if you clicked "Cancel"
+  in the unpack confirmation dialog. The tool will not modify prefab instances
+  unless you explicitly allow unpacking.
+
+PROBLEM: Hotkeys M / Alt+M don't work.
+SOLUTION:
+- Go to Edit > Shortcuts and search for "Mommy Tool".
+- Check if other tools use the same keys.
+- Try clicking inside the Hierarchy or Scene view to ensure they have focus.
+
+PROBLEM: I lost my objects in the Hierarchy.
+SOLUTION:
+- After operations, Mommy Tool focuses an affected object.
+- If you still lose them, use the Hierarchy search field or
+  select them again in the Scene view and press F to frame them.
+
+================================================================================
+10. FAQ
+================================================================================
+
+Q: Is "Mommy" just a joke or does it change how parenting works?
+A: It's mostly a playful name. Under the hood, it uses standard
+   Unity parent/child relationships and Undo.
+
+Q: Does Mommy Tool add anything to my builds?
+A: No. This is an Editor-only tool. Nothing from this tool is included
+   in runtime builds.
+
+Q: Can I use Mommy Tool with UI objects?
+A: Yes. As long as they are standard GameObjects/Transforms in the Hierarchy,
+   Mommy Tool will work. It does not modify components or layouts.
+
+Q: Can I undo Make Mommy / You're Not My Mommy?
+A: Yes. Both operations fully support Unity's Undo system (Ctrl+Z).
+
+Q: Can I use this in multiple scenes?
+A: Yes. It works per-scene like any other Hierarchy operation. Just make sure
+   your selection is within a single scene.
+
+Q: Does You're Not My Mommy unpack prefabs automatically?
+A: No. If selected objects are part of a prefab instance, Mommy Tool will ask
+   for confirmation first. It will only unpack the involved prefab instance(s)
+   and unparent the objects if you choose "Unpack and Unparent".
+
+================================================================================
+11. UNINSTALL
+================================================================================
+
+1) Close Unity Editor.
+2) Delete the folder: Assets/Plugins/Multitool/Mommy Tool.
+3) No runtime code remains in builds.
+4) Shortcut assignments are cleared automatically.
+
+================================================================================
+12. CHANGELOG
+================================================================================
+
+Version 1.0 (2025-11-29)
+- Initial release of Mommy Tool.
+- Make Mommy (M) operation.
+- You're Not My Mommy (Alt+M) operation.
+- Selection-focused workflow (children stay selected).
+- Visual highlighting of the last selected object.
+- Full Undo/Redo support.
+- Customizable keyboard shortcuts.
+- Menu items in Tools > Multitool > Mommy Tool (Make Mommy and You're Not My Mommy).
+
+================================================================================
+13. SUPPORT
+================================================================================
+
+For support and bug reports:
+- Use the Asset Store support link associated with the package.
+- Include Unity version, reproduction steps, and screenshots.
+- Check the troubleshooting section first.
+
+Thank you for using Mommy Tool!
+
+================================================================================
+END OF MANUAL
+================================================================================
+
+
