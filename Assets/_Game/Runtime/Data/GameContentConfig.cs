@@ -12,12 +12,16 @@ namespace ColorChargeTD.Data
         [SerializeField] private List<TowerDefinition> towers = new List<TowerDefinition>();
         [SerializeField] private List<EnemyDefinition> enemies = new List<EnemyDefinition>();
         [SerializeField] private List<UpgradeDefinition> upgrades = new List<UpgradeDefinition>();
+        [SerializeField] private List<AuxiliaryBuildingDefinition> auxiliaryBuildings = new List<AuxiliaryBuildingDefinition>();
+        [SerializeField] private List<RoadTrapDefinition> roadTraps = new List<RoadTrapDefinition>();
 
         public GameBalanceConfig BalanceConfig => balanceConfig;
         public LevelCatalogDefinition LevelCatalog => levelCatalog;
         public IReadOnlyList<TowerDefinition> Towers => towers;
         public IReadOnlyList<EnemyDefinition> Enemies => enemies;
         public IReadOnlyList<UpgradeDefinition> Upgrades => upgrades;
+        public IReadOnlyList<AuxiliaryBuildingDefinition> AuxiliaryBuildings => auxiliaryBuildings;
+        public IReadOnlyList<RoadTrapDefinition> RoadTraps => roadTraps;
 
         public void ValidateInto(List<ContentValidationMessage> messages)
         {
@@ -38,6 +42,8 @@ namespace ColorChargeTD.Data
             ValidateCollection(towers, "tower", messages);
             ValidateCollection(enemies, "enemy", messages);
             ValidateCollection(upgrades, "upgrade", messages);
+            ValidateCollection(auxiliaryBuildings, "auxiliary building", messages);
+            ValidateCollection(roadTraps, "road trap", messages);
 
             for (int i = 0; i < towers.Count; i++)
             {
@@ -60,6 +66,22 @@ namespace ColorChargeTD.Data
                 if (upgrades[i] != null)
                 {
                     upgrades[i].ValidateInto(messages);
+                }
+            }
+
+            for (int i = 0; i < auxiliaryBuildings.Count; i++)
+            {
+                if (auxiliaryBuildings[i] != null)
+                {
+                    auxiliaryBuildings[i].ValidateInto(messages);
+                }
+            }
+
+            for (int i = 0; i < roadTraps.Count; i++)
+            {
+                if (roadTraps[i] != null)
+                {
+                    roadTraps[i].ValidateInto(messages);
                 }
             }
         }

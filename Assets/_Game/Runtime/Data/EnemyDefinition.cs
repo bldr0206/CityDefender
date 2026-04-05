@@ -19,6 +19,7 @@ namespace ColorChargeTD.Data
         [Header("Presentation")]
         [SerializeField] private GameObject prefab;
         [SerializeField] [Min(0.01f)] private float visualScale = 1f;
+        [SerializeField] private EnemyPresentationProfile presentationProfile;
 
         public string EnemyId => enemyId;
         public string DisplayName => string.IsNullOrWhiteSpace(displayName) ? enemyId : displayName;
@@ -28,6 +29,7 @@ namespace ColorChargeTD.Data
         public int BaseReward => Mathf.Max(0, baseReward);
         public GameObject Prefab => prefab;
         public float VisualScale => Mathf.Max(0.01f, visualScale);
+        public EnemyPresentationProfile PresentationProfile => presentationProfile;
 
         public void ValidateInto(System.Collections.Generic.List<ContentValidationMessage> messages)
         {

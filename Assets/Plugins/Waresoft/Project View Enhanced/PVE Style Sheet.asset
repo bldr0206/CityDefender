@@ -111,11 +111,11 @@ MonoBehaviour:
     overrideIcon: 1
     iconName: Colour - Gold
     overrideLabel: 1
-    labelColour: {r: 1.1383508, g: 0.94899434, b: 0.37102413, a: 1}
-    labelStyle: 0
+    labelColour: {r: 1, g: 0.8769098, b: 0.514151, a: 1}
+    labelStyle: 1
     overrideBackground: 1
     backgroundName: Flat
-    backgroundColour: {r: 0.808, g: 0.655, b: 0.188, a: 0.25}
+    backgroundColour: {r: 0.80784315, g: 0.54562473, b: 0.18823528, a: 0.25}
     visibleInInspector: 1
     styleFilteredInInspector: 0
   - mInitialised: 1

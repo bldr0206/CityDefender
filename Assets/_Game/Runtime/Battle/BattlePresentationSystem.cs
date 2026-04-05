@@ -1,4 +1,6 @@
 using System.Collections.Generic;
+using ColorChargeTD.Data;
+using ColorChargeTD.Domain;
 using UnityEngine;
 
 namespace ColorChargeTD.Battle
@@ -7,11 +9,20 @@ namespace ColorChargeTD.Battle
     {
         private readonly Dictionary<TowerRuntimeModel, GameObject> towerViews = new Dictionary<TowerRuntimeModel, GameObject>();
         private readonly Dictionary<EnemyRuntimeModel, GameObject> enemyViews = new Dictionary<EnemyRuntimeModel, GameObject>();
+        private readonly Dictionary<PlacedStructureRuntimeModel, GameObject> structureViews =
+            new Dictionary<PlacedStructureRuntimeModel, GameObject>();
 
         private Transform root;
         private Transform towerRoot;
+        private Transform structureRoot;
         private Transform enemyRoot;
         private Transform projectilesRoot;
+        private Transform pathOverlaysRoot;
+        private readonly MaterialPropertyBlock pathMarkerPropertyBlock = new MaterialPropertyBlock();
+        private readonly MaterialPropertyBlock enemyVisualPropertyBlock = new MaterialPropertyBlock();
+
+        private static readonly int EnemyBaseColorId = Shader.PropertyToID("_BaseColor");
+        private static readonly int EnemyColorId = Shader.PropertyToID("_Color");
 
         #region Lifecycle
         public void Initialize(Transform parent)
@@ -20,13 +31,49 @@ namespace ColorChargeTD.Battle
 
             root = CreateChild(parent, "BattlePresentation");
             towerRoot = CreateChild(root, "Towers");
+            structureRoot = CreateChild(root, "PlacedStructures");
             enemyRoot = CreateChild(root, "Enemies");
             projectilesRoot = CreateChild(root, "Projectiles");
+        }
+
+        public void BuildPathRouteMarkers(
+            LevelLayoutRuntimeDefinition layout,
+            WaveDefinition wave,
+            GameObject pathMarkerPrefab,
+            float markerSpacing,
+            float markerYOffset)
+        {
+            if (root == null)
+            {
+                return;
+            }
+
+            if (pathOverlaysRoot != null)
+            {
+                Object.Destroy(pathOverlaysRoot.gameObject);
+                pathOverlaysRoot = null;
+            }
+
+            if (pathMarkerPrefab == null || wave == null)
+            {
+                return;
+            }
+
+            pathOverlaysRoot = CreateChild(root, "PathOverlays");
+            PathRouteMarkerOverlayBuilder.Build(
+                pathOverlaysRoot,
+                pathMarkerPrefab,
+                layout,
+                wave,
+                markerSpacing,
+                markerYOffset,
+                pathMarkerPropertyBlock);
         }
 
         public void Dispose()
         {
             ClearViews(towerViews);
+            ClearViews(structureViews);
             ClearViews(enemyViews);
 
             if (root != null)
@@ -36,13 +83,34 @@ namespace ColorChargeTD.Battle
 
             root = null;
             towerRoot = null;
+            structureRoot = null;
             enemyRoot = null;
             projectilesRoot = null;
+            pathOverlaysRoot = null;
         }
         #endregion
 
         #region Events
-        public void NotifyTowerFired(TowerRuntimeModel tower, EnemyRuntimeModel enemy)
+        public void NotifyEnemyDamaged(EnemyRuntimeModel enemy)
+        {
+            if (enemy == null)
+            {
+                return;
+            }
+
+            if (!enemyViews.TryGetValue(enemy, out GameObject enemyView) || enemyView == null)
+            {
+                return;
+            }
+
+            EnemyWorldPresenter presenter = enemyView.GetComponent<EnemyWorldPresenter>();
+            if (presenter != null)
+            {
+                presenter.NotifyHit();
+            }
+        }
+
+        public void NotifyTowerFired(TowerRuntimeModel tower, EnemyRuntimeModel enemy, float travelTime)
         {
             if (tower == null || enemy == null || tower.Definition == null)
             {
@@ -70,7 +138,7 @@ namespace ColorChargeTD.Battle
                 TowerProjectileView projectileView = projectileInstance.GetComponent<TowerProjectileView>();
                 if (projectileView != null)
                 {
-                    projectileView.BeginFlight(start, enemyView.transform, tower.Definition.ProjectileTravelTime);
+                    projectileView.BeginFlight(start, enemyView.transform, travelTime, tower.Definition.ProjectileArcPeakHeight);
                 }
                 else
                 {
@@ -91,9 +159,13 @@ namespace ColorChargeTD.Battle
         #endregion
 
         #region Sync
-        public void Sync(List<TowerRuntimeModel> towers, List<EnemyRuntimeModel> enemies)
+        public void Sync(
+            List<TowerRuntimeModel> towers,
+            List<EnemyRuntimeModel> enemies,
+            List<PlacedStructureRuntimeModel> placedStructures)
         {
             SyncTowers(towers);
+            SyncPlacedStructures(placedStructures);
             SyncEnemies(enemies);
         }
 
@@ -138,6 +210,85 @@ namespace ColorChargeTD.Battle
             RemoveMissingViews(towerViews, activeTowers);
         }
 
+        private void SyncPlacedStructures(List<PlacedStructureRuntimeModel> placedStructures)
+        {
+            if (structureRoot == null)
+            {
+                return;
+            }
+
+            HashSet<PlacedStructureRuntimeModel> active = new HashSet<PlacedStructureRuntimeModel>();
+
+            if (placedStructures == null)
+            {
+                RemoveMissingViews(structureViews, active);
+                return;
+            }
+
+            for (int i = 0; i < placedStructures.Count; i++)
+            {
+                PlacedStructureRuntimeModel model = placedStructures[i];
+                if (model == null || model.Definition == null)
+                {
+                    continue;
+                }
+
+                active.Add(model);
+
+                if (!structureViews.TryGetValue(model, out GameObject view) || view == null)
+                {
+                    Color fallback = model.Kind == BuildSlotKind.RoadTrap
+                        ? new Color(1f, 0.5f, 0.2f, 1f)
+                        : new Color(0.35f, 0.65f, 1f, 1f);
+
+                    view = SpawnView(
+                        model.Definition.Prefab,
+                        structureRoot,
+                        "StructureFallback",
+                        PrimitiveType.Cube,
+                        new Vector3(0.6f, 0.35f, 0.6f),
+                        fallback);
+
+                    structureViews[model] = view;
+                }
+
+                view.transform.SetPositionAndRotation(model.Slot.Position, Quaternion.identity);
+                SyncAuxiliaryIncomeRing(view, model);
+            }
+
+            RemoveMissingViews(structureViews, active);
+        }
+
+        private static void SyncAuxiliaryIncomeRing(GameObject view, PlacedStructureRuntimeModel model)
+        {
+            if (view == null || model == null)
+            {
+                return;
+            }
+
+            StructureAuxiliaryIncomeRingPresenter ring = view.GetComponent<StructureAuxiliaryIncomeRingPresenter>();
+            AuxiliaryBuildingDefinition aux = model.Definition as AuxiliaryBuildingDefinition;
+            bool wantRing = model.Kind == BuildSlotKind.Auxiliary && aux != null && aux.HasPeriodicIncome;
+
+            if (!wantRing)
+            {
+                if (ring != null)
+                {
+                    ring.Hide();
+                }
+
+                return;
+            }
+
+            if (ring == null)
+            {
+                ring = view.AddComponent<StructureAuxiliaryIncomeRingPresenter>();
+            }
+
+            ring.Setup(model, aux);
+            ring.RefreshFill();
+        }
+
         private void SyncEnemies(List<EnemyRuntimeModel> enemies)
         {
             HashSet<EnemyRuntimeModel> activeEnemies = new HashSet<EnemyRuntimeModel>();
@@ -165,13 +316,64 @@ namespace ColorChargeTD.Battle
                     float visualScale = enemy.Definition.VisualScale;
                     enemyView.transform.localScale = enemyView.transform.localScale * visualScale;
 
+                    ApplyEnemyChargeTint(enemyView, enemy.Definition.Color);
+
                     enemyViews[enemy] = enemyView;
                 }
 
                 enemyView.transform.position = enemy.Position;
+
+                EnemyWorldPresenter enemyPresenter = enemyView.GetComponent<EnemyWorldPresenter>();
+                if (enemyPresenter == null)
+                {
+                    enemyPresenter = enemyView.AddComponent<EnemyWorldPresenter>();
+                }
+
+                EnemyPresentationProfile profile = enemy.Definition != null ? enemy.Definition.PresentationProfile : null;
+                if (profile != null)
+                {
+                    enemyPresenter.SetPresentationProfile(profile);
+                }
+
+                enemyPresenter.Sync(enemy, Time.deltaTime);
+
+                EnemyHealthWorldBar healthBar = enemyView.GetComponent<EnemyHealthWorldBar>();
+                if (healthBar == null)
+                {
+                    healthBar = enemyView.AddComponent<EnemyHealthWorldBar>();
+                }
+
+                healthBar.Apply(enemy);
             }
 
             RemoveMissingViews(enemyViews, activeEnemies);
+        }
+        #endregion
+
+        #region EnemyVisualTint
+        private void ApplyEnemyChargeTint(GameObject root, ColorCharge charge)
+        {
+            if (root == null)
+            {
+                return;
+            }
+
+            Color color = charge.ToUnityColor();
+            Renderer[] renderers = root.GetComponentsInChildren<Renderer>(true);
+            for (int i = 0; i < renderers.Length; i++)
+            {
+                Renderer renderer = renderers[i];
+                if (renderer == null)
+                {
+                    continue;
+                }
+
+                enemyVisualPropertyBlock.Clear();
+                renderer.GetPropertyBlock(enemyVisualPropertyBlock);
+                enemyVisualPropertyBlock.SetColor(EnemyBaseColorId, color);
+                enemyVisualPropertyBlock.SetColor(EnemyColorId, color);
+                renderer.SetPropertyBlock(enemyVisualPropertyBlock);
+            }
         }
         #endregion
 

@@ -14,7 +14,6 @@ namespace ColorChargeTD.Presentation
         [SerializeField] private Text livesText;
         [SerializeField] private Text waveText;
         [SerializeField] private Image waveProgressFill;
-        [SerializeField] private Text slotsText;
         [SerializeField] private GameObject chargeWarningRoot;
         [SerializeField] private GameObject startWaveRoot;
         [SerializeField] private Button startWaveButton;
@@ -147,18 +146,6 @@ namespace ColorChargeTD.Presentation
             {
                 waveProgressFill.fillAmount = p;
             }
-        }
-
-        public void SetSlots(int freeSlots, int totalSlots)
-        {
-            if (slotsText == null)
-            {
-                return;
-            }
-
-            int free = Mathf.Clamp(freeSlots, 0, Mathf.Max(0, totalSlots));
-            int total = Mathf.Max(0, totalSlots);
-            slotsText.text = $"Slots: {free} / {total}";
         }
 
         public void PlayResourceEarnPulse()

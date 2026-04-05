@@ -22,8 +22,12 @@ namespace ColorChargeTD.Product
         LevelCatalogDefinition LevelCatalog { get; }
         IReadOnlyList<UpgradeDefinition> Upgrades { get; }
         IReadOnlyList<TowerDefinition> Towers { get; }
+        IReadOnlyList<AuxiliaryBuildingDefinition> AuxiliaryBuildings { get; }
+        IReadOnlyList<RoadTrapDefinition> RoadTraps { get; }
         TowerDefinition GetTowerById(string towerId);
         UpgradeDefinition GetUpgradeById(string upgradeId);
+        AuxiliaryBuildingDefinition GetAuxiliaryBuildingById(string structureId);
+        RoadTrapDefinition GetRoadTrapById(string structureId);
     }
 
     public interface IPlayerProfileService
@@ -94,6 +98,8 @@ namespace ColorChargeTD.Product
     {
         private readonly Dictionary<string, TowerDefinition> towersById = new Dictionary<string, TowerDefinition>(StringComparer.Ordinal);
         private readonly Dictionary<string, UpgradeDefinition> upgradesById = new Dictionary<string, UpgradeDefinition>(StringComparer.Ordinal);
+        private readonly Dictionary<string, AuxiliaryBuildingDefinition> auxiliaryById = new Dictionary<string, AuxiliaryBuildingDefinition>(StringComparer.Ordinal);
+        private readonly Dictionary<string, RoadTrapDefinition> roadTrapsById = new Dictionary<string, RoadTrapDefinition>(StringComparer.Ordinal);
 
         public GameContentService(GameContentConfig content)
         {
@@ -103,6 +109,8 @@ namespace ColorChargeTD.Product
             {
                 CacheTowerDefinitions(content.Towers);
                 CacheUpgradeDefinitions(content.Upgrades);
+                CacheAuxiliaryDefinitions(content.AuxiliaryBuildings);
+                CacheRoadTrapDefinitions(content.RoadTraps);
             }
         }
 
@@ -116,6 +124,12 @@ namespace ColorChargeTD.Product
 
         public IReadOnlyList<TowerDefinition> Towers => Content != null ? Content.Towers : Array.Empty<TowerDefinition>();
 
+        public IReadOnlyList<AuxiliaryBuildingDefinition> AuxiliaryBuildings =>
+            Content != null ? Content.AuxiliaryBuildings : Array.Empty<AuxiliaryBuildingDefinition>();
+
+        public IReadOnlyList<RoadTrapDefinition> RoadTraps =>
+            Content != null ? Content.RoadTraps : Array.Empty<RoadTrapDefinition>();
+
         public TowerDefinition GetTowerById(string towerId)
         {
             towersById.TryGetValue(towerId ?? string.Empty, out TowerDefinition tower);
@@ -126,6 +140,18 @@ namespace ColorChargeTD.Product
         {
             upgradesById.TryGetValue(upgradeId ?? string.Empty, out UpgradeDefinition upgrade);
             return upgrade;
+        }
+
+        public AuxiliaryBuildingDefinition GetAuxiliaryBuildingById(string structureId)
+        {
+            auxiliaryById.TryGetValue(structureId ?? string.Empty, out AuxiliaryBuildingDefinition def);
+            return def;
+        }
+
+        public RoadTrapDefinition GetRoadTrapById(string structureId)
+        {
+            roadTrapsById.TryGetValue(structureId ?? string.Empty, out RoadTrapDefinition def);
+            return def;
         }
 
         private void CacheTowerDefinitions(IReadOnlyList<TowerDefinition> towers)
@@ -139,6 +165,44 @@ namespace ColorChargeTD.Product
                 }
 
                 towersById[tower.TowerId] = tower;
+            }
+        }
+
+        private void CacheAuxiliaryDefinitions(IReadOnlyList<AuxiliaryBuildingDefinition> list)
+        {
+            if (list == null)
+            {
+                return;
+            }
+
+            for (int i = 0; i < list.Count; i++)
+            {
+                AuxiliaryBuildingDefinition def = list[i];
+                if (def == null || string.IsNullOrWhiteSpace(def.StructureId))
+                {
+                    continue;
+                }
+
+                auxiliaryById[def.StructureId] = def;
+            }
+        }
+
+        private void CacheRoadTrapDefinitions(IReadOnlyList<RoadTrapDefinition> list)
+        {
+            if (list == null)
+            {
+                return;
+            }
+
+            for (int i = 0; i < list.Count; i++)
+            {
+                RoadTrapDefinition def = list[i];
+                if (def == null || string.IsNullOrWhiteSpace(def.StructureId))
+                {
+                    continue;
+                }
+
+                roadTrapsById[def.StructureId] = def;
             }
         }
 

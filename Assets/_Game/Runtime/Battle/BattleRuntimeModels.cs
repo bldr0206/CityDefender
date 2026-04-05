@@ -102,12 +102,29 @@ namespace ColorChargeTD.Battle
         public float DistanceToNextWaypoint { get; set; }
         public Vector3 Position { get; set; }
         public bool ReachedGoal { get; set; }
+        public float StunTimeRemaining { get; private set; }
 
         public bool IsAlive => CurrentHitPoints > 0 && !ReachedGoal;
 
         public void ApplyDamage(int amount)
         {
             CurrentHitPoints = Mathf.Max(0, CurrentHitPoints - Mathf.Max(0, amount));
+        }
+
+        public void ApplyStun(float durationSeconds)
+        {
+            float d = Mathf.Max(0f, durationSeconds);
+            StunTimeRemaining = Mathf.Max(StunTimeRemaining, d);
+        }
+
+        public void TickCrowdControl(float deltaTime)
+        {
+            if (StunTimeRemaining <= 0f)
+            {
+                return;
+            }
+
+            StunTimeRemaining = Mathf.Max(0f, StunTimeRemaining - deltaTime);
         }
     }
 
@@ -119,6 +136,7 @@ namespace ColorChargeTD.Battle
             Slot = slot;
             Charge = definition.Capacity * Mathf.Clamp01(startingChargeNormalized);
             TurretYawDegrees = 0f;
+            DamageUpgradeLevel = 0;
         }
 
         public TowerDefinition Definition { get; }
@@ -128,16 +146,29 @@ namespace ColorChargeTD.Battle
         public EnemyRuntimeModel CurrentAimTarget { get; set; }
         public float TurretYawDegrees { get; set; }
 
+        public int DamageUpgradeLevel { get; private set; }
+
         public bool HasCharge => Charge >= 1f;
         public bool IsFull => Charge >= Definition.Capacity;
+
+        public bool CanApplyDamageUpgrade(int maxLevel)
+        {
+            return maxLevel > 0 && DamageUpgradeLevel < maxLevel;
+        }
+
+        public void ApplyDamageUpgrade()
+        {
+            DamageUpgradeLevel++;
+        }
     }
 
     public sealed class WaveSpawnerSystem
     {
         #region Fields
         private readonly WaveDefinition waveDefinition;
+        private readonly LevelLayoutRuntimeDefinition layoutDefinition;
         private readonly int plannedEnemyTotal;
-        private readonly Dictionary<string, LevelPathRuntimeDefinition> pathsById = new Dictionary<string, LevelPathRuntimeDefinition>(StringComparer.Ordinal);
+        private readonly Dictionary<string, LevelPathRuntimeDefinition> pathsById;
 
         private int groupIndex;
         private float elapsedInGroup;
@@ -149,17 +180,9 @@ namespace ColorChargeTD.Battle
         public WaveSpawnerSystem(WaveDefinition waveDefinition, LevelLayoutRuntimeDefinition layoutDefinition)
         {
             this.waveDefinition = waveDefinition;
+            this.layoutDefinition = layoutDefinition;
             plannedEnemyTotal = waveDefinition != null ? waveDefinition.GetTotalPlannedEnemyCount() : 0;
-
-            LevelPathRuntimeDefinition[] paths = layoutDefinition.Paths;
-            for (int i = 0; i < paths.Length; i++)
-            {
-                LevelPathRuntimeDefinition path = paths[i];
-                if (!string.IsNullOrWhiteSpace(path.PathId))
-                {
-                    pathsById[path.PathId] = path;
-                }
-            }
+            pathsById = WaveSpawnPathResolver.BuildPathIndex(layoutDefinition);
         }
 
         public bool NeedsPlayerStart => awaitingPlayerAck && !IsComplete;
@@ -273,17 +296,7 @@ namespace ColorChargeTD.Battle
 
         private LevelPathRuntimeDefinition ResolvePath(WaveSpawnGroup group)
         {
-            if (!string.IsNullOrWhiteSpace(group.PathId) && pathsById.TryGetValue(group.PathId, out LevelPathRuntimeDefinition path))
-            {
-                return path;
-            }
-
-            foreach (KeyValuePair<string, LevelPathRuntimeDefinition> pair in pathsById)
-            {
-                return pair.Value;
-            }
-
-            return default;
+            return WaveSpawnPathResolver.Resolve(group, layoutDefinition, pathsById);
         }
     }
 
@@ -330,6 +343,11 @@ namespace ColorChargeTD.Battle
 
         private void MoveEnemy(float deltaTime, EnemyRuntimeModel enemy, LevelSessionRuntime session)
         {
+            if (enemy.StunTimeRemaining > 0f)
+            {
+                return;
+            }
+
             Vector3[] waypoints = enemy.Path.Waypoints;
             if (waypoints == null || waypoints.Length == 0)
             {
@@ -361,12 +379,18 @@ namespace ColorChargeTD.Battle
 
     public sealed class TowerChargeSystem
     {
-        public void Tick(float deltaTime, List<TowerRuntimeModel> towers)
+        public void Tick(float deltaTime, List<TowerRuntimeModel> towers, bool rechargeFromProduction)
         {
             for (int i = 0; i < towers.Count; i++)
             {
                 TowerRuntimeModel tower = towers[i];
-                tower.Charge = Mathf.Min(tower.Definition.Capacity, tower.Charge + tower.Definition.ProductionPerSecond * deltaTime);
+                if (rechargeFromProduction)
+                {
+                    tower.Charge = Mathf.Min(
+                        tower.Definition.Capacity,
+                        tower.Charge + tower.Definition.ProductionPerSecond * deltaTime);
+                }
+
                 tower.FireCooldown = Mathf.Max(0f, tower.FireCooldown - deltaTime);
             }
         }
@@ -380,7 +404,7 @@ namespace ColorChargeTD.Battle
             List<EnemyRuntimeModel> enemies,
             DamageResolver damageResolver,
             ProjectileHitScheduler projectileHits,
-            UnityAction<TowerRuntimeModel, EnemyRuntimeModel> onTowerFired)
+            UnityAction<TowerRuntimeModel, EnemyRuntimeModel, float> onTowerFired)
         {
             for (int i = 0; i < towers.Count; i++)
             {
@@ -413,11 +437,12 @@ namespace ColorChargeTD.Battle
                 }
 
                 int damage = damageResolver.ComputeShotDamage(tower);
-                float travelTime = tower.Definition.ProjectileTravelTime;
+                float distance = Vector3.Distance(tower.Slot.Position, target.Position);
+                float travelTime = Mathf.Max(0.01f, distance / tower.Definition.ProjectileSpeed);
                 projectileHits.Enqueue(target, travelTime, damage, tower.Definition.Color);
                 tower.Charge = Mathf.Max(0f, tower.Charge - 1f);
                 tower.FireCooldown = 1f / tower.Definition.FireRatePerSecond;
-                onTowerFired?.Invoke(tower, target);
+                onTowerFired?.Invoke(tower, target, travelTime);
             }
         }
 
@@ -513,6 +538,11 @@ namespace ColorChargeTD.Battle
             }
 
             int damage = tower.Definition.DamagePerShot;
+            if (balanceConfig != null)
+            {
+                damage += balanceConfig.TowerDamageUpgradeBonusPerLevel * tower.DamageUpgradeLevel;
+            }
+
             if (balanceConfig != null && balanceConfig.EnableOvercharge && tower.IsFull)
             {
                 damage = Mathf.RoundToInt(damage * tower.Definition.OverchargeMultiplier);

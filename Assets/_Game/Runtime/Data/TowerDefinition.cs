@@ -8,7 +8,7 @@ namespace ColorChargeTD.Data
     {
         [Header("Identity")]
         [SerializeField] private string towerId = "tower-red-basic";
-        [SerializeField] private string displayName = "Red Tower";
+        [SerializeField] private string displayName = "Tower";
         [SerializeField] private ColorCharge color = ColorCharge.Red;
 
         [Header("Economy")]
@@ -21,7 +21,8 @@ namespace ColorChargeTD.Data
         [SerializeField] private float fireRatePerSecond = 1f;
         [SerializeField] private float range = 4f;
         [SerializeField] private float overchargeMultiplier = 2f;
-        [SerializeField] private float projectileTravelTime = 0.25f;
+        [SerializeField] private float projectileSpeed = 8f;
+        [SerializeField] private float projectileArcPeakHeight = 3f;
         [SerializeField] private float turretTraverseDegreesPerSecond = 320f;
         [SerializeField] private float turretFireAlignToleranceDegrees = 12f;
 
@@ -41,7 +42,8 @@ namespace ColorChargeTD.Data
         public float FireRatePerSecond => Mathf.Max(0.1f, fireRatePerSecond);
         public float Range => Mathf.Max(0.1f, range);
         public float OverchargeMultiplier => Mathf.Max(1f, overchargeMultiplier);
-        public float ProjectileTravelTime => Mathf.Max(0.01f, projectileTravelTime);
+        public float ProjectileSpeed => Mathf.Max(0.01f, projectileSpeed);
+        public float ProjectileArcPeakHeight => Mathf.Max(0f, projectileArcPeakHeight);
         public float TurretTraverseDegreesPerSecond => Mathf.Max(30f, turretTraverseDegreesPerSecond);
         public float TurretFireAlignToleranceDegrees => Mathf.Clamp(turretFireAlignToleranceDegrees, 1f, 45f);
         public GameObject Prefab => prefab;
@@ -64,6 +66,11 @@ namespace ColorChargeTD.Data
             if (damagePerShot <= 0)
             {
                 messages.Add(ContentValidationMessage.Error(name, "Damage per shot must be greater than zero."));
+            }
+
+            if (projectileSpeed <= 0f)
+            {
+                messages.Add(ContentValidationMessage.Error(name, "Projectile speed must be greater than zero."));
             }
 
             if (prefab == null)

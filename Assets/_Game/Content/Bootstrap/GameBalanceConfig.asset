@@ -12,10 +12,13 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 49311885595511745ae0a33872c764ce, type: 3}
   m_Name: GameBalanceConfig
   m_EditorClassIdentifier: 
-  defaultStartingResource: 100
+  defaultStartingResource: 50
   defaultTowerCost: 50
   defaultTowerCapacity: 3
   defaultProductionPerSecond: 3
   defaultFireRatePerSecond: 1
   baseLives: 10
   enableOvercharge: 0
+  towerDamageUpgradeCost: 50
+  towerDamageUpgradeMaxLevel: 1
+  towerDamageUpgradeBonusPerLevel: 1

@@ -16,7 +16,13 @@ MonoBehaviour:
   levelCatalog: {fileID: 11400000, guid: e104f7c8a48882a4986e14766912b6dd, type: 2}
   towers:
   - {fileID: 11400000, guid: 2e33a380d803f0e4a8ed142f09499d92, type: 2}
+  - {fileID: 11400000, guid: b47ac10d58c54c2d9a0e9b1c2d3e4f5a, type: 2}
   enemies:
   - {fileID: 11400000, guid: 504252b760217bf4db4290dfbf59768e, type: 2}
-  - {fileID: 11400000, guid: f3a8c9d14b2a4c6e8d0e1f2a3b4c5d6, type: 2}
+  - {fileID: 11400000, guid: 50e740e2326455947931ed4228c895e6, type: 2}
   upgrades: []
+  auxiliaryBuildings:
+  - {fileID: 11400000, guid: 5ea27ad471d21d147aaedd7042dfc12d, type: 2}
+  - {fileID: 11400000, guid: e8f4c9a12b3d4567e89f0a1b2c3d4e5f, type: 2}
+  roadTraps:
+  - {fileID: 11400000, guid: 75305507010b87e44a8a8e212c2989ed, type: 2}

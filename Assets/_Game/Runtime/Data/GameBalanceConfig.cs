@@ -13,6 +13,11 @@ namespace ColorChargeTD.Data
         [SerializeField] private int baseLives = 10;
         [SerializeField] private bool enableOvercharge = false;
 
+        [Header("Tower upgrades (battle)")]
+        [SerializeField] private int towerDamageUpgradeCost = 50;
+        [SerializeField] [Min(1)] private int towerDamageUpgradeMaxLevel = 1;
+        [SerializeField] [Min(1)] private int towerDamageUpgradeBonusPerLevel = 1;
+
         public int DefaultStartingResource => Mathf.Max(0, defaultStartingResource);
         public int DefaultTowerCost => Mathf.Max(0, defaultTowerCost);
         public int DefaultTowerCapacity => Mathf.Max(1, defaultTowerCapacity);
@@ -20,5 +25,9 @@ namespace ColorChargeTD.Data
         public float DefaultFireRatePerSecond => Mathf.Max(0.1f, defaultFireRatePerSecond);
         public int BaseLives => Mathf.Max(1, baseLives);
         public bool EnableOvercharge => enableOvercharge;
+
+        public int TowerDamageUpgradeCost => Mathf.Max(0, towerDamageUpgradeCost);
+        public int TowerDamageUpgradeMaxLevel => Mathf.Max(1, towerDamageUpgradeMaxLevel);
+        public int TowerDamageUpgradeBonusPerLevel => Mathf.Max(1, towerDamageUpgradeBonusPerLevel);
     }
 }

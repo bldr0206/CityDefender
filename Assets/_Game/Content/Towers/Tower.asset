@@ -10,10 +10,10 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 94bcb0b7f36b0854fb83b487e0ae60da, type: 3}
-  m_Name: Tower_Red_Basic
+  m_Name: Tower
   m_EditorClassIdentifier: 
   towerId: tower-red-basic
-  displayName: Red Basic Tower
+  displayName: Tower
   color: 0
   buildCost: 50
   damagePerShot: 1
@@ -22,7 +22,10 @@ MonoBehaviour:
   fireRatePerSecond: 1
   range: 4
   overchargeMultiplier: 2
-  projectileTravelTime: 0.25
+  projectileSpeed: 8
+  projectileArcPeakHeight: 2
+  turretTraverseDegreesPerSecond: 320
+  turretFireAlignToleranceDegrees: 12
   prefab: {fileID: 3327984129578387851, guid: 3b6263c804ed56048873952c9cf5d0e4, type: 3}
   projectilePrefab: {fileID: 7000000000000000001, guid: e2f3a4b5c6d7e8f9012345678abcdefa, type: 3}
   fireSfx: {fileID: 0}

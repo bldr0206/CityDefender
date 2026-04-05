@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using ColorChargeTD.Core;
 using ColorChargeTD.Data;
@@ -26,8 +27,21 @@ namespace ColorChargeTD.Battle
         [SerializeField] private BattleCoinFlyoutPresenter coinFlyoutPresenter;
         [SerializeField] private BattleDamageFlyoutPresenter damageFlyoutPresenter;
 
+        [Header("Path route markers")]
+        [SerializeField] private GameObject pathRouteMarkerPrefab;
+        [SerializeField] [Min(0.05f)] private float pathMarkerSpacing = 1.2f;
+        [SerializeField] private float pathMarkerYOffset = 0.01f;
+
+        [Header("Tower radial menu")]
+        [SerializeField] private GameObject towerRadialMenuShellPrefab;
+        [SerializeField] private GameObject towerRadialOptionPrefab;
+
+        [Header("Build slots")]
+        [SerializeField] private GameObject buildSlotPlusVisualPrefab;
+
         private readonly List<TowerRuntimeModel> towers = new List<TowerRuntimeModel>();
         private readonly List<EnemyRuntimeModel> enemies = new List<EnemyRuntimeModel>();
+        private readonly List<PlacedStructureRuntimeModel> placedStructures = new List<PlacedStructureRuntimeModel>();
 
         private WaveSpawnerSystem waveSpawnerSystem;
         private EnemyPathSystem enemyPathSystem;
@@ -39,6 +53,7 @@ namespace ColorChargeTD.Battle
         private BattlePresentationSystem presentationSystem;
         private LevelSessionRuntime session;
         private LevelDefinition activeLevelDefinition;
+        private IReadOnlyList<TowerDefinition> buildableTowers;
         private GameObject activeLayoutInstance;
         private bool ownsActiveLayoutInstance;
         private bool isConfigured;
@@ -47,12 +62,14 @@ namespace ColorChargeTD.Battle
         private GameObject buildSlotHandlesRoot;
         private BattleTowerRadialMenu radialBuildMenu;
         private float smoothedWaveProgress;
+        private Coroutine deferredBattleResultNavigation;
 
         [Inject] private IGameContentService contentService;
         [Inject] private ILevelSelectionService levelSelectionService;
         [Inject] private IProgressionService progressionService;
         [Inject] private IGameNavigationService navigationService;
         [Inject] private IPlayerProfileService profileService;
+        [Inject(Optional = true)] private GameFlowPresentationSettings flowPresentationSettings;
 
         #region UnityLifecycle
         private void Start()
@@ -70,8 +87,18 @@ namespace ColorChargeTD.Battle
 
         private void Update()
         {
-            if (!isConfigured || session == null || session.IsFinished)
+            if (!isConfigured || session == null)
             {
+                return;
+            }
+
+            if (session.IsFinished)
+            {
+                if (deferredBattleResultNavigation != null)
+                {
+                    TickPostVictoryWaveProgressHud();
+                }
+
                 return;
             }
 
@@ -83,12 +110,14 @@ namespace ColorChargeTD.Battle
             HandleBuildSlotInput();
 
             float deltaTime = Time.deltaTime;
+            TickAuxiliaryIncome(deltaTime);
+            TickEnemyCrowdControl(deltaTime);
             waveSpawnerSystem.Tick(deltaTime, enemies);
             enemyPathSystem.Tick(deltaTime, enemies, session);
-            towerChargeSystem.Tick(deltaTime, towers);
+            towerChargeSystem.Tick(deltaTime, towers, ShouldRechargeTowerAmmo());
             projectileHitScheduler.Tick(deltaTime);
             towerTargetingSystem.Tick(deltaTime, towers, enemies, damageResolver, projectileHitScheduler, HandleTowerFiredForPresentation);
-            presentationSystem.Sync(towers, enemies);
+            presentationSystem.Sync(towers, enemies, placedStructures);
 
             UpdateHud();
 
@@ -120,6 +149,7 @@ namespace ColorChargeTD.Battle
             ResetSessionState();
 
             activeLevelDefinition = levelDefinition;
+            buildableTowers = levelDefinition.ResolveBuildableTowers(contentService.Towers);
             LevelLayoutAuthoring layoutAuthoring = ResolveLayout(levelDefinition);
             if (layoutAuthoring == null)
             {
@@ -135,6 +165,7 @@ namespace ColorChargeTD.Battle
 
             towers.Clear();
             enemies.Clear();
+            placedStructures.Clear();
 
             session = new LevelSessionRuntime(
                 levelDefinition,
@@ -152,7 +183,13 @@ namespace ColorChargeTD.Battle
             battleResultService = new BattleResultService();
             presentationSystem = new BattlePresentationSystem();
             presentationSystem.Initialize(layoutAuthoring.transform);
-            presentationSystem.Sync(towers, enemies);
+            presentationSystem.BuildPathRouteMarkers(
+                layoutDefinition,
+                levelDefinition.WaveSet,
+                pathRouteMarkerPrefab,
+                pathMarkerSpacing,
+                pathMarkerYOffset);
+            presentationSystem.Sync(towers, enemies, placedStructures);
             CreateBuildSlotHandles(layoutAuthoring.transform, layoutDefinition);
             isConfigured = true;
 
@@ -170,13 +207,18 @@ namespace ColorChargeTD.Battle
             }
 
             TowerDefinition towerDefinition = contentService.GetTowerById(towerId);
-            if (towerDefinition == null)
+            if (towerDefinition == null || !IsTowerInBuildableList(towerDefinition))
             {
                 return false;
             }
 
             BuildSlotRuntimeDefinition slot = session.FindSlot(slotId);
             if (string.IsNullOrWhiteSpace(slot.SlotId) || session.IsSlotOccupied(slot.SlotId))
+            {
+                return false;
+            }
+
+            if (slot.Kind != BuildSlotKind.Tower)
             {
                 return false;
             }
@@ -190,7 +232,58 @@ namespace ColorChargeTD.Battle
             TowerRuntimeModel tower = new TowerRuntimeModel(towerDefinition, slot, 1f);
             towers.Add(tower);
             session.CurrentResource -= towerDefinition.BuildCost;
-            presentationSystem.Sync(towers, enemies);
+            presentationSystem.Sync(towers, enemies, placedStructures);
+            UpdateHud();
+            return true;
+        }
+
+        public bool TryPlacePlaceableStructure(string structureId, string slotId)
+        {
+            if (!isConfigured || session == null || session.IsFinished)
+            {
+                return false;
+            }
+
+            BuildSlotRuntimeDefinition slot = session.FindSlot(slotId);
+            if (string.IsNullOrWhiteSpace(slot.SlotId) || session.IsSlotOccupied(slot.SlotId))
+            {
+                return false;
+            }
+
+            PlaceableStructureDefinition def = null;
+            if (slot.Kind == BuildSlotKind.Auxiliary)
+            {
+                def = FindAuxiliaryOnSlot(slot, structureId);
+            }
+            else if (slot.Kind == BuildSlotKind.RoadTrap)
+            {
+                def = FindRoadTrapOnSlot(slot, structureId);
+            }
+            else
+            {
+                return false;
+            }
+
+            if (def == null)
+            {
+                return false;
+            }
+
+            AuxiliaryBuildingDefinition auxGate = def as AuxiliaryBuildingDefinition;
+            if (auxGate != null && !IsAuxiliaryUnlockedForBuild(auxGate))
+            {
+                return false;
+            }
+
+            if (session.CurrentResource < def.BuildCost)
+            {
+                return false;
+            }
+
+            session.OccupySlot(slot.SlotId);
+            session.CurrentResource -= def.BuildCost;
+            placedStructures.Add(new PlacedStructureRuntimeModel(slot.Kind, def, slot));
+            presentationSystem.Sync(towers, enemies, placedStructures);
             UpdateHud();
             return true;
         }
@@ -290,7 +383,57 @@ namespace ColorChargeTD.Battle
                 : session.AccumulatedKillReward;
 
             BattleResultModel result = progressionService.ApplyBattleResult(activeLevelDefinition, outcome, reward);
+
+            float victoryDelay = outcome == BattleOutcome.Victory && flowPresentationSettings != null
+                ? flowPresentationSettings.VictoryResultScreenDelaySeconds
+                : 0f;
+
+            if (victoryDelay > 0f)
+            {
+                StopDeferredBattleResultNavigation();
+                deferredBattleResultNavigation = StartCoroutine(OpenBattleResultAfterDelay(result, victoryDelay));
+            }
+            else
+            {
+                if (outcome == BattleOutcome.Victory && hudView != null)
+                {
+                    smoothedWaveProgress = 1f;
+                    hudView.SetWaveProgress(1f);
+                }
+
+                navigationService.OpenBattleResult(result);
+            }
+        }
+
+        private void TickPostVictoryWaveProgressHud()
+        {
+            if (hudView == null || waveSpawnerSystem == null)
+            {
+                return;
+            }
+
+            float dt = Time.unscaledDeltaTime;
+            smoothedWaveProgress = Mathf.MoveTowards(smoothedWaveProgress, 1f, waveProgressFillSpeed * dt);
+            hudView.SetWaveProgress(smoothedWaveProgress);
+            hudView.SetWaveLabel(waveSpawnerSystem.DisplayWaveNumber, waveSpawnerSystem.TotalWaveGroups);
+        }
+
+        private IEnumerator OpenBattleResultAfterDelay(BattleResultModel result, float delaySeconds)
+        {
+            yield return new WaitForSecondsRealtime(delaySeconds);
+            deferredBattleResultNavigation = null;
             navigationService.OpenBattleResult(result);
+        }
+
+        private void StopDeferredBattleResultNavigation()
+        {
+            if (deferredBattleResultNavigation == null)
+            {
+                return;
+            }
+
+            StopCoroutine(deferredBattleResultNavigation);
+            deferredBattleResultNavigation = null;
         }
 
         private void UpdateHud()
@@ -339,12 +482,10 @@ namespace ColorChargeTD.Battle
                 hudView.SetWaveProgress(0f);
             }
 
-            int totalSlots = session.TotalBuildSlotCount;
-            int freeSlots = totalSlots - session.OccupiedBuildSlotCount;
-            hudView.SetSlots(freeSlots, totalSlots);
-
-            bool waitingForWaveStart = waveSpawnerSystem != null && waveSpawnerSystem.NeedsPlayerStart;
-            bool hasTowers = towers.Count > 0;
+            bool waitingForWaveStart = waveSpawnerSystem != null
+                && waveSpawnerSystem.NeedsPlayerStart
+                && enemies.Count == 0;
+            bool hasTowers = towers.Count > 0 || placedStructures.Count > 0;
 
             if (waitingForWaveStart)
             {
@@ -383,16 +524,13 @@ namespace ColorChargeTD.Battle
                 go.transform.SetParent(buildSlotHandlesRoot.transform, false);
                 go.transform.position = slot.Position;
                 BuildSlotWorldHandle handle = go.AddComponent<BuildSlotWorldHandle>();
-                handle.Initialize(slot);
+                handle.Initialize(slot, buildSlotPlusVisualPrefab);
                 buildSlotHandles.Add(handle);
             }
         }
 
         private void RefreshBuildSlotVisuals()
         {
-            int minTowerCost = GetMinimumTowerBuildCost(contentService.Towers);
-            bool canAffordCheapest = session.CurrentResource >= minTowerCost;
-
             for (int i = 0; i < buildSlotHandles.Count; i++)
             {
                 BuildSlotWorldHandle handle = buildSlotHandles[i];
@@ -401,9 +539,153 @@ namespace ColorChargeTD.Battle
                     continue;
                 }
 
+                BuildSlotRuntimeDefinition slot = session.FindSlot(handle.SlotId);
+                if (string.IsNullOrWhiteSpace(slot.SlotId))
+                {
+                    continue;
+                }
+
                 bool empty = !session.IsSlotOccupied(handle.SlotId);
-                handle.SetBuildableVisible(empty && canAffordCheapest);
+                int minCost = GetMinimumBuildCostForSlot(slot);
+                bool hasBuildOptions = minCost < int.MaxValue;
+                bool showPlusForBuild = empty && hasBuildOptions;
+
+                bool occupiedTower = !empty && slot.Kind == BuildSlotKind.Tower;
+                TowerRuntimeModel towerOnSlot = occupiedTower ? FindTowerBySlotId(handle.SlotId) : null;
+
+                bool showPlusForUpgrade = false;
+                int upgradeCost = int.MaxValue;
+                GameBalanceConfig balance = contentService != null ? contentService.BalanceConfig : null;
+                if (towerOnSlot != null && balance != null
+                    && towerOnSlot.CanApplyDamageUpgrade(balance.TowerDamageUpgradeMaxLevel))
+                {
+                    showPlusForUpgrade = true;
+                    upgradeCost = balance.TowerDamageUpgradeCost;
+                }
+
+                bool showPlus = showPlusForBuild || showPlusForUpgrade;
+                bool raycastEnabled = (empty && hasBuildOptions) || towerOnSlot != null;
+
+                handle.SetPlusVisible(showPlus);
+                handle.SetSlotRaycastEnabled(raycastEnabled);
+
+                if (showPlus)
+                {
+                    bool affordable = showPlusForBuild && session.CurrentResource >= minCost
+                        || showPlusForUpgrade && session.CurrentResource >= upgradeCost;
+                    handle.SetAffordableVisual(affordable);
+                }
             }
+        }
+
+        private int GetMinimumBuildCostForSlot(BuildSlotRuntimeDefinition slot)
+        {
+            switch (slot.Kind)
+            {
+                case BuildSlotKind.Auxiliary:
+                    return GetMinimumUnlockedAuxiliaryBuildCost(slot.AllowedAuxiliaryBuildings);
+                case BuildSlotKind.RoadTrap:
+                    return GetMinimumStructureCost(slot.AllowedRoadTraps);
+                default:
+                    return GetMinimumTowerBuildCost(buildableTowers);
+            }
+        }
+
+        private int GetMinimumUnlockedAuxiliaryBuildCost(AuxiliaryBuildingDefinition[] defs)
+        {
+            if (defs == null || defs.Length == 0)
+            {
+                return int.MaxValue;
+            }
+
+            int min = int.MaxValue;
+            for (int i = 0; i < defs.Length; i++)
+            {
+                AuxiliaryBuildingDefinition d = defs[i];
+                if (d == null || string.IsNullOrWhiteSpace(d.StructureId))
+                {
+                    continue;
+                }
+
+                if (!IsAuxiliaryUnlockedForBuild(d))
+                {
+                    continue;
+                }
+
+                int c = d.BuildCost;
+                if (c < min)
+                {
+                    min = c;
+                }
+            }
+
+            return min;
+        }
+
+        private bool IsAuxiliaryUnlockedForBuild(AuxiliaryBuildingDefinition def)
+        {
+            if (def == null)
+            {
+                return false;
+            }
+
+            if (!def.RequiresPlacedTowerToBuild)
+            {
+                return true;
+            }
+
+            return towers.Count > 0;
+        }
+
+        private List<AuxiliaryBuildingDefinition> BuildUnlockedAuxiliaryList(AuxiliaryBuildingDefinition[] defs)
+        {
+            List<AuxiliaryBuildingDefinition> list = new List<AuxiliaryBuildingDefinition>();
+            if (defs == null)
+            {
+                return list;
+            }
+
+            for (int i = 0; i < defs.Length; i++)
+            {
+                AuxiliaryBuildingDefinition d = defs[i];
+                if (d == null || string.IsNullOrWhiteSpace(d.StructureId))
+                {
+                    continue;
+                }
+
+                if (IsAuxiliaryUnlockedForBuild(d))
+                {
+                    list.Add(d);
+                }
+            }
+
+            return list;
+        }
+
+        private static int GetMinimumStructureCost<T>(T[] defs) where T : PlaceableStructureDefinition
+        {
+            if (defs == null || defs.Length == 0)
+            {
+                return int.MaxValue;
+            }
+
+            int min = int.MaxValue;
+            for (int i = 0; i < defs.Length; i++)
+            {
+                T def = defs[i];
+                if (def == null || string.IsNullOrWhiteSpace(def.StructureId))
+                {
+                    continue;
+                }
+
+                int c = def.BuildCost;
+                if (c < min)
+                {
+                    min = c;
+                }
+            }
+
+            return min;
         }
 
         private static int GetMinimumTowerBuildCost(IReadOnlyList<TowerDefinition> towers)
@@ -468,18 +750,75 @@ namespace ColorChargeTD.Battle
                 return;
             }
 
-            if (session.IsSlotOccupied(handle.SlotId))
+            BuildSlotRuntimeDefinition clickedSlot = session.FindSlot(handle.SlotId);
+            if (string.IsNullOrWhiteSpace(clickedSlot.SlotId))
             {
                 return;
             }
 
-            Vector3 anchorWorld = handle.transform.position + Vector3.up * 0.45f;
-            Vector2 screen = RectTransformUtility.WorldToScreenPoint(cam, anchorWorld);
-            OpenRadialBuildMenu(screen, handle.SlotId);
+            if (session.IsSlotOccupied(handle.SlotId))
+            {
+                if (clickedSlot.Kind == BuildSlotKind.Tower)
+                {
+                    TowerRuntimeModel towerOnSlot = FindTowerBySlotId(handle.SlotId);
+                    if (towerOnSlot != null)
+                    {
+                        Vector3 anchorWorld = handle.transform.position + Vector3.up * 0.45f;
+                        Vector2 screen = RectTransformUtility.WorldToScreenPoint(cam, anchorWorld);
+                        OpenRadialTowerUpgradeMenu(screen, handle.SlotId, towerOnSlot);
+                    }
+                }
+
+                return;
+            }
+
+            Vector3 anchorWorldFree = handle.transform.position + Vector3.up * 0.45f;
+            Vector2 screenFree = RectTransformUtility.WorldToScreenPoint(cam, anchorWorldFree);
+            OpenRadialBuildMenu(screenFree, handle.SlotId);
         }
 
         private void OpenRadialBuildMenu(Vector2 screenPosition, string slotId)
         {
+            if (session == null)
+            {
+                return;
+            }
+
+            BuildSlotRuntimeDefinition slot = session.FindSlot(slotId);
+            if (string.IsNullOrWhiteSpace(slot.SlotId))
+            {
+                return;
+            }
+
+            List<BuildRadialOptionData> options;
+            Func<string, string, bool> tryPlace;
+
+            switch (slot.Kind)
+            {
+                case BuildSlotKind.Tower:
+                    options = BuildRadialOptionData.ListFromTowers(buildableTowers);
+                    tryPlace = TryPlaceTower;
+                    break;
+
+                case BuildSlotKind.Auxiliary:
+                    options = BuildRadialOptionData.ListFromAuxiliaries(BuildUnlockedAuxiliaryList(slot.AllowedAuxiliaryBuildings));
+                    tryPlace = TryPlacePlaceableStructure;
+                    break;
+
+                case BuildSlotKind.RoadTrap:
+                    options = BuildRadialOptionData.ListFromRoadTraps(slot.AllowedRoadTraps);
+                    tryPlace = TryPlacePlaceableStructure;
+                    break;
+
+                default:
+                    return;
+            }
+
+            if (options == null || options.Count == 0)
+            {
+                return;
+            }
+
             if (radialBuildMenu == null)
             {
                 radialBuildMenu = new BattleTowerRadialMenu();
@@ -488,10 +827,183 @@ namespace ColorChargeTD.Battle
             radialBuildMenu.Show(
                 screenPosition,
                 slotId,
-                contentService.Towers,
+                options,
                 session.CurrentResource,
-                TryPlaceTower,
-                UpdateHud);
+                tryPlace,
+                UpdateHud,
+                towerRadialMenuShellPrefab,
+                towerRadialOptionPrefab);
+        }
+
+        #region Tower damage upgrade (battle)
+
+        private void OpenRadialTowerUpgradeMenu(Vector2 screenPosition, string slotId, TowerRuntimeModel tower)
+        {
+            if (session == null || tower == null || contentService == null || contentService.BalanceConfig == null)
+            {
+                return;
+            }
+
+            GameBalanceConfig balance = contentService.BalanceConfig;
+            List<BuildRadialOptionData> options = new List<BuildRadialOptionData>(1);
+            if (tower.CanApplyDamageUpgrade(balance.TowerDamageUpgradeMaxLevel))
+            {
+                options.Add(
+                    new BuildRadialOptionData(
+                        BattleRadialOptionIds.TowerDamageUpgrade,
+                        "Upgrade damage",
+                        balance.TowerDamageUpgradeCost));
+            }
+            else
+            {
+                options.Add(
+                    new BuildRadialOptionData(
+                        BattleRadialOptionIds.TowerDamageUpgradeMaxed,
+                        "Fully upgraded",
+                        0,
+                        false));
+            }
+
+            if (radialBuildMenu == null)
+            {
+                radialBuildMenu = new BattleTowerRadialMenu();
+            }
+
+            radialBuildMenu.Show(
+                screenPosition,
+                slotId,
+                options,
+                session.CurrentResource,
+                TryTowerSlotUpgradeRadialAction,
+                UpdateHud,
+                towerRadialMenuShellPrefab,
+                towerRadialOptionPrefab);
+        }
+
+        private bool TryTowerSlotUpgradeRadialAction(string optionId, string slotId)
+        {
+            if (!string.Equals(optionId, BattleRadialOptionIds.TowerDamageUpgrade, StringComparison.Ordinal))
+            {
+                return false;
+            }
+
+            TowerRuntimeModel tower = FindTowerBySlotId(slotId);
+            if (tower == null)
+            {
+                return false;
+            }
+
+            return TryPurchaseTowerDamageUpgrade(tower);
+        }
+
+        private bool TryPurchaseTowerDamageUpgrade(TowerRuntimeModel tower)
+        {
+            if (!isConfigured || session == null || session.IsFinished || tower == null || contentService == null
+                || contentService.BalanceConfig == null)
+            {
+                return false;
+            }
+
+            GameBalanceConfig balance = contentService.BalanceConfig;
+            if (!tower.CanApplyDamageUpgrade(balance.TowerDamageUpgradeMaxLevel))
+            {
+                return false;
+            }
+
+            if (session.CurrentResource < balance.TowerDamageUpgradeCost)
+            {
+                return false;
+            }
+
+            session.CurrentResource -= balance.TowerDamageUpgradeCost;
+            tower.ApplyDamageUpgrade();
+            presentationSystem.Sync(towers, enemies, placedStructures);
+            UpdateHud();
+            return true;
+        }
+
+        private TowerRuntimeModel FindTowerBySlotId(string slotId)
+        {
+            if (string.IsNullOrWhiteSpace(slotId))
+            {
+                return null;
+            }
+
+            for (int i = 0; i < towers.Count; i++)
+            {
+                TowerRuntimeModel t = towers[i];
+                if (t == null || string.IsNullOrWhiteSpace(t.Slot.SlotId))
+                {
+                    continue;
+                }
+
+                if (string.Equals(t.Slot.SlotId, slotId, StringComparison.Ordinal))
+                {
+                    return t;
+                }
+            }
+
+            return null;
+        }
+
+        #endregion
+
+        private static AuxiliaryBuildingDefinition FindAuxiliaryOnSlot(BuildSlotRuntimeDefinition slot, string structureId)
+        {
+            AuxiliaryBuildingDefinition[] arr = slot.AllowedAuxiliaryBuildings;
+            if (arr == null)
+            {
+                return null;
+            }
+
+            for (int i = 0; i < arr.Length; i++)
+            {
+                AuxiliaryBuildingDefinition d = arr[i];
+                if (d != null && string.Equals(d.StructureId, structureId, StringComparison.Ordinal))
+                {
+                    return d;
+                }
+            }
+
+            return null;
+        }
+
+        private static RoadTrapDefinition FindRoadTrapOnSlot(BuildSlotRuntimeDefinition slot, string structureId)
+        {
+            RoadTrapDefinition[] arr = slot.AllowedRoadTraps;
+            if (arr == null)
+            {
+                return null;
+            }
+
+            for (int i = 0; i < arr.Length; i++)
+            {
+                RoadTrapDefinition d = arr[i];
+                if (d != null && string.Equals(d.StructureId, structureId, StringComparison.Ordinal))
+                {
+                    return d;
+                }
+            }
+
+            return null;
+        }
+
+        private bool IsTowerInBuildableList(TowerDefinition towerDefinition)
+        {
+            if (buildableTowers == null || buildableTowers.Count == 0)
+            {
+                return false;
+            }
+
+            for (int i = 0; i < buildableTowers.Count; i++)
+            {
+                if (buildableTowers[i] == towerDefinition)
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         private void ClearBuildSlotHandles()
@@ -516,6 +1028,63 @@ namespace ColorChargeTD.Battle
 
         #endregion
 
+        #region AuxiliaryIncome
+
+        private bool ShouldRechargeTowerAmmo()
+        {
+            if (session == null || session.IsFinished || waveSpawnerSystem == null)
+            {
+                return false;
+            }
+
+            if (waveSpawnerSystem.IsComplete && enemies.Count == 0)
+            {
+                return false;
+            }
+
+            if (waveSpawnerSystem.NeedsPlayerStart && enemies.Count == 0)
+            {
+                return false;
+            }
+
+            return true;
+        }
+
+        private void TickAuxiliaryIncome(float deltaTime)
+        {
+            if (placedStructures.Count == 0 || !ShouldRechargeTowerAmmo())
+            {
+                return;
+            }
+
+            for (int i = 0; i < placedStructures.Count; i++)
+            {
+                PlacedStructureRuntimeModel model = placedStructures[i];
+                if (model == null || model.Kind != BuildSlotKind.Auxiliary)
+                {
+                    continue;
+                }
+
+                AuxiliaryBuildingDefinition aux = model.Definition as AuxiliaryBuildingDefinition;
+                if (aux == null || !aux.HasPeriodicIncome)
+                {
+                    continue;
+                }
+
+                float period = aux.IncomePeriodSeconds;
+                model.AuxiliaryIncomeElapsed += deltaTime;
+                while (model.AuxiliaryIncomeElapsed >= period)
+                {
+                    model.AuxiliaryIncomeElapsed -= period;
+                    session.CurrentResource += aux.IncomeAmount;
+                    Vector3 flyOrigin = model.Slot.Position + Vector3.up * 0.55f;
+                    coinFlyoutPresenter?.OnPeriodicIncomePayout(flyOrigin, aux.IncomeAmount);
+                }
+            }
+        }
+
+        #endregion
+
         #region StartWave
 
         private void HandleEnemyKilledForCoinFlyout(Vector3 worldPosition, int reward)
@@ -536,13 +1105,26 @@ namespace ColorChargeTD.Battle
             }
 
             damageFlyoutPresenter?.ShowDamage(enemy.Position, damage);
+            presentationSystem?.NotifyEnemyDamaged(enemy);
         }
 
-        private void HandleTowerFiredForPresentation(TowerRuntimeModel tower, EnemyRuntimeModel enemy)
+        private void HandleTowerFiredForPresentation(TowerRuntimeModel tower, EnemyRuntimeModel enemy, float travelTime)
         {
             if (presentationSystem != null)
             {
-                presentationSystem.NotifyTowerFired(tower, enemy);
+                presentationSystem.NotifyTowerFired(tower, enemy, travelTime);
+            }
+        }
+
+        private void TickEnemyCrowdControl(float deltaTime)
+        {
+            for (int i = 0; i < enemies.Count; i++)
+            {
+                EnemyRuntimeModel enemy = enemies[i];
+                if (enemy != null)
+                {
+                    enemy.TickCrowdControl(deltaTime);
+                }
             }
         }
 
@@ -562,6 +1144,8 @@ namespace ColorChargeTD.Battle
         #region Cleanup
         private void OnDestroy()
         {
+            StopDeferredBattleResultNavigation();
+
             if (hudView != null)
             {
                 hudView.SetStartWaveClickedHandler(null);
@@ -572,12 +1156,16 @@ namespace ColorChargeTD.Battle
 
         private void ResetSessionState()
         {
+            StopDeferredBattleResultNavigation();
+
             isConfigured = false;
             smoothedWaveProgress = 0f;
             towers.Clear();
             enemies.Clear();
+            placedStructures.Clear();
             session = null;
             activeLevelDefinition = null;
+            buildableTowers = null;
 
             DisposeRadialBuildMenu();
             ClearBuildSlotHandles();

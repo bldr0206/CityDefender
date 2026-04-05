@@ -28,6 +28,9 @@ namespace ColorChargeTD.Editor
         private const string MainMenuScenePath = ScenesFolder + "/MainMenu.unity";
         private const string MetaScenePath = ScenesFolder + "/Meta.unity";
         private const string BattleScenePath = ScenesFolder + "/Battle.unity";
+        private const string TowerRadialShellPrefabPath = RootFolder + "/Prefabs/UI/BattleTowerRadial/BattleTowerRadialMenuRoot.prefab";
+        private const string TowerRadialOptionPrefabPath = RootFolder + "/Prefabs/UI/BattleTowerRadial/BattleTowerRadialOption.prefab";
+        private const string BuildSlotPlusVisualPrefabPath = RootFolder + "/Prefabs/Presentation/BuildSlotPlusVisual.prefab";
 
         [MenuItem("Tools/Color Charge TD/Generate Bootstrap Scenes")]
         public static void GenerateBootstrapScenes()
@@ -38,7 +41,10 @@ namespace ColorChargeTD.Editor
             EnsureFolder(ResourcesFolder);
 
             GameContentConfig gameContentConfig = EnsureBootstrapContent();
-            EnsureProjectContextPrefab(gameContentConfig);
+            string flowPresentationPath = ResourcesFolder + "/GameFlowPresentationSettings.asset";
+            GameFlowPresentationSettings flowPresentationSettings =
+                LoadOrCreateAsset<GameFlowPresentationSettings>(flowPresentationPath);
+            EnsureProjectContextPrefab(gameContentConfig, flowPresentationSettings);
 
             EnsureBootScene();
             EnsureMainMenuScene();
@@ -67,25 +73,30 @@ namespace ColorChargeTD.Editor
             return gameContentConfig;
         }
 
-        private static void EnsureProjectContextPrefab(GameContentConfig gameContentConfig)
+        private static void EnsureProjectContextPrefab(
+            GameContentConfig gameContentConfig,
+            GameFlowPresentationSettings flowPresentationSettings)
         {
             GameObject existingPrefab = AssetDatabase.LoadAssetAtPath<GameObject>(ProjectContextPrefabPath);
             if (existingPrefab != null)
             {
                 GameObject prefabRoot = PrefabUtility.LoadPrefabContents(ProjectContextPrefabPath);
-                ConfigureProjectContextPrefab(prefabRoot, gameContentConfig);
+                ConfigureProjectContextPrefab(prefabRoot, gameContentConfig, flowPresentationSettings);
                 PrefabUtility.SaveAsPrefabAsset(prefabRoot, ProjectContextPrefabPath);
                 PrefabUtility.UnloadPrefabContents(prefabRoot);
                 return;
             }
 
             GameObject projectContextRoot = new GameObject("ProjectContext");
-            ConfigureProjectContextPrefab(projectContextRoot, gameContentConfig);
+            ConfigureProjectContextPrefab(projectContextRoot, gameContentConfig, flowPresentationSettings);
             PrefabUtility.SaveAsPrefabAsset(projectContextRoot, ProjectContextPrefabPath);
             Object.DestroyImmediate(projectContextRoot);
         }
 
-        private static void ConfigureProjectContextPrefab(GameObject root, GameContentConfig gameContentConfig)
+        private static void ConfigureProjectContextPrefab(
+            GameObject root,
+            GameContentConfig gameContentConfig,
+            GameFlowPresentationSettings flowPresentationSettings)
         {
             ProjectContext projectContext = GetOrAddComponent<ProjectContext>(root);
             ProjectInstaller projectInstaller = GetOrAddComponent<ProjectInstaller>(root);
@@ -93,6 +104,7 @@ namespace ColorChargeTD.Editor
 
             SerializedObject serializedInstaller = new SerializedObject(projectInstaller);
             serializedInstaller.FindProperty("gameContentConfig").objectReferenceValue = gameContentConfig;
+            serializedInstaller.FindProperty("gameFlowPresentationSettings").objectReferenceValue = flowPresentationSettings;
             serializedInstaller.ApplyModifiedPropertiesWithoutUndo();
             EditorUtility.SetDirty(root);
         }
@@ -212,6 +224,23 @@ namespace ColorChargeTD.Editor
             LevelSessionController levelSessionController = sessionRoot.AddComponent<LevelSessionController>();
             SetBool(levelSessionController, "autoStartSelectedLevel", false);
             SetObjectReference(levelSessionController, "hudView", hudView);
+            GameObject towerRadialShell = AssetDatabase.LoadAssetAtPath<GameObject>(TowerRadialShellPrefabPath);
+            GameObject towerRadialOption = AssetDatabase.LoadAssetAtPath<GameObject>(TowerRadialOptionPrefabPath);
+            if (towerRadialShell != null)
+            {
+                SetObjectReference(levelSessionController, "towerRadialMenuShellPrefab", towerRadialShell);
+            }
+
+            if (towerRadialOption != null)
+            {
+                SetObjectReference(levelSessionController, "towerRadialOptionPrefab", towerRadialOption);
+            }
+
+            GameObject buildSlotPlusVisual = AssetDatabase.LoadAssetAtPath<GameObject>(BuildSlotPlusVisualPrefabPath);
+            if (buildSlotPlusVisual != null)
+            {
+                SetObjectReference(levelSessionController, "buildSlotPlusVisualPrefab", buildSlotPlusVisual);
+            }
 
             CreateEventSystem();
             CreateCameraRig();

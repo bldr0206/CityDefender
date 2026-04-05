@@ -24,3 +24,6 @@ MonoBehaviour:
     softCurrency: 30
     firstCompletionBonus: 12
   startingResourceOverride: -1
+  useTowerBuildAllowlist: 1
+  allowedTowers:
+  - {fileID: 11400000, guid: 2e33a380d803f0e4a8ed142f09499d92, type: 2}

@@ -37,6 +37,23 @@ namespace ColorChargeTD.Presentation
             StartCoroutine(SpawnStaggered(worldPosition, visual, cam));
         }
 
+        public void OnPeriodicIncomePayout(Vector3 worldPosition, int amount)
+        {
+            if (amount <= 0 || flyLayer == null || flyTarget == null || coinPrefab == null)
+            {
+                return;
+            }
+
+            Camera cam = worldCamera != null ? worldCamera : Camera.main;
+            if (cam == null)
+            {
+                return;
+            }
+
+            int visual = Mathf.Clamp(amount, 1, maxVisualCoins);
+            StartCoroutine(SpawnStaggered(worldPosition, visual, cam));
+        }
+
         #endregion
 
         #region Spawn

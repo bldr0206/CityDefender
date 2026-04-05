@@ -1,4 +1,5 @@
 using ColorChargeTD.Data;
+using TMPro;
 using UnityEngine;
 
 namespace ColorChargeTD.Presentation
@@ -6,16 +7,20 @@ namespace ColorChargeTD.Presentation
     public sealed class BuildSlotWorldHandle : MonoBehaviour
     {
         private string slotId;
-        private TextMesh plusMesh;
+        private BuildSlotKind slotKind;
+        private Transform plusVisualRoot;
         private Collider slotCollider;
+        private TMP_Text tmpPlus;
+        private TextMesh legacyPlusMesh;
 
         public string SlotId => slotId;
 
         #region Setup
 
-        public void Initialize(BuildSlotRuntimeDefinition slot)
+        public void Initialize(BuildSlotRuntimeDefinition slot, GameObject plusVisualPrefab)
         {
             slotId = slot.SlotId;
+            slotKind = slot.Kind;
             transform.position = slot.Position;
 
             float r = Mathf.Max(0.35f, slot.Radius);
@@ -24,29 +29,65 @@ namespace ColorChargeTD.Presentation
             box.center = new Vector3(0f, 0.08f, 0f);
             slotCollider = box;
 
-            GameObject plusGo = new GameObject("Plus");
-            plusGo.transform.SetParent(transform, false);
-            plusGo.transform.localPosition = new Vector3(0f, 0.45f, 0f);
-            plusMesh = plusGo.AddComponent<TextMesh>();
-            plusMesh.text = "+";
-            plusMesh.fontSize = 260;
-            plusMesh.characterSize = 0.055f;
-            plusMesh.anchor = TextAnchor.MiddleCenter;
-            plusMesh.alignment = TextAlignment.Center;
-            plusMesh.color = new Color(0.85f, 1f, 0.9f, 1f);
-            plusMesh.fontStyle = FontStyle.Bold;
-        }
+            Vector3 plusLocalPos = new Vector3(0f, 0.45f, 0f);
 
-        public void SetBuildableVisible(bool visible)
-        {
-            if (plusMesh != null)
+            if (plusVisualPrefab != null)
             {
-                plusMesh.gameObject.SetActive(visible);
+                GameObject instance = Instantiate(plusVisualPrefab, transform);
+                instance.name = "PlusVisual";
+                Transform t = instance.transform;
+                t.localPosition = plusLocalPos;
+                t.localRotation = Quaternion.identity;
+                t.localScale = Vector3.one;
+                plusVisualRoot = t;
+                tmpPlus = instance.GetComponentInChildren<TMP_Text>(true);
+            }
+            else
+            {
+                GameObject plusGo = new GameObject("Plus");
+                plusGo.transform.SetParent(transform, false);
+                plusGo.transform.localPosition = plusLocalPos;
+                TextMesh plusMesh = plusGo.AddComponent<TextMesh>();
+                plusMesh.text = "+";
+                plusMesh.fontSize = 260;
+                plusMesh.characterSize = 0.055f;
+                plusMesh.anchor = TextAnchor.MiddleCenter;
+                plusMesh.alignment = TextAlignment.Center;
+                plusMesh.fontStyle = FontStyle.Bold;
+                legacyPlusMesh = plusMesh;
+                plusVisualRoot = plusGo.transform;
             }
 
+            SetAffordableVisual(false);
+        }
+
+        public void SetPlusVisible(bool visible)
+        {
+            if (plusVisualRoot != null)
+            {
+                plusVisualRoot.gameObject.SetActive(visible);
+            }
+        }
+
+        public void SetSlotRaycastEnabled(bool enabled)
+        {
             if (slotCollider != null)
             {
-                slotCollider.enabled = visible;
+                slotCollider.enabled = enabled;
+            }
+        }
+
+        public void SetAffordableVisual(bool affordable)
+        {
+            Color color = BuildSlotVisualPalette.PlusAffordableTint(slotKind, affordable);
+            if (tmpPlus != null)
+            {
+                tmpPlus.color = color;
+            }
+
+            if (legacyPlusMesh != null)
+            {
+                legacyPlusMesh.color = color;
             }
         }
 
@@ -56,7 +97,7 @@ namespace ColorChargeTD.Presentation
 
         private void LateUpdate()
         {
-            if (plusMesh == null || !plusMesh.gameObject.activeSelf)
+            if (plusVisualRoot == null || !plusVisualRoot.gameObject.activeSelf)
             {
                 return;
             }
@@ -67,13 +108,13 @@ namespace ColorChargeTD.Presentation
                 return;
             }
 
-            Vector3 toCam = plusMesh.transform.position - cam.transform.position;
+            Vector3 toCam = plusVisualRoot.position - cam.transform.position;
             if (toCam.sqrMagnitude < 0.0001f)
             {
                 return;
             }
 
-            plusMesh.transform.rotation = Quaternion.LookRotation(toCam);
+            plusVisualRoot.rotation = Quaternion.LookRotation(toCam);
         }
 
         #endregion

@@ -146,22 +146,44 @@ namespace ColorChargeTD.Data
         }
     }
 
+    public enum BuildSlotKind
+    {
+        Tower = 0,
+        Auxiliary = 1,
+        RoadTrap = 2,
+    }
+
     [Serializable]
     public struct BuildSlotRuntimeDefinition
     {
         [SerializeField] private string slotId;
         [SerializeField] private Vector3 position;
         [SerializeField] private float radius;
+        [SerializeField] private BuildSlotKind kind;
+        [SerializeField] private AuxiliaryBuildingDefinition[] allowedAuxiliaryBuildings;
+        [SerializeField] private RoadTrapDefinition[] allowedRoadTraps;
 
         public string SlotId => slotId;
         public Vector3 Position => position;
         public float Radius => radius;
+        public BuildSlotKind Kind => kind;
+        public AuxiliaryBuildingDefinition[] AllowedAuxiliaryBuildings => allowedAuxiliaryBuildings;
+        public RoadTrapDefinition[] AllowedRoadTraps => allowedRoadTraps;
 
-        public BuildSlotRuntimeDefinition(string slotId, Vector3 position, float radius)
+        public BuildSlotRuntimeDefinition(
+            string slotId,
+            Vector3 position,
+            float radius,
+            BuildSlotKind kind,
+            AuxiliaryBuildingDefinition[] allowedAuxiliaryBuildings,
+            RoadTrapDefinition[] allowedRoadTraps)
         {
             this.slotId = slotId;
             this.position = position;
             this.radius = radius;
+            this.kind = kind;
+            this.allowedAuxiliaryBuildings = allowedAuxiliaryBuildings;
+            this.allowedRoadTraps = allowedRoadTraps;
         }
     }
 }

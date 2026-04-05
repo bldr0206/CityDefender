@@ -2,6 +2,7 @@
     "name": "ColorChargeTD.Runtime",
     "rootNamespace": "ColorChargeTD",
     "references": [
+        "GUID:a811bde74b26b53498b4f6d872b09b6d",
         "GUID:0d8beb7f090555447a6cf5ce9e54dbb4",
         "GUID:2bafac87e7f4b9b418d9448d219b01ab",
         "GUID:6055be8ebefd69e48b49212b09b47b2f",

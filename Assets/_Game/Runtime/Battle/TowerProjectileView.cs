@@ -1,29 +1,21 @@
-using System.Collections;
+using DG.Tweening;
 using UnityEngine;
 
 namespace ColorChargeTD.Battle
 {
     public sealed class TowerProjectileView : MonoBehaviour
     {
-        private Coroutine flightRoutine;
+        private Tween flightTween;
 
         private void OnDestroy()
         {
-            if (flightRoutine != null)
-            {
-                StopCoroutine(flightRoutine);
-                flightRoutine = null;
-            }
+            KillFlightTween();
         }
 
-        public void BeginFlight(Vector3 worldStart, Transform targetTransform, float duration)
+        public void BeginFlight(Vector3 worldStart, Transform targetTransform, float duration, float arcPeakHeight)
         {
             transform.position = worldStart;
-            if (flightRoutine != null)
-            {
-                StopCoroutine(flightRoutine);
-                flightRoutine = null;
-            }
+            KillFlightTween();
 
             if (targetTransform == null || duration <= 0f)
             {
@@ -31,29 +23,55 @@ namespace ColorChargeTD.Battle
                 return;
             }
 
-            flightRoutine = StartCoroutine(FlightRoutine(worldStart, targetTransform, duration));
+            Vector3 start = worldStart;
+            Transform target = targetTransform;
+
+            flightTween = DOTween.To(
+                    () => 0f,
+                    t =>
+                    {
+                        if (target == null)
+                        {
+                            KillFlightTween();
+                            Destroy(gameObject);
+                            return;
+                        }
+
+                        transform.position = SampleArcPoint(start, target.position, t, arcPeakHeight);
+                    },
+                    1f,
+                    duration)
+                .SetEase(Ease.Linear)
+                .SetTarget(this)
+                .SetLink(gameObject)
+                .OnComplete(OnFlightTweenComplete);
         }
 
-        private IEnumerator FlightRoutine(Vector3 start, Transform target, float duration)
+        #region Flight
+        private void OnFlightTweenComplete()
         {
-            float elapsed = 0f;
-            while (elapsed < duration)
-            {
-                if (target == null)
-                {
-                    flightRoutine = null;
-                    Destroy(gameObject);
-                    yield break;
-                }
-
-                elapsed += Time.deltaTime;
-                float t = Mathf.Clamp01(elapsed / duration);
-                transform.position = Vector3.Lerp(start, target.position, t);
-                yield return null;
-            }
-
-            flightRoutine = null;
+            flightTween = null;
             Destroy(gameObject);
         }
+
+        private void KillFlightTween()
+        {
+            if (flightTween != null && flightTween.IsActive())
+            {
+                flightTween.Kill(false);
+            }
+
+            flightTween = null;
+        }
+        #endregion
+
+        #region Arc sampling
+        private static Vector3 SampleArcPoint(Vector3 start, Vector3 end, float u, float arcPeakHeight)
+        {
+            Vector3 basePos = Vector3.Lerp(start, end, u);
+            float arc = arcPeakHeight * 4f * u * (1f - u);
+            return basePos + Vector3.up * arc;
+        }
+        #endregion
     }
 }

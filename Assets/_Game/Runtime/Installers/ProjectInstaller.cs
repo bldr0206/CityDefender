@@ -9,6 +9,7 @@ namespace ColorChargeTD.Installers
     public sealed class ProjectInstaller : MonoInstaller
     {
         [SerializeField] private GameContentConfig gameContentConfig;
+        [SerializeField] private GameFlowPresentationSettings gameFlowPresentationSettings;
 
         public override void InstallBindings()
         {
@@ -18,6 +19,16 @@ namespace ColorChargeTD.Installers
             }
 
             Container.BindInstance(gameContentConfig).IfNotBound();
+
+            if (gameFlowPresentationSettings == null)
+            {
+                gameFlowPresentationSettings = Resources.Load<GameFlowPresentationSettings>("GameFlowPresentationSettings");
+            }
+
+            if (gameFlowPresentationSettings != null)
+            {
+                Container.BindInstance(gameFlowPresentationSettings).AsSingle();
+            }
             Container.Bind<IGameContentService>().To<GameContentService>().AsSingle();
             Container.Bind<ISaveService>().To<PlayerPrefsJsonSaveService>().AsSingle();
             Container.Bind<IPlayerProfileService>().To<PlayerProfileService>().AsSingle();
