@@ -173,10 +173,13 @@ namespace ColorChargeTD.Editor
             GameObject metaScreen = CreateChild(canvas.gameObject, "MetaScreen");
             metaScreen.AddComponent<MetaScreenView>();
 
-            GameObject resultScreen = CreateChild(canvas.gameObject, "ResultScreen");
-            ResultScreenView resultScreenView = resultScreen.AddComponent<ResultScreenView>();
-            ResultScreenBridge resultScreenBridge = resultScreen.AddComponent<ResultScreenBridge>();
-            SetObjectReference(resultScreenBridge, "targetView", resultScreenView);
+            GameObject resultScreenPrefabRoot = AssetDatabase.LoadAssetAtPath<GameObject>(ResultScreenPrefabBuilder.ResultScreenPrefabPath);
+            GameObject resultScreen = (GameObject)PrefabUtility.InstantiatePrefab(resultScreenPrefabRoot, canvas.transform);
+            resultScreen.name = "ResultScreen";
+            ResultScreenBridge resultScreenBridge = resultScreen.GetComponent<ResultScreenBridge>();
+            SetObjectReference(resultScreenBridge, "targetView", resultScreen.GetComponent<ResultScreenView>());
+            SetObjectReference(resultScreenBridge, "metaScreenRoot", metaScreen);
+            SetObjectReference(resultScreenBridge, "commandRouter", systemsRoot.GetComponent<NavigationCommandRouter>());
 
             CreateEventSystem();
             CreateCameraRig();
