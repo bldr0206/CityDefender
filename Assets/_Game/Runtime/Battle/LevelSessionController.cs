@@ -159,6 +159,9 @@ namespace ColorChargeTD.Battle
             UpdateHud();
         }
 
+        public string ActiveLevelId =>
+            activeLevelDefinition != null ? activeLevelDefinition.LevelId : string.Empty;
+
         public bool TryPlaceTower(string towerId, string slotId)
         {
             if (!isConfigured || session == null || session.IsFinished)
@@ -387,6 +390,9 @@ namespace ColorChargeTD.Battle
 
         private void RefreshBuildSlotVisuals()
         {
+            int minTowerCost = GetMinimumTowerBuildCost(contentService.Towers);
+            bool canAffordCheapest = session.CurrentResource >= minTowerCost;
+
             for (int i = 0; i < buildSlotHandles.Count; i++)
             {
                 BuildSlotWorldHandle handle = buildSlotHandles[i];
@@ -396,8 +402,34 @@ namespace ColorChargeTD.Battle
                 }
 
                 bool empty = !session.IsSlotOccupied(handle.SlotId);
-                handle.SetBuildableVisible(empty);
+                handle.SetBuildableVisible(empty && canAffordCheapest);
             }
+        }
+
+        private static int GetMinimumTowerBuildCost(IReadOnlyList<TowerDefinition> towers)
+        {
+            if (towers == null)
+            {
+                return int.MaxValue;
+            }
+
+            int min = int.MaxValue;
+            for (int i = 0; i < towers.Count; i++)
+            {
+                TowerDefinition t = towers[i];
+                if (t == null || string.IsNullOrWhiteSpace(t.TowerId))
+                {
+                    continue;
+                }
+
+                int c = t.BuildCost;
+                if (c < min)
+                {
+                    min = c;
+                }
+            }
+
+            return min;
         }
 
         private void HandleBuildSlotInput()

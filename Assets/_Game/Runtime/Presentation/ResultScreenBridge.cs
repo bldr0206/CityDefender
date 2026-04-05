@@ -48,6 +48,7 @@ namespace ColorChargeTD.Presentation
             targetView.Bind(
                 navigationService.LastBattleResult,
                 commandRouter.ContinueAfterVictory,
+                commandRouter.RetryLastLevel,
                 commandRouter.RetryLastLevel);
         }
 

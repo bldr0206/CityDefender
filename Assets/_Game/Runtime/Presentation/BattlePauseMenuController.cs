@@ -1,4 +1,5 @@
 using ColorChargeTD.Battle;
+using ColorChargeTD.Core;
 using ColorChargeTD.Product;
 using UnityEngine;
 using Zenject;
@@ -17,6 +18,7 @@ namespace ColorChargeTD.Presentation
         #region Injected
 
         [Inject] private IGameNavigationService navigationService;
+        [Inject] private ILevelSelectionService levelSelectionService;
 
         #endregion
 
@@ -36,7 +38,7 @@ namespace ColorChargeTD.Presentation
                 return;
             }
 
-            view.SetHandlers(OnPauseOpenClicked, OnResumeClicked, OnToMenuClicked);
+            view.SetHandlers(OnPauseOpenClicked, OnResumeClicked, OnRestartLevelClicked, OnToMenuClicked);
         }
 
         private void OnDestroy()
@@ -64,6 +66,27 @@ namespace ColorChargeTD.Presentation
         private void OnResumeClicked()
         {
             Resume();
+        }
+
+        private void OnRestartLevelClicked()
+        {
+            string levelId = levelSelectionService != null ? levelSelectionService.SelectedLevelId : string.Empty;
+            if (string.IsNullOrWhiteSpace(levelId) && levelSession != null)
+            {
+                levelId = levelSession.ActiveLevelId;
+            }
+
+            if (string.IsNullOrWhiteSpace(levelId))
+            {
+                Debug.LogWarning("BattlePauseMenuController: cannot restart, level id is unknown.");
+                return;
+            }
+
+            Time.timeScale = 1f;
+            isPaused = false;
+            view?.SetOverlayVisible(false);
+            levelSelectionService?.SelectLevel(levelId);
+            navigationService?.StartSelectedLevel();
         }
 
         private void OnToMenuClicked()

@@ -52,7 +52,7 @@ namespace ColorChargeTD.Presentation
             {
                 popT += Time.unscaledDeltaTime;
                 float u = Mathf.Clamp01(popT / popDur);
-                float s = Mathf.Lerp(popFromScale, 1f, 1f - (1f - u) * (1f - u));
+                float s = Mathf.Lerp(popFromScale, 1f, EaseOutCubic(u));
                 rt.localScale = Vector3.one * s;
                 yield return null;
             }
@@ -64,7 +64,7 @@ namespace ColorChargeTD.Presentation
             {
                 t += Time.unscaledDeltaTime;
                 float u = Mathf.Clamp01(t / riseDur);
-                float eased = 1f - (1f - u) * (1f - u);
+                float eased = EaseOutQuart(u);
                 rt.anchoredPosition = Vector2.LerpUnclamped(start, end, eased);
                 yield return null;
             }
@@ -87,6 +87,22 @@ namespace ColorChargeTD.Presentation
             }
 
             Destroy(gameObject);
+        }
+
+        #endregion
+
+        #region Easing
+
+        private static float EaseOutCubic(float u)
+        {
+            float v = 1f - u;
+            return 1f - v * v * v;
+        }
+
+        private static float EaseOutQuart(float u)
+        {
+            float v = 1f - u;
+            return 1f - v * v * v * v;
         }
 
         #endregion

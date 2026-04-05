@@ -15,7 +15,7 @@ MonoBehaviour:
   enemyId: enemy-red-fast
   displayName: Red Fast Enemy
   color: 0
-  hitPoints: 3
+  hitPoints: 1
   speed: 2.2
   baseReward: 4
   prefab: {fileID: 3232023951885223497, guid: 0c8676d100bb7ec49b2f34b7994f47a8, type: 3}

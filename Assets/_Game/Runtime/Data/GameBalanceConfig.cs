@@ -5,7 +5,7 @@ namespace ColorChargeTD.Data
     [CreateAssetMenu(menuName = "Color Charge TD/Content/Game Balance", fileName = "GameBalanceConfig")]
     public sealed class GameBalanceConfig : ScriptableObject
     {
-        [SerializeField] private int defaultStartingResource = 125;
+        [SerializeField] private int defaultStartingResource = 100;
         [SerializeField] private int defaultTowerCost = 50;
         [SerializeField] private int defaultTowerCapacity = 3;
         [SerializeField] private float defaultProductionPerSecond = 3f;

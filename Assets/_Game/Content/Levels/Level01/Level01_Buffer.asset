@@ -23,4 +23,4 @@ MonoBehaviour:
   reward:
     softCurrency: 25
     firstCompletionBonus: 10
-  startingResourceOverride: 100
+  startingResourceOverride: -1

@@ -18,6 +18,7 @@ namespace ColorChargeTD.Data
 
         [Header("Presentation")]
         [SerializeField] private GameObject prefab;
+        [SerializeField] [Min(0.01f)] private float visualScale = 1f;
 
         public string EnemyId => enemyId;
         public string DisplayName => string.IsNullOrWhiteSpace(displayName) ? enemyId : displayName;
@@ -26,6 +27,7 @@ namespace ColorChargeTD.Data
         public float Speed => Mathf.Max(0.1f, speed);
         public int BaseReward => Mathf.Max(0, baseReward);
         public GameObject Prefab => prefab;
+        public float VisualScale => Mathf.Max(0.01f, visualScale);
 
         public void ValidateInto(System.Collections.Generic.List<ContentValidationMessage> messages)
         {

@@ -294,18 +294,15 @@ namespace ColorChargeTD.Battle
             EnsureReferences();
             TowerDefinition definition = tower.Definition;
 
-            if (regenRadialFill != null)
+            bool regenHudVisible = tower.Charge < definition.Capacity;
+            if (statusCanvas != null && statusCanvas.gameObject.activeSelf != regenHudVisible)
             {
-                float fill;
-                if (tower.Charge >= definition.Capacity)
-                {
-                    fill = 1f;
-                }
-                else
-                {
-                    fill = Mathf.Clamp01(tower.Charge - Mathf.Floor(tower.Charge));
-                }
+                statusCanvas.gameObject.SetActive(regenHudVisible);
+            }
 
+            if (regenRadialFill != null && regenHudVisible)
+            {
+                float fill = Mathf.Clamp01(tower.Charge - Mathf.Floor(tower.Charge));
                 regenRadialFill.fillAmount = fill;
                 Color c;
                 c.r = regenFillColorRgb.x;

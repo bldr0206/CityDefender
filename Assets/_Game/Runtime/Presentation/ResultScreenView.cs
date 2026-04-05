@@ -19,6 +19,9 @@ namespace ColorChargeTD.Presentation
         private Button primaryButton;
         private Text primaryButtonCaption;
         private Action primaryAction;
+        private GameObject restartLevelRow;
+        private Button restartLevelButton;
+        private Action restartLevelAction;
 
         private void Awake()
         {
@@ -30,6 +33,11 @@ namespace ColorChargeTD.Presentation
             if (primaryButton != null)
             {
                 primaryButton.onClick.RemoveListener(OnPrimaryClicked);
+            }
+
+            if (restartLevelButton != null)
+            {
+                restartLevelButton.onClick.RemoveListener(OnRestartLevelClicked);
             }
         }
 
@@ -101,7 +109,7 @@ namespace ColorChargeTD.Presentation
             cardRt.anchorMin = new Vector2(0.5f, 0.5f);
             cardRt.anchorMax = new Vector2(0.5f, 0.5f);
             cardRt.pivot = new Vector2(0.5f, 0.5f);
-            cardRt.sizeDelta = new Vector2(420f, 260f);
+            cardRt.sizeDelta = new Vector2(420f, 300f);
             Image cardImg = card.GetComponent<Image>();
             cardImg.sprite = GetWhiteSprite();
             cardImg.color = new Color(0.12f, 0.14f, 0.18f, 0.98f);
@@ -144,6 +152,36 @@ namespace ColorChargeTD.Presentation
             primaryButtonCaption.resizeTextForBestFit = false;
             primaryButtonCaption.supportRichText = false;
             ApplyDefaultFont(primaryButtonCaption);
+
+            GameObject restartHost = new GameObject("RestartLevelButton", typeof(RectTransform), typeof(LayoutElement), typeof(Image), typeof(Button));
+            restartHost.transform.SetParent(card.transform, false);
+            restartLevelRow = restartHost;
+            LayoutElement restartLayout = restartHost.GetComponent<LayoutElement>();
+            restartLayout.minHeight = 32f;
+            restartLayout.preferredHeight = 32f;
+            RectTransform restartRt = restartHost.GetComponent<RectTransform>();
+            restartRt.sizeDelta = new Vector2(0f, 32f);
+            Image restartBg = restartHost.GetComponent<Image>();
+            restartBg.sprite = GetWhiteSprite();
+            restartBg.color = new Color(0.2f, 0.22f, 0.28f, 0.95f);
+            restartLevelButton = restartHost.GetComponent<Button>();
+            restartLevelButton.targetGraphic = restartBg;
+            restartLevelButton.onClick.AddListener(OnRestartLevelClicked);
+
+            GameObject restartCaptionGo = new GameObject("Caption", typeof(RectTransform), typeof(Text));
+            restartCaptionGo.transform.SetParent(restartHost.transform, false);
+            RectTransform restartCapRt = restartCaptionGo.GetComponent<RectTransform>();
+            StretchFull(restartCapRt);
+            Text restartCaption = restartCaptionGo.GetComponent<Text>();
+            restartCaption.alignment = TextAnchor.MiddleCenter;
+            restartCaption.color = new Color(0.88f, 0.9f, 0.94f, 1f);
+            restartCaption.fontSize = 14;
+            restartCaption.fontStyle = FontStyle.Normal;
+            restartCaption.resizeTextForBestFit = false;
+            restartCaption.supportRichText = false;
+            restartCaption.text = "Restart level";
+            ApplyDefaultFont(restartCaption);
+            restartLevelRow.SetActive(false);
         }
 
         private static Text CreateTextLine(Transform parent, string name, int fontSize, FontStyle style, TextAnchor alignment)
@@ -184,7 +222,7 @@ namespace ColorChargeTD.Presentation
             }
         }
 
-        public void Bind(BattleResultModel result, Action onVictoryContinue, Action onDefeatRetry)
+        public void Bind(BattleResultModel result, Action onVictoryContinue, Action onDefeatRetry, Action onVictoryRestartLevel)
         {
             EnsureContentHierarchy();
 
@@ -200,6 +238,11 @@ namespace ColorChargeTD.Presentation
                 bool hasNext = !string.IsNullOrWhiteSpace(result.NextLevelId);
                 primaryButtonCaption.text = hasNext ? "Continue" : "Play again";
                 primaryAction = onVictoryContinue;
+                restartLevelAction = onVictoryRestartLevel;
+                if (restartLevelRow != null)
+                {
+                    restartLevelRow.SetActive(true);
+                }
             }
             else
             {
@@ -207,6 +250,11 @@ namespace ColorChargeTD.Presentation
                 detailText.text = "Your city took too much damage.";
                 primaryButtonCaption.text = "Retry";
                 primaryAction = onDefeatRetry;
+                restartLevelAction = null;
+                if (restartLevelRow != null)
+                {
+                    restartLevelRow.SetActive(false);
+                }
             }
         }
 
@@ -217,6 +265,11 @@ namespace ColorChargeTD.Presentation
         private void OnPrimaryClicked()
         {
             primaryAction?.Invoke();
+        }
+
+        private void OnRestartLevelClicked()
+        {
+            restartLevelAction?.Invoke();
         }
 
         #endregion

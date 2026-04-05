@@ -162,6 +162,9 @@ namespace ColorChargeTD.Battle
                         new Vector3(0.5f, 0.5f, 0.5f),
                         new Color(0.85f, 0.3f, 0.3f, 1f));
 
+                    float visualScale = enemy.Definition.VisualScale;
+                    enemyView.transform.localScale = enemyView.transform.localScale * visualScale;
+
                     enemyViews[enemy] = enemyView;
                 }
 

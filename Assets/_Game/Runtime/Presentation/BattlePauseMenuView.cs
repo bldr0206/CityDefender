@@ -11,9 +11,11 @@ namespace ColorChargeTD.Presentation
         [SerializeField] private Button pauseToggleButton;
         [SerializeField] private GameObject overlayRoot;
         [SerializeField] private Button resumeButton;
+        [SerializeField] private Button restartLevelButton;
         [SerializeField] private Button toMenuButton;
         [SerializeField] private Text pauseButtonLabel;
         [SerializeField] private Text resumeButtonLabel;
+        [SerializeField] private Text restartLevelButtonLabel;
         [SerializeField] private Text toMenuButtonLabel;
 
         #endregion
@@ -22,6 +24,7 @@ namespace ColorChargeTD.Presentation
 
         private Action onPauseOpen;
         private Action onResume;
+        private Action onRestartLevel;
         private Action onToMenu;
 
         #endregion
@@ -40,6 +43,11 @@ namespace ColorChargeTD.Presentation
             if (resumeButton != null)
             {
                 resumeButton.onClick.AddListener(() => onResume?.Invoke());
+            }
+
+            if (restartLevelButton != null)
+            {
+                restartLevelButton.onClick.AddListener(() => onRestartLevel?.Invoke());
             }
 
             if (toMenuButton != null)
@@ -62,6 +70,11 @@ namespace ColorChargeTD.Presentation
                 resumeButton.onClick.RemoveAllListeners();
             }
 
+            if (restartLevelButton != null)
+            {
+                restartLevelButton.onClick.RemoveAllListeners();
+            }
+
             if (toMenuButton != null)
             {
                 toMenuButton.onClick.RemoveAllListeners();
@@ -72,10 +85,11 @@ namespace ColorChargeTD.Presentation
 
         #region PublicAPI
 
-        public void SetHandlers(Action pauseOpen, Action resume, Action toMenu)
+        public void SetHandlers(Action pauseOpen, Action resume, Action restartLevel, Action toMenu)
         {
             onPauseOpen = pauseOpen;
             onResume = resume;
+            onRestartLevel = restartLevel;
             onToMenu = toMenu;
         }
 
@@ -109,6 +123,11 @@ namespace ColorChargeTD.Presentation
             if (resumeButtonLabel != null)
             {
                 resumeButtonLabel.text = "Resume";
+            }
+
+            if (restartLevelButtonLabel != null)
+            {
+                restartLevelButtonLabel.text = "Restart level";
             }
 
             if (toMenuButtonLabel != null)
