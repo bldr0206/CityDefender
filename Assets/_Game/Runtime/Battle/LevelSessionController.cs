@@ -548,32 +548,30 @@ namespace ColorChargeTD.Battle
                 bool empty = !session.IsSlotOccupied(handle.SlotId);
                 int minCost = GetMinimumBuildCostForSlot(slot);
                 bool hasBuildOptions = minCost < int.MaxValue;
-                bool showPlusForBuild = empty && hasBuildOptions;
+                bool canAffordBuild = empty && hasBuildOptions && session.CurrentResource >= minCost;
 
                 bool occupiedTower = !empty && slot.Kind == BuildSlotKind.Tower;
                 TowerRuntimeModel towerOnSlot = occupiedTower ? FindTowerBySlotId(handle.SlotId) : null;
 
-                bool showPlusForUpgrade = false;
-                int upgradeCost = int.MaxValue;
+                bool upgradeAvailable = false;
+                int upgradeCost = 0;
                 GameBalanceConfig balance = contentService != null ? contentService.BalanceConfig : null;
                 if (towerOnSlot != null && balance != null
                     && towerOnSlot.CanApplyDamageUpgrade(balance.TowerDamageUpgradeMaxLevel))
                 {
-                    showPlusForUpgrade = true;
+                    upgradeAvailable = true;
                     upgradeCost = balance.TowerDamageUpgradeCost;
                 }
 
-                bool showPlus = showPlusForBuild || showPlusForUpgrade;
-                bool raycastEnabled = (empty && hasBuildOptions) || towerOnSlot != null;
+                bool canAffordUpgrade = upgradeAvailable && session.CurrentResource >= upgradeCost;
 
+                bool showPlus = canAffordBuild || canAffordUpgrade;
                 handle.SetPlusVisible(showPlus);
-                handle.SetSlotRaycastEnabled(raycastEnabled);
+                handle.SetSlotRaycastEnabled(showPlus);
 
                 if (showPlus)
                 {
-                    bool affordable = showPlusForBuild && session.CurrentResource >= minCost
-                        || showPlusForUpgrade && session.CurrentResource >= upgradeCost;
-                    handle.SetAffordableVisual(affordable);
+                    handle.SetAffordableVisual(true);
                 }
             }
         }

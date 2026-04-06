@@ -13,7 +13,7 @@ GameObject:
   - component: {fileID: 3161242777201176196}
   - component: {fileID: 8033521078285883658}
   - component: {fileID: 1172602749875972587}
-  m_Layer: 0
+  m_Layer: 5
   m_Name: BuildSlotPlusVisual
   m_TagString: Untagged
   m_Icon: {fileID: 0}

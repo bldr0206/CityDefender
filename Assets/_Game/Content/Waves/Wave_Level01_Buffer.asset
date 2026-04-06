@@ -16,16 +16,16 @@ MonoBehaviour:
   - enemy: {fileID: 11400000, guid: 504252b760217bf4db4290dfbf59768e, type: 2}
     pathId: path-main
     count: 5
-    startDelay: 1
-    spawnInterval: 1
+    startDelay: 1.25
+    spawnInterval: 3
   - enemy: {fileID: 11400000, guid: 504252b760217bf4db4290dfbf59768e, type: 2}
     pathId: path-main
     count: 5
-    startDelay: 0.9
-    spawnInterval: 1
+    startDelay: 1.25
+    spawnInterval: 2.5
   - enemy: {fileID: 11400000, guid: 504252b760217bf4db4290dfbf59768e, type: 2}
     pathId: path-main
-    count: 6
+    count: 8
     startDelay: 0.85
     spawnInterval: 1
   - enemy: {fileID: 11400000, guid: 504252b760217bf4db4290dfbf59768e, type: 2}

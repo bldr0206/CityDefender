@@ -18,4 +18,4 @@ MonoBehaviour:
   prefab: {fileID: 3441796745536095077, guid: 7bac84169cfa21e4f938f19d62149f98, type: 3}
   requiresPlacedTower: 1
   incomeAmount: 1
-  incomePeriodSeconds: 2
+  incomePeriodSeconds: 1
