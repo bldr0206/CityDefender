@@ -16,6 +16,8 @@ MonoBehaviour:
     keys:
     - f9a7a4fd582493d47a69f93c9885ca46
     - d33973f99e198c24ca30ae73d44bcdfc
+    - 4462a5616b57deb4fb6a22da943ec0e3
+    - b641acb63c0a5f24d958d31caeb94359
     values:
     - goDatas_byGlobalId:
         keys:
@@ -126,6 +128,32 @@ MonoBehaviour:
         values:
         - colorIndex: 0
           iconNameOrGuid: Canvas Icon
+          isIconRecursive: 0
+          isColorRecursive: 0
+    - goDatas_byGlobalId:
+        keys:
+        - globalObjectIdString: GlobalObjectId_V1-2-4462a5616b57deb4fb6a22da943ec0e3-2122033575-0
+        values:
+        - colorIndex: 5
+          iconNameOrGuid: 
+          isIconRecursive: 0
+          isColorRecursive: 0
+    - goDatas_byGlobalId:
+        keys:
+        - globalObjectIdString: GlobalObjectId_V1-2-b641acb63c0a5f24d958d31caeb94359-2122033575-0
+        - globalObjectIdString: GlobalObjectId_V1-2-b641acb63c0a5f24d958d31caeb94359-1962002123-0
+        - globalObjectIdString: GlobalObjectId_V1-2-b641acb63c0a5f24d958d31caeb94359-887711041-0
+        values:
+        - colorIndex: 5
+          iconNameOrGuid: 
+          isIconRecursive: 0
+          isColorRecursive: 0
+        - colorIndex: 7
+          iconNameOrGuid: Canvas Icon
+          isIconRecursive: 0
+          isColorRecursive: 0
+        - colorIndex: 3
+          iconNameOrGuid: 
           isIconRecursive: 0
           isColorRecursive: 0
   bookmarks: []

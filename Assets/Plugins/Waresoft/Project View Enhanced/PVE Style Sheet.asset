@@ -133,3 +133,18 @@ MonoBehaviour:
     backgroundColour: {r: 0.937, g: 0.937, b: 0.937, a: 0.25}
     visibleInInspector: 1
     styleFilteredInInspector: 0
+  - mInitialised: 0
+    matchMethod: 2
+    matchValue: b55eef8115ed6d042b78d8690370fd9e
+    priority: 0
+    recursive: 1
+    overrideIcon: 1
+    iconName: Colour - Forest Green
+    overrideLabel: 1
+    labelColour: {r: 0.44308484, g: 1.1427376, b: 0.47607088, a: 1}
+    labelStyle: 1
+    overrideBackground: 1
+    backgroundName: Flat
+    backgroundColour: {r: 0, g: 0.09433961, b: 0.004579593, a: 0.25}
+    visibleInInspector: 1
+    styleFilteredInInspector: 0

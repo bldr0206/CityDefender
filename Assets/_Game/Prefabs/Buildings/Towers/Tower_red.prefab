@@ -236,7 +236,6 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 9199875146451713415}
-  - component: {fileID: 7345617829134567890}
   m_Layer: 0
   m_Name: Tower_red
   m_TagString: Untagged
@@ -261,28 +260,6 @@ Transform:
   - {fileID: 4414233313994313689}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &7345617829134567890
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 3327984129578387851}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: f4e3d2c1b0a9788695a4b3c2d1e0f9a8, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: ColorChargeTD.Battle.TowerWorldPresenter, ColorChargeTD.Runtime
-  turretYawRoot: {fileID: 8649686791880249895}
-  muzzlePoint: {fileID: 9123456789012333002}
-  statusCanvas: {fileID: 0}
-  magazineSlotsRoot: {fileID: 4414233313994313689}
-  regenRadialHudPrefab: {fileID: 8811010101010100001, guid: 710437a3d63ae3d47bc431a6d44bd6a6, type: 3}
-  regenRadialFill: {fileID: 0}
-  regenHudAnchor: {fileID: 0}
-  regenHudLocalOffset: {x: 0.9, y: 1.5, z: 0}
-  regenHudPixelSize: 112
-  regenHudWorldScale: 0.007
 --- !u!1 &4153177421467751589
 GameObject:
   m_ObjectHideFlags: 0

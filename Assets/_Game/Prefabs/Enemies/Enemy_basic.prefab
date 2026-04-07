@@ -96,8 +96,6 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 2136888598812150406}
-  - component: {fileID: 4829103847562019384}
-  - component: {fileID: 7722334455667788990}
   m_Layer: 0
   m_Name: Enemy_basic
   m_TagString: Untagged
@@ -121,41 +119,6 @@ Transform:
   - {fileID: 7138987539446209359}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &4829103847562019384
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 3232023951885223497}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: e1f2a3b4c5d647899001122334455667, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  visualRoot: {fileID: 7138987539446209359}
-  profile: {fileID: 11400000, guid: d4e5f60718294a3cb91d0e2f3a4b5c8e, type: 2}
-  animator: {fileID: 0}
---- !u!114 &7722334455667788990
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 3232023951885223497}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 7c8d9e0f1a2b3c4d5e6f708192a3b4c5, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: ColorChargeTD.Battle.EnemyHealthWorldBar, ColorChargeTD.Runtime
-  localOffset: {x: 0, y: 0.65, z: 0}
-  worldBarSize: {x: 0.75, y: 0.07}
-  canvasUniformScale: 0.01
-  backgroundColor: {r: 0.12, g: 0.12, b: 0.14, a: 0.92}
-  fillColor: {r: 0.35, g: 0.85, b: 0.4, a: 1}
-  barRoot: {fileID: 0}
-  backgroundImage: {fileID: 0}
-  fillImage: {fileID: 0}
 --- !u!1 &3733976701883247389
 GameObject:
   m_ObjectHideFlags: 0
