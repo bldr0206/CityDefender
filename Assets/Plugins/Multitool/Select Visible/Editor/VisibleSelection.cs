@@ -1172,7 +1172,7 @@ namespace Multitool.SelectVisible
                     Bounds? prefabBounds = CalculatePrefabBounds(prefabRoot);
                     if (prefabBounds.HasValue)
                     {
-                        Rect? prefabRect = DrawPrefabBoundsSquare(prefabBounds.Value, sceneView);
+                        Rect? prefabRect = DrawPrefabBoundsOutline(prefabBounds.Value, sceneView);
                         if (prefabRect.HasValue)
                         {
                             screenRect = prefabRect;
@@ -1228,7 +1228,7 @@ namespace Multitool.SelectVisible
             }
         }
 
-#region Outline Geometry
+        #region Outline Geometry
 
         private static Rect? DrawRendererOutline(Renderer renderer, SceneView sceneView)
         {
@@ -1422,7 +1422,7 @@ namespace Multitool.SelectVisible
             return new Rect(minX, minY, maxX - minX, maxY - minY);
         }
 
-#endregion
+        #endregion
 
         private static Rect? DrawBoundsSquare(Bounds bounds, SceneView sceneView)
         {
@@ -1570,79 +1570,28 @@ namespace Multitool.SelectVisible
             return hasBounds ? bounds : (Bounds?)null;
         }
 
-        private static Rect? DrawPrefabBoundsSquare(Bounds bounds, SceneView sceneView)
+        private static Rect? DrawPrefabBoundsOutline(Bounds bounds, SceneView sceneView)
         {
-            if (sceneView == null || sceneView.camera == null)
-                return null;
-
-            Camera cam = sceneView.camera;
-
-            // Получаем все 8 углов bounds
-            Vector3 center = bounds.center;
-            Vector3 extents = bounds.extents;
-            Vector3[] worldCorners = new Vector3[8]
-            {
-                center + new Vector3(-extents.x, -extents.y, -extents.z),
-                center + new Vector3( extents.x, -extents.y, -extents.z),
-                center + new Vector3( extents.x,  extents.y, -extents.z),
-                center + new Vector3(-extents.x,  extents.y, -extents.z),
-                center + new Vector3(-extents.x, -extents.y,  extents.z),
-                center + new Vector3( extents.x, -extents.y,  extents.z),
-                center + new Vector3( extents.x,  extents.y,  extents.z),
-                center + new Vector3(-extents.x,  extents.y,  extents.z)
-            };
-
-            // Проецируем все углы в экранные координаты
-            float minX = float.MaxValue, minY = float.MaxValue;
-            float maxX = float.MinValue, maxY = float.MinValue;
-            bool hasVisiblePoints = false;
-
-            foreach (Vector3 worldCorner in worldCorners)
-            {
-                Vector3 screenPos = cam.WorldToScreenPoint(worldCorner);
-
-                // Пропускаем точки за камерой
-                if (screenPos.z < 0)
-                    continue;
-
-                // Конвертируем в GUI координаты SceneView
-                Vector2 guiPos = HandleUtility.WorldToGUIPoint(worldCorner);
-
-                if (guiPos.x < minX) minX = guiPos.x;
-                if (guiPos.x > maxX) maxX = guiPos.x;
-                if (guiPos.y < minY) minY = guiPos.y;
-                if (guiPos.y > maxY) maxY = guiPos.y;
-                hasVisiblePoints = true;
-            }
-
-            if (!hasVisiblePoints)
-                return null;
-
-            // Рисуем прямоугольник в экранном пространстве без перспективных искажений
-            Handles.BeginGUI();
-
-            Rect rect = new Rect(minX, minY, maxX - minX, maxY - minY);
-
             float a = BoundsOutlineAlpha();
-            Color outlineColor = new Color(0.2f, 0.85f, 1f, a);
-            Color shadowColor = new Color(0f, 0f, 0f, 0.25f * a);
-            const float thickness = 1f;
-            const float shadowOffset = 1f;
+            Color prevColor = Handles.color;
+            Handles.color = new Color(0.2f, 0.85f, 1f, a);
 
-            Rect shadowRect = new Rect(rect.xMin + shadowOffset, rect.yMin + shadowOffset, rect.width, rect.height);
-            EditorGUI.DrawRect(new Rect(shadowRect.xMin, shadowRect.yMin, shadowRect.width, thickness), shadowColor); // верх
-            EditorGUI.DrawRect(new Rect(shadowRect.xMin, shadowRect.yMax - thickness, shadowRect.width, thickness), shadowColor); // низ
-            EditorGUI.DrawRect(new Rect(shadowRect.xMin, shadowRect.yMin, thickness, shadowRect.height), shadowColor); // лево
-            EditorGUI.DrawRect(new Rect(shadowRect.xMax - thickness, shadowRect.yMin, thickness, shadowRect.height), shadowColor); // право
+            try
+            {
+                if (TryGetFlatFrameWorldCorners(bounds, Matrix4x4.identity, out Vector3[] flatFrameCorners))
+                {
+                    DrawWireQuad(flatFrameCorners);
+                    return CalculateScreenRect(flatFrameCorners, sceneView);
+                }
 
-            EditorGUI.DrawRect(new Rect(rect.xMin, rect.yMin, rect.width, thickness), outlineColor); // верх
-            EditorGUI.DrawRect(new Rect(rect.xMin, rect.yMax - thickness, rect.width, thickness), outlineColor); // низ
-            EditorGUI.DrawRect(new Rect(rect.xMin, rect.yMin, thickness, rect.height), outlineColor); // лево
-            EditorGUI.DrawRect(new Rect(rect.xMax - thickness, rect.yMin, thickness, rect.height), outlineColor); // право
-
-            Handles.EndGUI();
-
-            return rect;
+                Vector3[] worldCorners = GetWorldBoundsCorners(bounds, Matrix4x4.identity);
+                DrawWireBounds(worldCorners);
+                return CalculateScreenRect(worldCorners, sceneView);
+            }
+            finally
+            {
+                Handles.color = prevColor;
+            }
         }
 
         private static void DrawTextInScreenSpace(string text, Rect screenRect, Color textColor)
@@ -1701,7 +1650,7 @@ namespace Multitool.SelectVisible
 
     }
 
-    [Overlay(typeof(SceneView), "", true)]
+    [Overlay(typeof(SceneView), "\u200B", true)]
     public class VisibleSelectionOverlay : IMGUIOverlay, ITransientOverlay
     {
         private const float Padding = 1f;
@@ -1721,10 +1670,7 @@ namespace Multitool.SelectVisible
             bool expanded = VisibleSelection.OverlayExpanded;
             float panelHeight = expanded ? PanelHeightExpanded : PanelHeightCollapsed;
 
-            Rect panelRect = GUILayoutUtility.GetRect(PanelWidth, panelHeight, GUILayout.Width(PanelWidth), GUILayout.Height(panelHeight));
-            EditorGUI.DrawRect(panelRect, new Color(0f, 0f, 0f, 0.85f));
-
-            GUILayout.BeginArea(new Rect(panelRect.x + Padding, panelRect.y + Padding, panelRect.width - Padding * 2, panelRect.height - Padding * 2));
+            GUILayout.BeginVertical(GUILayout.Width(PanelWidth), GUILayout.Height(panelHeight));
 
             if (_labelStyle == null)
             {
@@ -1820,7 +1766,7 @@ namespace Multitool.SelectVisible
                 }
             }
 
-            GUILayout.EndArea();
+            GUILayout.EndVertical();
         }
     }
 }

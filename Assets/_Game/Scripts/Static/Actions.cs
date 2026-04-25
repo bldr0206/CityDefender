@@ -1,0 +1,38 @@
+// Этот скрипт вызывает события из игры, к нему обращаемся чтобы вызвать какое либо событие. 
+// На него подписываемся чтобы слушать события
+
+
+using UnityEngine;
+using UnityEngine.Events;
+
+public static class Actions
+{
+    static string debugColor = "#3aa6ff";
+
+    #region Actions:
+
+    // GAME
+    public static UnityAction OnLevelStarted;
+    public static void LevelStarted()
+    {
+        Debug.Log($"<color={debugColor}>LevelStarted</color>");
+        OnLevelStarted?.Invoke();
+    }
+
+    public static UnityAction OnLevelFinished;
+    public static void LevelFinished()
+    {
+        Debug.Log($"<color={debugColor}>LevelFinished</color>");
+        OnLevelFinished?.Invoke();
+    }
+
+    // UI
+    public static UnityAction OnNextLevelButtonPressed;
+    public static void NextLevelButtonPressed()
+    {
+        Debug.Log($"<color={debugColor}>NextLevelButtonPressed</color>");
+        OnNextLevelButtonPressed?.Invoke();
+    }
+
+    #endregion
+}

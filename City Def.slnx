@@ -1,14 +1,21 @@
 ﻿<Solution>
-  <Project Path="Febucci.TextAnimator.Runtime.csproj" />
-  <Project Path="ColorChargeTD.Runtime.csproj" />
-  <Project Path="Febucci.TextAnimator.Editor.csproj" />
-  <Project Path="Febucci.Attributes.Editor.csproj" />
-  <Project Path="Assembly-CSharp-firstpass.csproj" />
-  <Project Path="Assembly-CSharp-Editor.csproj" />
-  <Project Path="Febucci.TextAnimator.TMP.Runtime.csproj" />
-  <Project Path="Assembly-CSharp-Editor-firstpass.csproj" />
-  <Project Path="Febucci.TextAnimator.Demo.Runtime.csproj" />
-  <Project Path="Febucci.Attributes.Runtime.csproj" />
-  <Project Path="ColorChargeTD.Editor.csproj" />
+  <Project Path="Zenject.csproj" />
+  <Project Path="Zenject-IntegrationTests-Editor.csproj" />
   <Project Path="Assembly-CSharp.csproj" />
+  <Project Path="VHierarchy.csproj" />
+  <Project Path="Zenject-ReflectionBaking-Editor.csproj" />
+  <Project Path="Zenject-UnitTests-Editor.csproj" />
+  <Project Path="Zenject-Editor.csproj" />
+  <Project Path="Zenject-IntegrationTests.csproj" />
+  <Project Path="Febucci.TextAnimator.Runtime.csproj" />
+  <Project Path="Febucci.TextAnimator.Editor.csproj" />
+  <Project Path="Zenject-TestFramework.csproj" />
+  <Project Path="Assembly-CSharp-Editor.csproj" />
+  <Project Path="Assembly-CSharp-firstpass.csproj" />
+  <Project Path="Assembly-CSharp-Editor-firstpass.csproj" />
+  <Project Path="Febucci.TextAnimator.TMP.Runtime.csproj" />
+  <Project Path="Febucci.Attributes.Editor.csproj" />
+  <Project Path="Zenject-PoolMonitor-Editor.csproj" />
+  <Project Path="Febucci.Attributes.Runtime.csproj" />
+  <Project Path="Febucci.TextAnimator.Demo.Runtime.csproj" />
 </Solution>

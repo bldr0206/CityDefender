@@ -143,6 +143,16 @@ MonoBehaviour:
         - globalObjectIdString: GlobalObjectId_V1-2-b641acb63c0a5f24d958d31caeb94359-2122033575-0
         - globalObjectIdString: GlobalObjectId_V1-2-b641acb63c0a5f24d958d31caeb94359-1962002123-0
         - globalObjectIdString: GlobalObjectId_V1-2-b641acb63c0a5f24d958d31caeb94359-887711041-0
+        - globalObjectIdString: GlobalObjectId_V1-2-b641acb63c0a5f24d958d31caeb94359-1699902810-0
+        - globalObjectIdString: GlobalObjectId_V1-2-b641acb63c0a5f24d958d31caeb94359-1024666452-0
+        - globalObjectIdString: GlobalObjectId_V1-2-b641acb63c0a5f24d958d31caeb94359-1572060501-0
+        - globalObjectIdString: GlobalObjectId_V1-2-b641acb63c0a5f24d958d31caeb94359-1838548168-0
+        - globalObjectIdString: GlobalObjectId_V1-2-b641acb63c0a5f24d958d31caeb94359-1616762818-0
+        - globalObjectIdString: GlobalObjectId_V1-2-b641acb63c0a5f24d958d31caeb94359-1759460790-0
+        - globalObjectIdString: GlobalObjectId_V1-2-b641acb63c0a5f24d958d31caeb94359-1733407758-0
+        - globalObjectIdString: GlobalObjectId_V1-2-b641acb63c0a5f24d958d31caeb94359-1138559915-0
+        - globalObjectIdString: GlobalObjectId_V1-2-b641acb63c0a5f24d958d31caeb94359-1375900380-0
+        - globalObjectIdString: GlobalObjectId_V1-2-b641acb63c0a5f24d958d31caeb94359-500524700-0
         values:
         - colorIndex: 5
           iconNameOrGuid: 
@@ -154,6 +164,46 @@ MonoBehaviour:
           isColorRecursive: 0
         - colorIndex: 3
           iconNameOrGuid: 
+          isIconRecursive: 0
+          isColorRecursive: 0
+        - colorIndex: 7
+          iconNameOrGuid: Folder Icon
+          isIconRecursive: 0
+          isColorRecursive: 0
+        - colorIndex: 7
+          iconNameOrGuid: Folder Icon
+          isIconRecursive: 0
+          isColorRecursive: 0
+        - colorIndex: 5
+          iconNameOrGuid: 
+          isIconRecursive: 0
+          isColorRecursive: 0
+        - colorIndex: 9
+          iconNameOrGuid: 
+          isIconRecursive: 0
+          isColorRecursive: 0
+        - colorIndex: 1
+          iconNameOrGuid: 
+          isIconRecursive: 0
+          isColorRecursive: 0
+        - colorIndex: 6
+          iconNameOrGuid: Camera Icon
+          isIconRecursive: 0
+          isColorRecursive: 0
+        - colorIndex: 0
+          iconNameOrGuid: Camera Icon
+          isIconRecursive: 0
+          isColorRecursive: 0
+        - colorIndex: 6
+          iconNameOrGuid: Camera Icon
+          isIconRecursive: 0
+          isColorRecursive: 0
+        - colorIndex: 7
+          iconNameOrGuid: Canvas Icon
+          isIconRecursive: 1
+          isColorRecursive: 0
+        - colorIndex: 7
+          iconNameOrGuid: Folder Icon
           isIconRecursive: 0
           isColorRecursive: 0
   bookmarks: []
