@@ -1,3 +1,4 @@
+using System;
 using UnityEngine;
 using Zenject;
 public class PlayerController : MonoBehaviour
@@ -16,6 +17,8 @@ public class PlayerController : MonoBehaviour
     private Transform _aimTransform;
     private Vector3 _aimVelocity;
 
+    private bool _canMove = true;
+
     [Inject]
     public void Construct(Joystick moveJoystick)
     {
@@ -23,23 +26,31 @@ public class PlayerController : MonoBehaviour
     }
     private void Awake()
     {
+        Actions.OnPlayerReachedFinish += () => _canMove = false;
+
         _rigidbody = GetComponent<Rigidbody>();
         _playerModelTransform = _playerModel.transform;
         _aimTransform = _aimObject.transform;
     }
+    private void OnDestroy()
+    {
+        Actions.OnPlayerReachedFinish -= () => _canMove = false;
+    }
     private void FixedUpdate()
     {
+        MovementLogic();
+    }
+    void MovementLogic()
+    {
+        if (!_canMove) return;
         Vector2 input = _moveJoystick.Direction;
         Vector3 move = new Vector3(input.x, 0f, input.y);
         _rigidbody.MovePosition(_rigidbody.position + move * speed * Time.fixedDeltaTime);
-
-        // rotate Y axis in the direction of movement
-        if (move.sqrMagnitude > 0f)
+        if (move.sqrMagnitude > 0f)// rotate Y axis in the direction of movement
         {
             Quaternion targetRotation = Quaternion.LookRotation(move);
             _playerModelTransform.rotation = Quaternion.Slerp(_playerModelTransform.rotation, targetRotation, Time.fixedDeltaTime * 10f);
         }
-
         // Always update aim: with no input it smoothly returns to the minimum distance.
         float inputStrength = Mathf.Clamp01(move.magnitude);
         float distance = Mathf.Lerp(aimObjectMinDistance, aimObjectMaxDistance, inputStrength);
@@ -52,6 +63,5 @@ public class PlayerController : MonoBehaviour
             Mathf.Infinity,
             Time.fixedDeltaTime
         );
-
     }
 }

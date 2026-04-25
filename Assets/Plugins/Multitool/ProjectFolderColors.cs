@@ -298,7 +298,7 @@ namespace Multitool.ProjectFolderColors
             return background;
         }
 
-        private static bool IsWhiteColor(Color color)
+        internal static bool IsWhiteColor(Color color)
         {
             return color.r > 0.98f && color.g > 0.98f && color.b > 0.98f;
         }

@@ -39,7 +39,7 @@ public class LevelSceneLogic : MonoBehaviour
         // КОГДА ВЫПОЛНИЛИ КВЕСТ
         Debug.Log($"<color={DebugColor}>Level finished!</color>");
         // show win screen, give rewards, etc.
-        Actions.LevelFinished();
+
     }
 
     // LIFE CYCLE
@@ -50,9 +50,11 @@ public class LevelSceneLogic : MonoBehaviour
     private void Awake()
     {
         Actions.OnNextLevelButtonPressed += LoadNextLevel;
+        Actions.OnPlayerReachedFinish += LevelFinished;
     }
-    private void OnDestroy()
+    private void OnDisable()
     {
         Actions.OnNextLevelButtonPressed -= LoadNextLevel;
+        Actions.OnPlayerReachedFinish -= LevelFinished;
     }
 }

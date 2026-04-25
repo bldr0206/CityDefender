@@ -19,11 +19,11 @@ public static class Actions
         OnLevelStarted?.Invoke();
     }
 
-    public static UnityAction OnLevelFinished;
-    public static void LevelFinished()
+    public static UnityAction OnPlayerReachedFinish;
+    public static void PlayerReachedFinish()
     {
-        Debug.Log($"<color={debugColor}>LevelFinished</color>");
-        OnLevelFinished?.Invoke();
+        Debug.Log($"<color={debugColor}>PlayerReachedFinish</color>");
+        OnPlayerReachedFinish?.Invoke();
     }
 
     // UI
