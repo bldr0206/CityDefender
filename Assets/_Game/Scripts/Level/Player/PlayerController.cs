@@ -18,6 +18,8 @@ public class PlayerController : MonoBehaviour
     private Vector3 _aimVelocity;
 
     private bool _canMove = true;
+    private bool _ignoreInputUntilReleased;
+    private const float InputReleaseEpsilonSqr = 0.0004f; // (~0.02)^2
 
     [Inject]
     public void Construct(Joystick moveJoystick)
@@ -26,7 +28,8 @@ public class PlayerController : MonoBehaviour
     }
     private void Awake()
     {
-        Actions.OnPlayerReachedFinish += () => _canMove = false;
+        Actions.OnPlayerReachedFinish += HandlePlayerReachedFinish;
+        Actions.OnLevelStarted += HandleLevelStarted;
 
         _rigidbody = GetComponent<Rigidbody>();
         _playerModelTransform = _playerModel.transform;
@@ -34,7 +37,8 @@ public class PlayerController : MonoBehaviour
     }
     private void OnDestroy()
     {
-        Actions.OnPlayerReachedFinish -= () => _canMove = false;
+        Actions.OnPlayerReachedFinish -= HandlePlayerReachedFinish;
+        Actions.OnLevelStarted -= HandleLevelStarted;
     }
     private void FixedUpdate()
     {
@@ -42,8 +46,19 @@ public class PlayerController : MonoBehaviour
     }
     void MovementLogic()
     {
-        if (!_canMove) return;
+        if (!_canMove)
+        {
+            return;
+        }
+
         Vector2 input = _moveJoystick.Direction;
+        if (_ignoreInputUntilReleased)
+        {
+            if (input.sqrMagnitude > InputReleaseEpsilonSqr)
+                return;
+
+            _ignoreInputUntilReleased = false;
+        }
         Vector3 move = new Vector3(input.x, 0f, input.y);
         _rigidbody.MovePosition(_rigidbody.position + move * speed * Time.fixedDeltaTime);
         if (move.sqrMagnitude > 0f)// rotate Y axis in the direction of movement
@@ -63,5 +78,30 @@ public class PlayerController : MonoBehaviour
             Mathf.Infinity,
             Time.fixedDeltaTime
         );
+    }
+
+    private void HandlePlayerReachedFinish()
+    {
+        _canMove = false;
+        _ignoreInputUntilReleased = true;
+        StopMotionImmediately();
+    }
+
+    private void HandleLevelStarted()
+    {
+        _canMove = true;
+        _ignoreInputUntilReleased = true;
+        StopMotionImmediately();
+    }
+
+    private void StopMotionImmediately()
+    {
+        if (_rigidbody != null)
+        {
+            _rigidbody.linearVelocity = Vector3.zero;
+            _rigidbody.angularVelocity = Vector3.zero;
+        }
+
+        _aimVelocity = Vector3.zero;
     }
 }

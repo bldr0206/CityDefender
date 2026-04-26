@@ -8,7 +8,7 @@ public class PlayerTriggersChecker : MonoBehaviour
         if (other.CompareTag("Finish"))
         {
             Debug.Log("Player reached the finish!");
-            Actions.OnPlayerReachedFinish?.Invoke();
+            Actions.PlayerReachedFinish();
         }
     }
 }

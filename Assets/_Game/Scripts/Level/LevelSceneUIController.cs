@@ -1,10 +1,21 @@
 using UnityEngine;
 using UnityEngine.UI;
+using Zenject;
+using System.Collections;
+using System.Runtime.InteropServices;
 
 public class LevelSceneUIController : MonoBehaviour
 {
     [SerializeField] private GameObject gameHudRoot;
+    [SerializeField] private GameObject winScreenRoot;
     [SerializeField] private Button nextLevelButton;
+    GameUISettings _gameSettings;
+
+    [Inject]
+    public void Construct(GameUISettings gameSettings)
+    {
+        _gameSettings = gameSettings;
+    }
 
     // LIFE CYCLE
     void Awake()
@@ -15,9 +26,10 @@ public class LevelSceneUIController : MonoBehaviour
 
 
 
-    public void InitUI()
+    public void LevelStarted()
     {
         ShowGameHud();
+        HideWinscreen();
     }
     public void ShowGameHud()
     {
@@ -29,9 +41,29 @@ public class LevelSceneUIController : MonoBehaviour
         if (gameHudRoot != null)
             gameHudRoot.SetActive(false);
     }
+    public void HideWinscreen()
+    {
+        if (winScreenRoot != null)
+            winScreenRoot.SetActive(false);
+    }
+
+    Coroutine _winScreenCoroutine;
+    public void WinLevel()
+    {
+        HideGameHud();
+        _winScreenCoroutine = StartCoroutine(ShowWinScreenWithDelay(_gameSettings.standardDelay));
+    }
+    IEnumerator ShowWinScreenWithDelay(float delay)
+    {
+        yield return new WaitForSeconds(delay);
+        if (winScreenRoot != null)
+            winScreenRoot.SetActive(true);
+    }
+
     private void OnNextLevelButtonClicked()
     {
         Actions.NextLevelButtonPressed();
     }
+
 
 }

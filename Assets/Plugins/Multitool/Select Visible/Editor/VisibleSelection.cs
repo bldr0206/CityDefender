@@ -162,6 +162,10 @@ namespace Multitool.SelectVisible
         {
             bool newValue = !ShowBounds();
             EditorPrefs.SetBool(PrefKeyShowBounds, newValue);
+            if (newValue && BoundsOutlineAlpha() <= 0.0001f)
+            {
+                SetBoundsOutlineAlpha(DefaultBoundsOutlineAlpha);
+            }
             SyncMenuChecks();
             SceneView.RepaintAll();
         }
@@ -1655,10 +1659,24 @@ namespace Multitool.SelectVisible
     {
         private const float Padding = 1f;
         private const float Spacing = 1f;
-        private const float PanelWidth = 150f;
-        private const float PanelHeightExpanded = 200f;
-        private const float PanelHeightCollapsed = 60f;
+        private const float PanelWidth = 80f;
+        private const float SliderWidth = 78f;
         private static GUIStyle _labelStyle;
+        private static GUIStyle _toggleClippedStyle;
+
+        private static bool ToggleLeftClipped(string label, bool value, float height)
+        {
+            if (_toggleClippedStyle == null)
+            {
+                _toggleClippedStyle = new GUIStyle(EditorStyles.toggle)
+                {
+                    wordWrap = false,
+                    clipping = TextClipping.Clip
+                };
+            }
+
+            return GUILayout.Toggle(value, label, _toggleClippedStyle, GUILayout.Height(height), GUILayout.ExpandWidth(true));
+        }
 
         bool ITransientOverlay.visible => VisibleSelection.OverlayEnabled;
 
@@ -1668,9 +1686,9 @@ namespace Multitool.SelectVisible
                 return;
 
             bool expanded = VisibleSelection.OverlayExpanded;
-            float panelHeight = expanded ? PanelHeightExpanded : PanelHeightCollapsed;
 
-            GUILayout.BeginVertical(GUILayout.Width(PanelWidth), GUILayout.Height(panelHeight));
+            // Let the overlay auto-size vertically to avoid empty space at the bottom.
+            GUILayout.BeginVertical(GUILayout.Width(PanelWidth));
 
             if (_labelStyle == null)
             {
@@ -1707,8 +1725,33 @@ namespace Multitool.SelectVisible
             {
                 GUILayout.Space(Spacing);
 
+                float outlineAlpha = VisibleSelection.BoundsOutlineAlpha();
+                EditorGUI.BeginChangeCheck();
+                // Slider without the numeric value field (more compact).
+                GUILayout.BeginHorizontal();
+                GUILayout.FlexibleSpace();
+                Rect sliderRect = GUILayoutUtility.GetRect(SliderWidth, 14f, GUILayout.Width(SliderWidth));
+                float newOutlineAlpha = GUI.HorizontalSlider(sliderRect, outlineAlpha, 0f, 1f);
+                GUILayout.FlexibleSpace();
+                GUILayout.EndHorizontal();
+                if (EditorGUI.EndChangeCheck())
+                {
+                    bool shouldShowBounds = newOutlineAlpha > 0.0001f;
+                    bool wasShowingBounds = VisibleSelection.ShowBounds();
+
+                    VisibleSelection.SetBoundsOutlineAlpha(newOutlineAlpha);
+                    if (shouldShowBounds != wasShowingBounds)
+                    {
+                        EditorPrefs.SetBool(VisibleSelection.PrefKeyShowBounds, shouldShowBounds);
+                        VisibleSelection.SyncMenuChecks();
+                    }
+                    SceneView.RepaintAll();
+                }
+
+                GUILayout.Space(Spacing);
+
                 bool respectAlpha = VisibleSelection.RespectAlpha();
-                bool newRespectAlpha = EditorGUILayout.ToggleLeft("Respect Alpha", respectAlpha, GUILayout.Height(14f));
+                bool newRespectAlpha = ToggleLeftClipped("Respect Alpha", respectAlpha, 14f);
                 if (newRespectAlpha != respectAlpha)
                 {
                     EditorPrefs.SetBool(VisibleSelection.PrefKeyRespectAlpha, newRespectAlpha);
@@ -1718,7 +1761,7 @@ namespace Multitool.SelectVisible
                 GUILayout.Space(Spacing);
 
                 bool selectPrefabRoot = VisibleSelection.SelectPrefabRoot();
-                bool newSelectPrefabRoot = EditorGUILayout.ToggleLeft("Select Nearest Prefab", selectPrefabRoot, GUILayout.Height(14f));
+                bool newSelectPrefabRoot = ToggleLeftClipped("Select Nearest Prefab", selectPrefabRoot, 14f);
                 if (newSelectPrefabRoot != selectPrefabRoot)
                 {
                     EditorPrefs.SetBool(VisibleSelection.PrefKeySelectPrefabRoot, newSelectPrefabRoot);
@@ -1727,28 +1770,8 @@ namespace Multitool.SelectVisible
 
                 GUILayout.Space(Spacing);
 
-                bool showBounds = VisibleSelection.ShowBounds();
-                bool newShowBounds = EditorGUILayout.ToggleLeft("Show Bounds", showBounds, GUILayout.Height(14f));
-                if (newShowBounds != showBounds)
-                {
-                    EditorPrefs.SetBool(VisibleSelection.PrefKeyShowBounds, newShowBounds);
-                    VisibleSelection.SyncMenuChecks();
-                    SceneView.RepaintAll();
-                }
-
-                float outlineAlpha = VisibleSelection.BoundsOutlineAlpha();
-                EditorGUI.BeginChangeCheck();
-                float newOutlineAlpha = EditorGUILayout.Slider(outlineAlpha, 0f, 1f, GUILayout.Height(14f));
-                if (EditorGUI.EndChangeCheck())
-                {
-                    VisibleSelection.SetBoundsOutlineAlpha(newOutlineAlpha);
-                    SceneView.RepaintAll();
-                }
-
-                GUILayout.Space(Spacing);
-
                 bool showName = VisibleSelection.ShowName();
-                bool newShowName = EditorGUILayout.ToggleLeft("Show Name", showName, GUILayout.Height(14f));
+                bool newShowName = ToggleLeftClipped("Show Name", showName, 14f);
                 if (newShowName != showName)
                 {
                     EditorPrefs.SetBool(VisibleSelection.PrefKeyShowName, newShowName);
@@ -1759,7 +1782,7 @@ namespace Multitool.SelectVisible
                 GUILayout.Space(Spacing);
 
                 bool overlayClipBypass = VisibleSelection.OverlayClipBypassEnabled();
-                bool newOverlayClipBypass = EditorGUILayout.ToggleLeft("Bypass Overlay Clip", overlayClipBypass, GUILayout.Height(14f));
+                bool newOverlayClipBypass = ToggleLeftClipped("Bypass Overlay Clip", overlayClipBypass, 14f);
                 if (newOverlayClipBypass != overlayClipBypass)
                 {
                     EditorPrefs.SetBool(VisibleSelection.PrefKeyOverlayClipBypass, newOverlayClipBypass);
