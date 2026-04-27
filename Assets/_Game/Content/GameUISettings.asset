@@ -13,5 +13,5 @@ MonoBehaviour:
   m_Name: GameUISettings
   m_EditorClassIdentifier: Assembly-CSharp::GameUISettings
   standardDelay: 1
-  shortDelay: 0.5
+  shortDelay: 0.25
   minimalDelay: 0.125

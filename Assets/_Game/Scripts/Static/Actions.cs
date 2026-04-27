@@ -19,6 +19,13 @@ public static class Actions
         OnLevelStarted?.Invoke();
     }
 
+    public static UnityAction<int> OnPlayerMoneyChanged;
+    public static void PlayerMoneyChanged(int currentMoney)
+    {
+        Debug.Log($"<color={debugColor}>PlayerMoneyChanged</color> {currentMoney}");
+        OnPlayerMoneyChanged?.Invoke(currentMoney);
+    }
+
     public static UnityAction OnPlayerReachedFinish;
     public static void PlayerReachedFinish()
     {

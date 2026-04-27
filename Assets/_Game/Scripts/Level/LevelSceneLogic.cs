@@ -11,20 +11,20 @@ public class LevelSceneLogic : MonoBehaviour
     // VARIABLES
     private const string DebugColor = "#ff3aa6";
     private DiContainer _container;
-    private GameObject _currentLevel;
-    private LevelSceneUIController _uiController;
-
     [Inject]
     public void Construct(DiContainer container)
     {
         _container = container;
     }
-
+    private GameObject _currentLevel;
+    private LevelSceneUIController _uiController;
     [Inject]
     public void Init(LevelSceneUIController uiController)
     {
         _uiController = uiController;
     }
+
+
 
     public void LoadNextLevel()
     {

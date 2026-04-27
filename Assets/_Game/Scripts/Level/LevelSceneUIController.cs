@@ -9,6 +9,7 @@ public class LevelSceneUIController : MonoBehaviour
     [SerializeField] private GameObject gameHudRoot;
     [SerializeField] private GameObject winScreenRoot;
     [SerializeField] private Button nextLevelButton;
+
     GameUISettings _gameSettings;
 
     [Inject]

@@ -1,4 +1,3 @@
-using System;
 using UnityEngine;
 using Zenject;
 public class PlayerController : MonoBehaviour
@@ -19,7 +18,7 @@ public class PlayerController : MonoBehaviour
 
     private bool _canMove = true;
     private bool _ignoreInputUntilReleased;
-    private const float InputReleaseEpsilonSqr = 0.0004f; // (~0.02)^2
+    private const float InputDeadZoneSqr = 0.0004f; // (~0.02)^2
 
     [Inject]
     public void Construct(Joystick moveJoystick)
@@ -44,7 +43,7 @@ public class PlayerController : MonoBehaviour
     {
         MovementLogic();
     }
-    void MovementLogic()
+    private void MovementLogic()
     {
         if (!_canMove)
         {
@@ -54,20 +53,25 @@ public class PlayerController : MonoBehaviour
         Vector2 input = _moveJoystick.Direction;
         if (_ignoreInputUntilReleased)
         {
-            if (input.sqrMagnitude > InputReleaseEpsilonSqr)
+            if (input.sqrMagnitude > InputDeadZoneSqr)
+            {
                 return;
+            }
 
             _ignoreInputUntilReleased = false;
         }
-        Vector3 move = new Vector3(input.x, 0f, input.y);
-        _rigidbody.MovePosition(_rigidbody.position + move * speed * Time.fixedDeltaTime);
-        if (move.sqrMagnitude > 0f)// rotate Y axis in the direction of movement
+        float inputMagnitudeSqr = input.sqrMagnitude;
+        bool hasMoveInput = inputMagnitudeSqr > InputDeadZoneSqr;
+        Vector3 move = hasMoveInput ? new Vector3(input.x, 0f, input.y) : Vector3.zero;
+
+        if (hasMoveInput)
         {
+            _rigidbody.MovePosition(_rigidbody.position + move * speed * Time.fixedDeltaTime);
             Quaternion targetRotation = Quaternion.LookRotation(move);
             _playerModelTransform.rotation = Quaternion.Slerp(_playerModelTransform.rotation, targetRotation, Time.fixedDeltaTime * 10f);
         }
         // Always update aim: with no input it smoothly returns to the minimum distance.
-        float inputStrength = Mathf.Clamp01(move.magnitude);
+        float inputStrength = hasMoveInput ? Mathf.Clamp01(Mathf.Sqrt(inputMagnitudeSqr)) : 0f;
         float distance = Mathf.Lerp(aimObjectMinDistance, aimObjectMaxDistance, inputStrength);
         Vector3 aimPosition = _playerModelTransform.position + _playerModelTransform.forward * distance;
         _aimTransform.position = Vector3.SmoothDamp(
