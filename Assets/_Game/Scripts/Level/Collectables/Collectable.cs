@@ -2,7 +2,8 @@ using UnityEngine;
 
 public enum CollectableType
 {
-    Money = 0
+    Money = 0,
+    Key = 1
 }
 
 public class Collectable : MonoBehaviour
