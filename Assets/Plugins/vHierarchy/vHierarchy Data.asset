@@ -18,6 +18,7 @@ MonoBehaviour:
     - d33973f99e198c24ca30ae73d44bcdfc
     - 4462a5616b57deb4fb6a22da943ec0e3
     - b641acb63c0a5f24d958d31caeb94359
+    - 1f8f6872f22f13d44b8dddc8da2f8133
     values:
     - goDatas_byGlobalId:
         keys:
@@ -204,6 +205,14 @@ MonoBehaviour:
           isColorRecursive: 0
         - colorIndex: 7
           iconNameOrGuid: Folder Icon
+          isIconRecursive: 0
+          isColorRecursive: 0
+    - goDatas_byGlobalId:
+        keys:
+        - globalObjectIdString: GlobalObjectId_V1-1-1f8f6872f22f13d44b8dddc8da2f8133-6902992603648334364-0
+        values:
+        - colorIndex: 7
+          iconNameOrGuid: AvatarMask On Icon
           isIconRecursive: 0
           isColorRecursive: 0
   bookmarks: []

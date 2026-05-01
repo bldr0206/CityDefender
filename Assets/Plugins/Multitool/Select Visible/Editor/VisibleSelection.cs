@@ -12,12 +12,18 @@ namespace Multitool.SelectVisible
     {
         private const string MenuPathEnable = "Tools/Multitool/Select Visible/Enable";
         private const string MenuPathRespectAlpha = "Tools/Multitool/Select Visible/Respect Alpha";
+        private const string MenuPathIgnoreAdditive = "Tools/Multitool/Select Visible/Ignore Additive";
         private const string MenuPathRespectRenderQueue = "Tools/Multitool/Select Visible/Respect Render Queue";
-        private const string MenuPathSelectPrefabRoot = "Tools/Multitool/Select Visible/Select Nearest Prefab";
+        private const string MenuPathSelectionModeObject = "Tools/Multitool/Select Visible/Selection Mode/Object";
+        private const string MenuPathSelectionModeNearestPrefab = "Tools/Multitool/Select Visible/Selection Mode/Nearest Prefab";
+        private const string MenuPathSelectionModeTopPrefab = "Tools/Multitool/Select Visible/Selection Mode/Top Prefab";
 
         public const string PrefKeyEnable = "Multitool.SelectVisible.Enabled";
         public const string PrefKeyRespectAlpha = "Multitool.SelectVisible.RespectAlpha";
+        public const string PrefKeyIgnoreAdditive = "Multitool.SelectVisible.IgnoreAdditive";
         public const string PrefKeyRespectRenderQueue = "Multitool.SelectVisible.RespectRenderQueue";
+        public const string PrefKeySelectionMode = "Multitool.SelectVisible.SelectionMode";
+        // Legacy ключ, используется только для миграции в новые настройки
         public const string PrefKeySelectPrefabRoot = "Multitool.SelectVisible.SelectPrefabRoot";
         // Legacy ключ, используется только для миграции в новые настройки
         public const string PrefKeyShowDebugOutline = "Multitool.SelectVisible.ShowDebugOutline";
@@ -66,6 +72,13 @@ namespace Multitool.SelectVisible
         private static GameObject _hoveredObject;
         private static Vector2 _lastMousePosition;
 
+        public enum SelectionMode
+        {
+            Object = 0,
+            NearestPrefab = 1,
+            TopPrefab = 2,
+        }
+
         private struct PickCandidate
         {
             public GameObject GameObject;
@@ -91,6 +104,7 @@ namespace Multitool.SelectVisible
         static VisibleSelection()
         {
             MigrateLegacyShowDebugOutlinePref();
+            MigrateLegacySelectPrefabRootPref();
             SceneView.duringSceneGui += OnSceneGUI;
             EditorApplication.delayCall += SyncMenuChecks;
         }
@@ -126,6 +140,21 @@ namespace Multitool.SelectVisible
             return true;
         }
 
+        [MenuItem(MenuPathIgnoreAdditive)]
+        private static void ToggleIgnoreAdditive()
+        {
+            bool newValue = !IgnoreAdditiveEnabled();
+            EditorPrefs.SetBool(PrefKeyIgnoreAdditive, newValue);
+            SyncMenuChecks();
+        }
+
+        [MenuItem(MenuPathIgnoreAdditive, true)]
+        private static bool ToggleIgnoreAdditiveValidate()
+        {
+            Menu.SetChecked(MenuPathIgnoreAdditive, IgnoreAdditiveEnabled());
+            return true;
+        }
+
         [MenuItem(MenuPathRespectRenderQueue)]
         private static void ToggleRespectRenderQueue()
         {
@@ -142,18 +171,42 @@ namespace Multitool.SelectVisible
             return true;
         }
 
-        [MenuItem(MenuPathSelectPrefabRoot)]
-        private static void ToggleSelectPrefabRoot()
+        [MenuItem(MenuPathSelectionModeObject)]
+        private static void SetSelectionModeObject()
         {
-            bool newValue = !SelectPrefabRoot();
-            EditorPrefs.SetBool(PrefKeySelectPrefabRoot, newValue);
-            SyncMenuChecks();
+            SetSelectionMode(SelectionMode.Object);
         }
 
-        [MenuItem(MenuPathSelectPrefabRoot, true)]
-        private static bool ToggleSelectPrefabRootValidate()
+        [MenuItem(MenuPathSelectionModeObject, true)]
+        private static bool SetSelectionModeObjectValidate()
         {
-            Menu.SetChecked(MenuPathSelectPrefabRoot, SelectPrefabRoot());
+            Menu.SetChecked(MenuPathSelectionModeObject, GetSelectionMode() == SelectionMode.Object);
+            return true;
+        }
+
+        [MenuItem(MenuPathSelectionModeNearestPrefab)]
+        private static void SetSelectionModeNearestPrefab()
+        {
+            SetSelectionMode(SelectionMode.NearestPrefab);
+        }
+
+        [MenuItem(MenuPathSelectionModeNearestPrefab, true)]
+        private static bool SetSelectionModeNearestPrefabValidate()
+        {
+            Menu.SetChecked(MenuPathSelectionModeNearestPrefab, GetSelectionMode() == SelectionMode.NearestPrefab);
+            return true;
+        }
+
+        [MenuItem(MenuPathSelectionModeTopPrefab)]
+        private static void SetSelectionModeTopPrefab()
+        {
+            SetSelectionMode(SelectionMode.TopPrefab);
+        }
+
+        [MenuItem(MenuPathSelectionModeTopPrefab, true)]
+        private static bool SetSelectionModeTopPrefabValidate()
+        {
+            Menu.SetChecked(MenuPathSelectionModeTopPrefab, GetSelectionMode() == SelectionMode.TopPrefab);
             return true;
         }
 
@@ -210,8 +263,11 @@ namespace Multitool.SelectVisible
         {
             Menu.SetChecked(MenuPathEnable, IsEnabled());
             Menu.SetChecked(MenuPathRespectAlpha, RespectAlpha());
+            Menu.SetChecked(MenuPathIgnoreAdditive, IgnoreAdditiveEnabled());
             Menu.SetChecked(MenuPathRespectRenderQueue, RespectRenderQueue());
-            Menu.SetChecked(MenuPathSelectPrefabRoot, SelectPrefabRoot());
+            Menu.SetChecked(MenuPathSelectionModeObject, GetSelectionMode() == SelectionMode.Object);
+            Menu.SetChecked(MenuPathSelectionModeNearestPrefab, GetSelectionMode() == SelectionMode.NearestPrefab);
+            Menu.SetChecked(MenuPathSelectionModeTopPrefab, GetSelectionMode() == SelectionMode.TopPrefab);
             Menu.SetChecked("Tools/Multitool/Select Visible/Show Bounds", ShowBounds());
             Menu.SetChecked("Tools/Multitool/Select Visible/Show Name", ShowName());
         }
@@ -226,14 +282,29 @@ namespace Multitool.SelectVisible
             return EditorPrefs.GetBool(PrefKeyRespectAlpha, false);
         }
 
+        public static bool IgnoreAdditiveEnabled()
+        {
+            return EditorPrefs.GetBool(PrefKeyIgnoreAdditive, false);
+        }
+
         public static bool RespectRenderQueue()
         {
             return EditorPrefs.GetBool(PrefKeyRespectRenderQueue, true);
         }
 
-        public static bool SelectPrefabRoot()
+        public static SelectionMode GetSelectionMode()
         {
-            return EditorPrefs.GetBool(PrefKeySelectPrefabRoot, false);
+            return (SelectionMode)EditorPrefs.GetInt(PrefKeySelectionMode, (int)SelectionMode.Object);
+        }
+
+        public static void SetSelectionMode(SelectionMode mode)
+        {
+            if (GetSelectionMode() == mode)
+                return;
+
+            EditorPrefs.SetInt(PrefKeySelectionMode, (int)mode);
+            SyncMenuChecks();
+            SceneView.RepaintAll();
         }
 
         public static bool ShowBounds()
@@ -287,6 +358,34 @@ namespace Multitool.SelectVisible
                 EditorPrefs.SetBool(PrefKeyShowName, legacy);
         }
 
+        private static void MigrateLegacySelectPrefabRootPref()
+        {
+            if (EditorPrefs.HasKey(PrefKeySelectionMode))
+                return;
+
+            if (!EditorPrefs.HasKey(PrefKeySelectPrefabRoot))
+                return;
+
+            bool legacy = EditorPrefs.GetBool(PrefKeySelectPrefabRoot, false);
+            EditorPrefs.SetInt(PrefKeySelectionMode, (int)(legacy ? SelectionMode.NearestPrefab : SelectionMode.Object));
+        }
+
+        private static GameObject ApplySelectionMode(GameObject go)
+        {
+            if (go == null)
+                return null;
+
+            switch (GetSelectionMode())
+            {
+                case SelectionMode.NearestPrefab:
+                    return GetNearestPrefabRoot(go);
+                case SelectionMode.TopPrefab:
+                    return GetTopPrefabRoot(go);
+                default:
+                    return go;
+            }
+        }
+
         private static GameObject GetNearestPrefabRoot(GameObject go)
         {
             if (go == null)
@@ -294,6 +393,15 @@ namespace Multitool.SelectVisible
 
             GameObject nearestRoot = PrefabUtility.GetNearestPrefabInstanceRoot(go);
             return nearestRoot != null ? nearestRoot : go;
+        }
+
+        private static GameObject GetTopPrefabRoot(GameObject go)
+        {
+            if (go == null)
+                return null;
+
+            GameObject topRoot = PrefabUtility.GetOutermostPrefabInstanceRoot(go);
+            return topRoot != null ? topRoot : go;
         }
 
         private static void OnSceneGUI(SceneView sceneView)
@@ -399,10 +507,7 @@ namespace Multitool.SelectVisible
                 ? PickConsideringRenderOrder(sceneView, mousePos, respectAlpha)
                 : PickSimple(sceneView, mousePos, respectAlpha);
 
-            if (picked != null && SelectPrefabRoot())
-            {
-                picked = GetNearestPrefabRoot(picked);
-            }
+            picked = ApplySelectionMode(picked);
 
             if (e.shift)
             {
@@ -775,6 +880,19 @@ namespace Multitool.SelectVisible
 
         private static bool PassesAlphaTest(GameObject go, SceneView sceneView, Vector2 guiMousePos, bool respectAlpha)
         {
+            if (IgnoreAdditiveEnabled())
+            {
+                Graphic g0 = go.GetComponent<Graphic>();
+                Material gm = g0 != null ? g0.materialForRendering : null;
+                if (IsAdditiveMaterial(gm))
+                    return false;
+
+                Renderer r0 = go.GetComponent<Renderer>();
+                Material rm = r0 != null ? r0.sharedMaterial : null;
+                if (IsAdditiveMaterial(rm))
+                    return false;
+            }
+
             if (!respectAlpha)
                 return true;
 
@@ -847,6 +965,9 @@ namespace Multitool.SelectVisible
             Material material = renderer.sharedMaterial;
             if (material == null)
                 return true;
+
+            if (IgnoreAdditiveEnabled() && IsAdditiveMaterial(material))
+                return false;
 
             bool overlayClipEnabled = OverlayClipBypassEnabled();
             Texture2D overlayTex = null;
@@ -1010,6 +1131,22 @@ namespace Multitool.SelectVisible
             return renderType == "Transparent" || renderType == "Fade";
         }
 
+        private static bool IsAdditiveMaterial(Material material)
+        {
+            if (material == null)
+                return false;
+
+            if (material.HasProperty("_DstBlend"))
+            {
+                int dst = material.GetInt("_DstBlend");
+                if (dst == (int)BlendMode.One || dst == (int)BlendMode.OneMinusSrcColor)
+                    return true;
+            }
+
+            string n = material.shader != null ? material.shader.name : null;
+            return !string.IsNullOrEmpty(n) && n.IndexOf("Additive", System.StringComparison.OrdinalIgnoreCase) >= 0;
+        }
+
         private static float SampleMaterialAlpha(Material material, Vector2 uv)
         {
             float alpha = GetMaterialAlpha(material);
@@ -1121,16 +1258,17 @@ namespace Multitool.SelectVisible
                 ? PickConsideringRenderOrder(sceneView, mousePos, respectAlpha)
                 : PickSimple(sceneView, mousePos, respectAlpha);
 
-            if (picked != null && SelectPrefabRoot())
-            {
-                picked = GetNearestPrefabRoot(picked);
-            }
+            picked = ApplySelectionMode(picked);
 
             _hoveredObject = picked;
         }
 
         private static void DrawDebugOutline(GameObject go, SceneView sceneView)
         {
+            if (go == null || !go.activeInHierarchy)
+                return;
+
+            go = ApplySelectionMode(go);
             if (go == null || !go.activeInHierarchy)
                 return;
 
@@ -1166,14 +1304,13 @@ namespace Multitool.SelectVisible
                 }
             }
 
-            // Если включён SelectPrefabRoot — рисуем рамку и текст по bounds всего префаба голубым цветом
-            if (showBounds && SelectPrefabRoot())
+            // В prefab-режимах рисуем рамку и текст по bounds всего префаба голубым цветом
+            if (showBounds && GetSelectionMode() != SelectionMode.Object)
             {
-                GameObject prefabRoot = GetNearestPrefabRoot(go);
                 // Используем голубой цвет только если объект реально является частью инстанса префаба
-                if (prefabRoot != null && PrefabUtility.IsPartOfPrefabInstance(prefabRoot))
+                if (PrefabUtility.IsPartOfPrefabInstance(go))
                 {
-                    Bounds? prefabBounds = CalculatePrefabBounds(prefabRoot);
+                    Bounds? prefabBounds = CalculatePrefabBounds(go);
                     if (prefabBounds.HasValue)
                     {
                         Rect? prefabRect = DrawPrefabBoundsOutline(prefabBounds.Value, sceneView);
@@ -1659,10 +1796,11 @@ namespace Multitool.SelectVisible
     {
         private const float Padding = 1f;
         private const float Spacing = 1f;
-        private const float PanelWidth = 80f;
-        private const float SliderWidth = 78f;
+        private const float PanelWidth = 120f;
+        private const float SliderWidth = 120f;
         private static GUIStyle _labelStyle;
         private static GUIStyle _toggleClippedStyle;
+        private static readonly string[] SelectionModeOptions = { "Object", "Nearest", "Top" };
 
         private static bool ToggleLeftClipped(string label, bool value, float height)
         {
@@ -1675,7 +1813,7 @@ namespace Multitool.SelectVisible
                 };
             }
 
-            return GUILayout.Toggle(value, label, _toggleClippedStyle, GUILayout.Height(height), GUILayout.ExpandWidth(true));
+            return GUILayout.Toggle(value, label, _toggleClippedStyle, GUILayout.Width(PanelWidth), GUILayout.MaxWidth(PanelWidth), GUILayout.Height(height));
         }
 
         bool ITransientOverlay.visible => VisibleSelection.OverlayEnabled;
@@ -1688,7 +1826,7 @@ namespace Multitool.SelectVisible
             bool expanded = VisibleSelection.OverlayExpanded;
 
             // Let the overlay auto-size vertically to avoid empty space at the bottom.
-            GUILayout.BeginVertical(GUILayout.Width(PanelWidth));
+            GUILayout.BeginVertical(GUILayout.Width(PanelWidth), GUILayout.MaxWidth(PanelWidth));
 
             if (_labelStyle == null)
             {
@@ -1699,11 +1837,11 @@ namespace Multitool.SelectVisible
                     alignment = TextAnchor.MiddleLeft
                 };
             }
-            GUILayout.Label("Select Visible", _labelStyle, GUILayout.Height(11f));
+            GUILayout.Label("Select Visible", _labelStyle, GUILayout.Width(PanelWidth), GUILayout.MaxWidth(PanelWidth), GUILayout.Height(11f));
             GUILayout.Space(Spacing);
 
             bool enabled = VisibleSelection.IsEnabled();
-            bool newEnabled = EditorGUILayout.ToggleLeft("Enable", enabled, GUILayout.Height(16f));
+            bool newEnabled = EditorGUILayout.ToggleLeft("Enable", enabled, GUILayout.Width(PanelWidth), GUILayout.MaxWidth(PanelWidth), GUILayout.Height(16f));
             if (newEnabled != enabled)
             {
                 EditorPrefs.SetBool(VisibleSelection.PrefKeyEnable, newEnabled);
@@ -1712,10 +1850,11 @@ namespace Multitool.SelectVisible
             }
 
             GUILayout.Space(Spacing);
-            GUILayout.Box(GUIContent.none, GUILayout.Height(1f), GUILayout.ExpandWidth(true));
+            GUILayout.Box(GUIContent.none, GUILayout.Width(PanelWidth), GUILayout.MaxWidth(PanelWidth), GUILayout.Height(1f));
             GUILayout.Space(Spacing * 0.5f);
 
-            bool newExpanded = EditorGUILayout.Foldout(expanded, expanded ? "Hide settings" : "Show settings", true);
+            Rect foldoutRect = GUILayoutUtility.GetRect(PanelWidth, 16f, GUILayout.Width(PanelWidth), GUILayout.MaxWidth(PanelWidth));
+            bool newExpanded = EditorGUI.Foldout(foldoutRect, expanded, expanded ? "Hide settings" : "Show settings", true);
             if (newExpanded != expanded)
             {
                 VisibleSelection.OverlayExpanded = newExpanded;
@@ -1728,7 +1867,7 @@ namespace Multitool.SelectVisible
                 float outlineAlpha = VisibleSelection.BoundsOutlineAlpha();
                 EditorGUI.BeginChangeCheck();
                 // Slider without the numeric value field (more compact).
-                GUILayout.BeginHorizontal();
+                GUILayout.BeginHorizontal(GUILayout.Width(PanelWidth), GUILayout.MaxWidth(PanelWidth));
                 GUILayout.FlexibleSpace();
                 Rect sliderRect = GUILayoutUtility.GetRect(SliderWidth, 14f, GUILayout.Width(SliderWidth));
                 float newOutlineAlpha = GUI.HorizontalSlider(sliderRect, outlineAlpha, 0f, 1f);
@@ -1760,12 +1899,29 @@ namespace Multitool.SelectVisible
 
                 GUILayout.Space(Spacing);
 
-                bool selectPrefabRoot = VisibleSelection.SelectPrefabRoot();
-                bool newSelectPrefabRoot = ToggleLeftClipped("Select Nearest Prefab", selectPrefabRoot, 14f);
-                if (newSelectPrefabRoot != selectPrefabRoot)
+                bool ignoreAdditive = VisibleSelection.IgnoreAdditiveEnabled();
+                bool newIgnoreAdditive = ToggleLeftClipped("Ignore Additive", ignoreAdditive, 14f);
+                if (newIgnoreAdditive != ignoreAdditive)
                 {
-                    EditorPrefs.SetBool(VisibleSelection.PrefKeySelectPrefabRoot, newSelectPrefabRoot);
+                    EditorPrefs.SetBool(VisibleSelection.PrefKeyIgnoreAdditive, newIgnoreAdditive);
                     VisibleSelection.SyncMenuChecks();
+                }
+
+                GUILayout.Space(Spacing);
+
+                var selectionMode = VisibleSelection.GetSelectionMode();
+                int selectionModeIndex = Mathf.Clamp((int)selectionMode, 0, 2);
+                int newSelectionModeIndex = EditorGUILayout.Popup(
+                    selectionModeIndex,
+                    SelectionModeOptions,
+                    GUILayout.Width(PanelWidth),
+                    GUILayout.MaxWidth(PanelWidth),
+                    GUILayout.Height(16f)
+                );
+                var newSelectionMode = (VisibleSelection.SelectionMode)newSelectionModeIndex;
+                if (newSelectionMode != selectionMode)
+                {
+                    VisibleSelection.SetSelectionMode(newSelectionMode);
                 }
 
                 GUILayout.Space(Spacing);

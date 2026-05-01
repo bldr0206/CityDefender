@@ -6,6 +6,10 @@ TagManager:
   tags:
   - Collectable
   - Money
+  - Door
+  - Lift
+  - LiftTrigger
+  - Interactable
   layers:
   - Default
   - TransparentFX

@@ -52,7 +52,7 @@ SphereCollider:
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 3
-  m_Radius: 3
+  m_Radius: 2.5
   m_Center: {x: 0, y: 0, z: 0}
 --- !u!114 &5650375288444260738
 MonoBehaviour:
@@ -66,9 +66,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 559003b83c10fce47a85b77debe8f90a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PlayerCollectorTriggerChecker
-  collectableLayer:
-    serializedVersion: 2
-    m_Bits: 64
+  backpackPoint: {fileID: 308514852905549522}
 --- !u!1 &1232147926377234561
 GameObject:
   m_ObjectHideFlags: 0
@@ -203,6 +201,7 @@ GameObject:
   - component: {fileID: 5650705935375673050}
   - component: {fileID: 8263752709403455724}
   - component: {fileID: 6231553525204365537}
+  - component: {fileID: 6156177984540262580}
   m_Layer: 0
   m_Name: Player
   m_TagString: Untagged
@@ -270,9 +269,29 @@ Rigidbody:
   m_ImplicitTensor: 1
   m_UseGravity: 1
   m_IsKinematic: 0
-  m_Interpolate: 0
+  m_Interpolate: 1
   m_Constraints: 112
-  m_CollisionDetection: 0
+  m_CollisionDetection: 1
+--- !u!114 &6156177984540262580
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6847290704317647681}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 526df39d8026113428789c6c6428c418, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: '::'
+  _shadowObject: {fileID: 0}
+  _shadowOffset: 0.1
+  _rayStartHeight: 1
+  _shadowMaxDistance: 10
+  _minScale: 0.25
+  _surfaceMask:
+    serializedVersion: 2
+    m_Bits: 4294967295
 --- !u!1 &7249682492906466816
 GameObject:
   m_ObjectHideFlags: 0
@@ -306,6 +325,7 @@ Transform:
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 2552401185470873447}
+  - {fileID: 308514852905549522}
   m_Father: {fileID: 5650705935375673050}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!33 &1576903607850617643
@@ -388,6 +408,37 @@ CapsuleCollider:
   m_Height: 2
   m_Direction: 1
   m_Center: {x: 0, y: 0, z: 0}
+--- !u!1 &7605472045783250072
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 308514852905549522}
+  m_Layer: 6
+  m_Name: Backpack
+  m_TagString: Collectable
+  m_Icon: {fileID: -964228994112308473, guid: 0000000000000000d000000000000000, type: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &308514852905549522
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7605472045783250072}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0.70710707, y: -0, z: -0, w: 0.70710653}
+  m_LocalPosition: {x: 0, y: 0.25, z: -0.7499995}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 633188036399860255}
+  m_LocalEulerAnglesHint: {x: 90, y: 0, z: 0}
 --- !u!1 &8071723129295154377
 GameObject:
   m_ObjectHideFlags: 0
@@ -456,6 +507,3 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3c6af47c8347a614cb95e40a97c5cefd, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PlayerTriggersChecker
-  layerMask:
-    serializedVersion: 2
-    m_Bits: 128
