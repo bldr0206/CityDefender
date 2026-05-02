@@ -524,10 +524,10 @@ namespace Multitool.MoveInHierarchy
             private static Texture2D _iconMoveUp;
             private static Texture2D _iconMoveDown;
             private static Texture2D _iconMoveBottom;
-            private const float ButtonWidth = 40f;
-            private const float ButtonHeight = 20f;
-            private const float IconSize = 16f;
-            private const float Gap = 2f;
+            private const float ButtonWidth = 28f;
+            private const float ButtonHeight = 18f;
+            private const float IconSize = 14f;
+            private const float Gap = 1f;
 
             bool ITransientOverlay.visible => MoveInHierarchyEditor.OverlayEnabled;
 
@@ -543,22 +543,20 @@ namespace Multitool.MoveInHierarchy
                     _iconMoveBottom = AssetDatabase.LoadAssetAtPath<Texture2D>("Assets/Plugins/Multitool/MoveInHierarchy/Icons/MoveBottom.png");
             }
 
+            private static GUIContent ButtonContent(Texture2D icon, string fallback, string tooltip)
+            {
+                return icon != null ? new GUIContent(icon, tooltip) : new GUIContent(fallback, tooltip);
+            }
+
             public override void OnGUI()
             {
                 if (!MoveInHierarchyEditor.OverlayEnabled)
                     return;
 
+                if (GUI.skin == null)
+                    return;
+
                 LoadIcons();
-
-                float buttonWidth = ButtonWidth;
-                float buttonHeight = ButtonHeight;
-                float gap = Gap;
-
-                float panelWidth = buttonWidth;
-                float panelHeight = buttonHeight * 4f + gap * 6f;
-
-                Rect panelRect = GUILayoutUtility.GetRect(panelWidth, panelHeight, GUILayout.Width(panelWidth), GUILayout.Height(panelHeight));
-                EditorGUI.DrawRect(panelRect, new Color(0f, 0f, 0f, 0.85f));
 
                 if (_buttonStyle == null)
                 {
@@ -571,48 +569,50 @@ namespace Multitool.MoveInHierarchy
                     };
                 }
 
-
-                GUILayout.BeginArea(panelRect);
-                using (new EditorGUI.DisabledScope(!MoveInHierarchyEditor.IsSelectionOperationValid()))
+                GUILayout.BeginVertical(GUILayout.Width(ButtonWidth), GUILayout.MaxWidth(ButtonWidth));
+                try
                 {
-                    Vector2 oldIconSize = EditorGUIUtility.GetIconSize();
-                    EditorGUIUtility.SetIconSize(new Vector2(IconSize, IconSize));
-
-                    GUILayout.BeginVertical();
-
-                    // Move Top
-                    if (GUILayout.Button(new GUIContent(_iconMoveTop), _buttonStyle, GUILayout.Width(buttonWidth), GUILayout.Height(buttonHeight)))
+                    using (new EditorGUI.DisabledScope(!MoveInHierarchyEditor.IsSelectionOperationValid()))
                     {
-                        MoveInHierarchyEditor.MoveSelectionToTop();
-                    }
-                    GUILayout.Space(gap);
+                        Vector2 oldIconSize = EditorGUIUtility.GetIconSize();
+                        EditorGUIUtility.SetIconSize(new Vector2(IconSize, IconSize));
 
-                    // Move Up
-                    if (GUILayout.Button(new GUIContent(_iconMoveUp), _buttonStyle, GUILayout.Width(buttonWidth), GUILayout.Height(buttonHeight)))
-                    {
-                        MoveInHierarchyEditor.MoveSelectionUp();
-                    }
-                    GUILayout.Space(gap * 2);
+                        try
+                        {
+                            if (GUILayout.Button(ButtonContent(_iconMoveTop, "T", "Move selection to top"), _buttonStyle, GUILayout.Width(ButtonWidth), GUILayout.MaxWidth(ButtonWidth), GUILayout.Height(ButtonHeight)))
+                            {
+                                MoveInHierarchyEditor.MoveSelectionToTop();
+                            }
+                            GUILayout.Space(Gap);
 
-                    // Move Down
-                    if (GUILayout.Button(new GUIContent(_iconMoveDown), _buttonStyle, GUILayout.Width(buttonWidth), GUILayout.Height(buttonHeight)))
-                    {
-                        MoveInHierarchyEditor.MoveSelectionDown();
-                    }
-                    GUILayout.Space(gap);
+                            if (GUILayout.Button(ButtonContent(_iconMoveUp, "U", "Move selection up"), _buttonStyle, GUILayout.Width(ButtonWidth), GUILayout.MaxWidth(ButtonWidth), GUILayout.Height(ButtonHeight)))
+                            {
+                                MoveInHierarchyEditor.MoveSelectionUp();
+                            }
+                            GUILayout.Space(Gap * 2);
 
-                    // Move Bottom
-                    if (GUILayout.Button(new GUIContent(_iconMoveBottom), _buttonStyle, GUILayout.Width(buttonWidth), GUILayout.Height(buttonHeight)))
-                    {
-                        MoveInHierarchyEditor.MoveSelectionToBottom();
-                    }
+                            if (GUILayout.Button(ButtonContent(_iconMoveDown, "D", "Move selection down"), _buttonStyle, GUILayout.Width(ButtonWidth), GUILayout.MaxWidth(ButtonWidth), GUILayout.Height(ButtonHeight)))
+                            {
+                                MoveInHierarchyEditor.MoveSelectionDown();
+                            }
+                            GUILayout.Space(Gap);
 
+                            if (GUILayout.Button(ButtonContent(_iconMoveBottom, "B", "Move selection to bottom"), _buttonStyle, GUILayout.Width(ButtonWidth), GUILayout.MaxWidth(ButtonWidth), GUILayout.Height(ButtonHeight)))
+                            {
+                                MoveInHierarchyEditor.MoveSelectionToBottom();
+                            }
+                        }
+                        finally
+                        {
+                            EditorGUIUtility.SetIconSize(oldIconSize);
+                        }
+                    }
+                }
+                finally
+                {
                     GUILayout.EndVertical();
-
-                    EditorGUIUtility.SetIconSize(oldIconSize);
                 }
 
-                GUILayout.EndArea();
             }
         }
     }

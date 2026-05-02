@@ -33,6 +33,7 @@ namespace Multitool.RectTransformSnapper
         public override void OnGUI()
         {
             if (!OverlayEnabled) return;
+            if (GUI.skin == null) return;
             float oldLabel = EditorGUIUtility.labelWidth;
             float oldField = EditorGUIUtility.fieldWidth;
             EditorGUIUtility.labelWidth = 70f;
@@ -41,7 +42,7 @@ namespace Multitool.RectTransformSnapper
             GUILayout.BeginHorizontal();
             bool en = EditorGUILayout.Toggle(new GUIContent("Enabled"), RectTransformSnapperEngine.Enabled);
             GUILayout.FlexibleSpace();
-            if (GUILayout.Button(new GUIContent("\u00d7", "Close"), EditorStyles.miniButton, GUILayout.Width(18), GUILayout.Height(16)))
+            if (GUILayout.Button(new GUIContent("\u00d7", "Close"), GUI.skin.button, GUILayout.Width(18), GUILayout.Height(16)))
             {
                 OverlayEnabled = false;
                 RepaintMainWindow();

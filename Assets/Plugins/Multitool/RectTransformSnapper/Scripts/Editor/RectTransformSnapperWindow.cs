@@ -336,6 +336,9 @@ namespace Multitool.RectTransformSnapper
         }
         private void OnGUI()
         {
+            if (GUI.skin == null)
+                return;
+
             HandleHotkeys();
             var paddingStyle = new GUIStyle();
             paddingStyle.padding = new RectOffset((int)PADDING_WINDOW, (int)PADDING_WINDOW, (int)PADDING_WINDOW, (int)PADDING_WINDOW);
@@ -362,7 +365,7 @@ namespace Multitool.RectTransformSnapper
                     float y = rowRect.y + (rowRect.height - drawH) * 0.5f;
                     var drawRect = new Rect(x, y, drawW, drawH);
                     GUI.DrawTexture(drawRect, _logoTex, ScaleMode.ScaleToFit);
-                    var verStyle = new GUIStyle(EditorStyles.miniLabel);
+                    var verStyle = new GUIStyle(GUI.skin.label);
                     verStyle.alignment = TextAnchor.LowerRight;
                     verStyle.normal.textColor = new Color(1f, 1f, 1f, COLOR_ALPHA_VERSION);
                     var verRect = new Rect(drawRect.x, drawRect.y, drawRect.width - SPACING_SMALL, drawRect.height - 2f);
@@ -414,7 +417,7 @@ namespace Multitool.RectTransformSnapper
                 if (RectTransformSnapperEngine.AssignedCanvas == null)
                     EditorGUILayout.HelpBox("Assign a Canvas above to enable RectTransform snapping.", MessageType.Warning);
                 EditorGUILayout.Space(SPACING_SMALL);
-                EditorGUILayout.LabelField(GridOriginLabelContent, EditorStyles.boldLabel);
+                EditorGUILayout.LabelField(GridOriginLabelContent, GUI.skin.label);
                 for (int r = 0; r < 3; r++)
                 {
                     EditorGUILayout.BeginHorizontal();
@@ -447,7 +450,7 @@ namespace Multitool.RectTransformSnapper
             _foldoutAlignment = EditorGUILayout.Foldout(_foldoutAlignment, AlignmentFoldoutContent, true);
             GUILayout.FlexibleSpace();
             bool alignOv = EditorPrefs.GetBool("RTS_AlignmentOverlayVisible", false);
-            bool newAlignOv = GUILayout.Toggle(alignOv, OverlayModeContent, EditorStyles.miniButton, GUILayout.Width(BUTTON_WIDTH_LARGE));
+            bool newAlignOv = GUILayout.Toggle(alignOv, OverlayModeContent, GUI.skin.button, GUILayout.Width(BUTTON_WIDTH_LARGE));
             if (newAlignOv != alignOv)
             {
                 EditorPrefs.SetBool("RTS_AlignmentOverlayVisible", newAlignOv);
@@ -523,7 +526,7 @@ namespace Multitool.RectTransformSnapper
                 new GUIContent("Grid", "Grid settings define the snapping step, subdivisions, and offsets that control how RectTransforms align while you work."), true);
             GUILayout.FlexibleSpace();
             bool gridOv = EditorPrefs.GetBool("RTS_GridOverlayVisible", false);
-            bool newGridOv = GUILayout.Toggle(gridOv, new GUIContent("overlay mode", "Show grid overlay in SceneView"), EditorStyles.miniButton, GUILayout.Width(BUTTON_WIDTH_LARGE));
+            bool newGridOv = GUILayout.Toggle(gridOv, new GUIContent("overlay mode", "Show grid overlay in SceneView"), GUI.skin.button, GUILayout.Width(BUTTON_WIDTH_LARGE));
             if (newGridOv != gridOv)
             {
                 EditorPrefs.SetBool("RTS_GridOverlayVisible", newGridOv);
@@ -617,7 +620,7 @@ namespace Multitool.RectTransformSnapper
                 new GUIContent("Refernce", "Reference overlay helps you use a semi-transparent sprite as a guide to align your UI with mockups or screenshots."), true);
             GUILayout.FlexibleSpace();
             bool refOv = EditorPrefs.GetBool("RTS_RefOverlayVisible", false);
-            bool newRefOv = GUILayout.Toggle(refOv, new GUIContent("overlay mode", "Show reference overlay panel in SceneView"), EditorStyles.miniButton, GUILayout.Width(BUTTON_WIDTH_LARGE));
+            bool newRefOv = GUILayout.Toggle(refOv, new GUIContent("overlay mode", "Show reference overlay panel in SceneView"), GUI.skin.button, GUILayout.Width(BUTTON_WIDTH_LARGE));
             if (newRefOv != refOv)
             {
                 EditorPrefs.SetBool("RTS_RefOverlayVisible", newRefOv);

@@ -258,7 +258,7 @@ namespace Multitool.ProjectFolderColors
         {
             if (_rowLabelStyle == null)
             {
-                _rowLabelStyle = new GUIStyle(EditorStyles.label)
+                _rowLabelStyle = new GUIStyle(GUI.skin != null ? GUI.skin.label : new GUIStyle())
                 {
                     alignment = TextAnchor.MiddleLeft,
                     clipping = TextClipping.Clip,
@@ -274,7 +274,7 @@ namespace Multitool.ProjectFolderColors
         {
             if (_gridLabelStyle == null)
             {
-                _gridLabelStyle = new GUIStyle(EditorStyles.label)
+                _gridLabelStyle = new GUIStyle(GUI.skin != null ? GUI.skin.label : new GUIStyle())
                 {
                     alignment = TextAnchor.UpperCenter,
                     clipping = TextClipping.Clip,
@@ -687,7 +687,7 @@ namespace Multitool.ProjectFolderColors
         {
             if (_previewLabelStyle == null)
             {
-                _previewLabelStyle = new GUIStyle(EditorStyles.label)
+                _previewLabelStyle = new GUIStyle(GUI.skin != null ? GUI.skin.label : new GUIStyle())
                 {
                     alignment = TextAnchor.MiddleLeft,
                     clipping = TextClipping.Clip,

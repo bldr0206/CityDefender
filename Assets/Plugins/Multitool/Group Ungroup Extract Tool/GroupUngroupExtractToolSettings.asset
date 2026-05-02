@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 50371e6ed2d903149abe61bb78817aad, type: 3}
   m_Name: GroupUngroupExtractToolSettings
   m_EditorClassIdentifier: 
-  groupPositionMode: 0
+  groupPositionMode: 2
   enableRenameAfterGroup: 1
   showToastNotification: 1
   showConsoleLog: 0

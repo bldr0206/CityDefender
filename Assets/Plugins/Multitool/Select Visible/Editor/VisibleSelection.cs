@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using TMPro;
 using UnityEditor;
 using UnityEditor.Overlays;
 using UnityEngine;
@@ -13,7 +14,6 @@ namespace Multitool.SelectVisible
         private const string MenuPathEnable = "Tools/Multitool/Select Visible/Enable";
         private const string MenuPathRespectAlpha = "Tools/Multitool/Select Visible/Respect Alpha";
         private const string MenuPathIgnoreAdditive = "Tools/Multitool/Select Visible/Ignore Additive";
-        private const string MenuPathRespectRenderQueue = "Tools/Multitool/Select Visible/Respect Render Queue";
         private const string MenuPathSelectionModeObject = "Tools/Multitool/Select Visible/Selection Mode/Object";
         private const string MenuPathSelectionModeNearestPrefab = "Tools/Multitool/Select Visible/Selection Mode/Nearest Prefab";
         private const string MenuPathSelectionModeTopPrefab = "Tools/Multitool/Select Visible/Selection Mode/Top Prefab";
@@ -21,15 +21,9 @@ namespace Multitool.SelectVisible
         public const string PrefKeyEnable = "Multitool.SelectVisible.Enabled";
         public const string PrefKeyRespectAlpha = "Multitool.SelectVisible.RespectAlpha";
         public const string PrefKeyIgnoreAdditive = "Multitool.SelectVisible.IgnoreAdditive";
-        public const string PrefKeyRespectRenderQueue = "Multitool.SelectVisible.RespectRenderQueue";
         public const string PrefKeySelectionMode = "Multitool.SelectVisible.SelectionMode";
-        // Legacy ключ, используется только для миграции в новые настройки
-        public const string PrefKeySelectPrefabRoot = "Multitool.SelectVisible.SelectPrefabRoot";
-        // Legacy ключ, используется только для миграции в новые настройки
-        public const string PrefKeyShowDebugOutline = "Multitool.SelectVisible.ShowDebugOutline";
         public const string PrefKeyShowBounds = "Multitool.SelectVisible.ShowBounds";
         public const string PrefKeyShowName = "Multitool.SelectVisible.ShowName";
-        public const string PrefKeyOverlayClipBypass = "Multitool.SelectVisible.OverlayClipBypass";
         public const string PrefKeyBoundsOutlineAlpha = "Multitool.SelectVisible.BoundsOutlineAlpha";
         private const string PREF_OVERLAY_ENABLED = "SV_OverlayEnabled";
         private const string PREF_OVERLAY_EXPANDED = "SV_OverlayExpanded";
@@ -89,12 +83,11 @@ namespace Multitool.SelectVisible
 
         private struct RenderOrderInfo
         {
-            public int RenderQueue;
             public int SortingLayerValue;
             public int SortingOrder;
             public int SortingGroupLayerValue;
             public int SortingGroupOrder;
-            public float DepthAlongView;
+            public float SurfaceDistance;
             public int SiblingIndex;
             public bool IsUIElement;
             public int UiRootCanvasInstanceId;
@@ -103,8 +96,6 @@ namespace Multitool.SelectVisible
 
         static VisibleSelection()
         {
-            MigrateLegacyShowDebugOutlinePref();
-            MigrateLegacySelectPrefabRootPref();
             SceneView.duringSceneGui += OnSceneGUI;
             EditorApplication.delayCall += SyncMenuChecks;
         }
@@ -152,22 +143,6 @@ namespace Multitool.SelectVisible
         private static bool ToggleIgnoreAdditiveValidate()
         {
             Menu.SetChecked(MenuPathIgnoreAdditive, IgnoreAdditiveEnabled());
-            return true;
-        }
-
-        [MenuItem(MenuPathRespectRenderQueue)]
-        private static void ToggleRespectRenderQueue()
-        {
-            bool newValue = !RespectRenderQueue();
-            EditorPrefs.SetBool(PrefKeyRespectRenderQueue, newValue);
-            SyncMenuChecks();
-            SceneView.RepaintAll();
-        }
-
-        [MenuItem(MenuPathRespectRenderQueue, true)]
-        private static bool ToggleRespectRenderQueueValidate()
-        {
-            Menu.SetChecked(MenuPathRespectRenderQueue, RespectRenderQueue());
             return true;
         }
 
@@ -264,7 +239,6 @@ namespace Multitool.SelectVisible
             Menu.SetChecked(MenuPathEnable, IsEnabled());
             Menu.SetChecked(MenuPathRespectAlpha, RespectAlpha());
             Menu.SetChecked(MenuPathIgnoreAdditive, IgnoreAdditiveEnabled());
-            Menu.SetChecked(MenuPathRespectRenderQueue, RespectRenderQueue());
             Menu.SetChecked(MenuPathSelectionModeObject, GetSelectionMode() == SelectionMode.Object);
             Menu.SetChecked(MenuPathSelectionModeNearestPrefab, GetSelectionMode() == SelectionMode.NearestPrefab);
             Menu.SetChecked(MenuPathSelectionModeTopPrefab, GetSelectionMode() == SelectionMode.TopPrefab);
@@ -285,11 +259,6 @@ namespace Multitool.SelectVisible
         public static bool IgnoreAdditiveEnabled()
         {
             return EditorPrefs.GetBool(PrefKeyIgnoreAdditive, false);
-        }
-
-        public static bool RespectRenderQueue()
-        {
-            return EditorPrefs.GetBool(PrefKeyRespectRenderQueue, true);
         }
 
         public static SelectionMode GetSelectionMode()
@@ -317,11 +286,6 @@ namespace Multitool.SelectVisible
             return EditorPrefs.GetBool(PrefKeyShowName, false);
         }
 
-        public static bool OverlayClipBypassEnabled()
-        {
-            return EditorPrefs.GetBool(PrefKeyOverlayClipBypass, true);
-        }
-
         public static float BoundsOutlineAlpha()
         {
             return EditorPrefs.GetFloat(PrefKeyBoundsOutlineAlpha, DefaultBoundsOutlineAlpha);
@@ -332,42 +296,9 @@ namespace Multitool.SelectVisible
             EditorPrefs.SetFloat(PrefKeyBoundsOutlineAlpha, Mathf.Clamp01(alpha));
         }
 
-        // Для обратной совместимости возвращает true, если включены границы или имя
-        public static bool ShowDebugOutline()
-        {
-            return ShowBounds() || ShowName();
-        }
-
         private static bool ShouldDrawDebugOverlay()
         {
             return ShowBounds() || ShowName();
-        }
-
-        private static void MigrateLegacyShowDebugOutlinePref()
-        {
-            // Если пользователь ранее включал старую галку, переносим значение в новые настройки, если они ещё не заданы.
-            if (!EditorPrefs.HasKey(PrefKeyShowDebugOutline))
-                return;
-
-            bool legacy = EditorPrefs.GetBool(PrefKeyShowDebugOutline, false);
-
-            if (!EditorPrefs.HasKey(PrefKeyShowBounds))
-                EditorPrefs.SetBool(PrefKeyShowBounds, legacy);
-
-            if (!EditorPrefs.HasKey(PrefKeyShowName))
-                EditorPrefs.SetBool(PrefKeyShowName, legacy);
-        }
-
-        private static void MigrateLegacySelectPrefabRootPref()
-        {
-            if (EditorPrefs.HasKey(PrefKeySelectionMode))
-                return;
-
-            if (!EditorPrefs.HasKey(PrefKeySelectPrefabRoot))
-                return;
-
-            bool legacy = EditorPrefs.GetBool(PrefKeySelectPrefabRoot, false);
-            EditorPrefs.SetInt(PrefKeySelectionMode, (int)(legacy ? SelectionMode.NearestPrefab : SelectionMode.Object));
         }
 
         private static GameObject ApplySelectionMode(GameObject go)
@@ -502,10 +433,7 @@ namespace Multitool.SelectVisible
         private static void HandleClickSelection(SceneView sceneView, Vector2 mousePos, Event e)
         {
             bool respectAlpha = RespectAlpha();
-            bool respectRenderQueue = RespectRenderQueue();
-            GameObject picked = respectRenderQueue
-                ? PickConsideringRenderOrder(sceneView, mousePos, respectAlpha)
-                : PickSimple(sceneView, mousePos, respectAlpha);
+            GameObject picked = PickConsideringRenderOrder(sceneView, mousePos, respectAlpha);
 
             picked = ApplySelectionMode(picked);
 
@@ -555,38 +483,6 @@ namespace Multitool.SelectVisible
             return null;
         }
 
-        private static GameObject PickSimple(SceneView sceneView, Vector2 mousePos, bool respectAlpha)
-        {
-            List<GameObject> ignoreList = respectAlpha ? new List<GameObject>(8) : null;
-            GameObject picked = null;
-
-            for (int safe = 0; safe < 64; safe++)
-            {
-                picked = ignoreList == null
-                    ? HandleUtility.PickGameObject(mousePos, false)
-                    : HandleUtility.PickGameObject(mousePos, false, ignoreList.ToArray());
-
-                if (picked == null)
-                    break;
-
-                if (!IsPickable(picked, mousePos))
-                {
-                    ignoreList?.Add(picked);
-                    continue;
-                }
-
-                if (!respectAlpha || PassesAlphaTest(picked, sceneView, mousePos, respectAlpha))
-                    break;
-
-                ignoreList?.Add(picked);
-            }
-
-            if (respectAlpha && picked != null && !PassesAlphaTest(picked, sceneView, mousePos, respectAlpha))
-                picked = null;
-
-            return picked;
-        }
-
         private static List<PickCandidate> CollectPickCandidates(SceneView sceneView, Vector2 mousePos, bool respectAlpha)
         {
             var candidates = new List<PickCandidate>(8);
@@ -603,7 +499,7 @@ namespace Multitool.SelectVisible
 
                 ignore.Add(picked);
 
-                if (!IsPickable(picked, mousePos))
+                if (!IsPickable(picked, mousePos, sceneView))
                     continue;
 
                 bool alphaPassed = !respectAlpha || PassesAlphaTest(picked, sceneView, mousePos, respectAlpha);
@@ -659,9 +555,12 @@ namespace Multitool.SelectVisible
                 }
             }
 
-            cmp = a.OrderInfo.DepthAlongView.CompareTo(b.OrderInfo.DepthAlongView);
-            if (cmp != 0)
-                return cmp;
+            if (!a.OrderInfo.IsUIElement && !b.OrderInfo.IsUIElement)
+            {
+                cmp = a.OrderInfo.SurfaceDistance.CompareTo(b.OrderInfo.SurfaceDistance);
+                if (cmp != 0)
+                    return cmp;
+            }
 
             return a.PickOrder.CompareTo(b.PickOrder);
         }
@@ -692,12 +591,11 @@ namespace Multitool.SelectVisible
         {
             var info = new RenderOrderInfo
             {
-                RenderQueue = 2000,
                 SortingLayerValue = 0,
                 SortingOrder = 0,
                 SortingGroupLayerValue = 0,
                 SortingGroupOrder = 0,
-                DepthAlongView = ComputeDepthAlongView(go, sceneView, guiMousePos),
+                SurfaceDistance = float.PositiveInfinity,
                 SiblingIndex = 0,
                 IsUIElement = false,
                 UiRootCanvasInstanceId = 0,
@@ -707,9 +605,10 @@ namespace Multitool.SelectVisible
             Renderer renderer = go.GetComponent<Renderer>();
             if (renderer != null)
             {
-                info.RenderQueue = CalculateRendererQueue(renderer);
                 info.SortingLayerValue = SortingLayer.GetLayerValueFromID(renderer.sortingLayerID);
                 info.SortingOrder = renderer.sortingOrder;
+                if (TryGetRendererSurfaceDistance(renderer, guiMousePos, out float surfaceDistance))
+                    info.SurfaceDistance = surfaceDistance;
 
                 SortingGroup sortingGroup = renderer.GetComponentInParent<SortingGroup>();
                 if (sortingGroup != null)
@@ -726,12 +625,6 @@ namespace Multitool.SelectVisible
             {
                 info.IsUIElement = true;
                 info.SiblingIndex = go.transform.GetSiblingIndex();
-
-                Material material = graphic.materialForRendering;
-                if (material != null)
-                {
-                    info.RenderQueue = material.renderQueue;
-                }
 
                 Canvas canvas = graphic.canvas;
                 if (canvas != null)
@@ -778,53 +671,35 @@ namespace Multitool.SelectVisible
             return list.ToArray();
         }
 
-        private static int CalculateRendererQueue(Renderer renderer)
+        private static bool TryGetRendererSurfaceDistance(Renderer renderer, Vector2 guiMousePos, out float surfaceDistance)
         {
-            var materials = renderer.sharedMaterials;
-            if (materials == null || materials.Length == 0)
+            surfaceDistance = float.PositiveInfinity;
+            Mesh mesh = GetRendererMesh(renderer, out Matrix4x4 matrix);
+            if (mesh == null || !mesh.isReadable)
+                return false;
+
+            var vertices = mesh.vertices;
+            var indices = mesh.triangles;
+            if (vertices == null || vertices.Length == 0 || indices == null || indices.Length == 0)
+                return false;
+
+            Ray ray = HandleUtility.GUIPointToWorldRay(guiMousePos);
+            bool hitFound = false;
+
+            for (int i = 0; i < indices.Length; i += 3)
             {
-                return renderer.sharedMaterial != null ? renderer.sharedMaterial.renderQueue : 2000;
-            }
+                Vector3 v0 = matrix.MultiplyPoint3x4(vertices[indices[i]]);
+                Vector3 v1 = matrix.MultiplyPoint3x4(vertices[indices[i + 1]]);
+                Vector3 v2 = matrix.MultiplyPoint3x4(vertices[indices[i + 2]]);
 
-            int queue = int.MinValue;
-            for (int i = 0; i < materials.Length; i++)
-            {
-                Material material = materials[i];
-                if (material == null)
-                    continue;
-
-                queue = Mathf.Max(queue, material.renderQueue);
-            }
-
-            return queue == int.MinValue ? 2000 : queue;
-        }
-
-        private static float ComputeDepthAlongView(GameObject go, SceneView sceneView, Vector2 guiMousePos)
-        {
-            if (sceneView == null || sceneView.camera == null)
-                return 0f;
-
-            Ray viewRay = HandleUtility.GUIPointToWorldRay(guiMousePos);
-            Vector3 referenceOrigin = viewRay.origin;
-            Vector3 referenceDir = viewRay.direction.normalized;
-
-            Vector3 samplePoint = go.transform.position;
-            Renderer renderer = go.GetComponent<Renderer>();
-            if (renderer != null)
-            {
-                Vector3 farPoint = referenceOrigin + referenceDir * 10000f;
-                samplePoint = renderer.bounds.ClosestPoint(farPoint);
-            }
-            else
-            {
-                RectTransform rectTransform = go.transform as RectTransform;
-                if (rectTransform != null)
+                if (IntersectRayTriangle(ray, v0, v1, v2, out float distance, out _) && distance < surfaceDistance)
                 {
-                    samplePoint = rectTransform.TransformPoint(rectTransform.rect.center);
+                    surfaceDistance = distance;
+                    hitFound = true;
                 }
             }
 
-            return Vector3.Dot(samplePoint - referenceOrigin, referenceDir);
+            return hitFound;
         }
 
 
@@ -832,7 +707,7 @@ namespace Multitool.SelectVisible
 
         private static bool IsPickable(GameObject go)
         {
-            return IsPickable(go, null);
+            return IsPickable(go, null, null);
         }
 
         private static bool IsClickNearIcon(GameObject go, Vector2 mousePos)
@@ -844,7 +719,7 @@ namespace Multitool.SelectVisible
             return distance <= IconClickRadius;
         }
 
-        private static bool IsPickable(GameObject go, Vector2? mousePos)
+        private static bool IsPickable(GameObject go, Vector2? mousePos, SceneView sceneView)
         {
             if (!go.activeInHierarchy)
                 return false;
@@ -875,7 +750,42 @@ namespace Multitool.SelectVisible
             if ((go.hideFlags & HideFlags.HideInHierarchy) != 0)
                 return false;
 
+            if (mousePos.HasValue && sceneView != null)
+            {
+                TMP_Text tmp = go.GetComponent<TMP_Text>();
+                if (tmp != null && !TmpTextHitsVisibleCharacter(tmp, mousePos.Value, sceneView))
+                    return false;
+            }
+
             return true;
+        }
+
+        private static Camera GetTmpPickCamera(TMP_Text tmp, SceneView sceneView)
+        {
+            if (tmp is TextMeshProUGUI ui)
+            {
+                Canvas canvas = ui.canvas;
+                if (canvas == null)
+                    return sceneView != null ? sceneView.camera : null;
+
+                if (canvas.renderMode == RenderMode.ScreenSpaceOverlay)
+                    return null;
+
+                return canvas.worldCamera != null ? canvas.worldCamera : (sceneView != null ? sceneView.camera : null);
+            }
+
+            return sceneView != null ? sceneView.camera : Camera.main;
+        }
+
+        private static bool TmpTextHitsVisibleCharacter(TMP_Text tmp, Vector2 guiMousePos, SceneView sceneView)
+        {
+            if (tmp == null || string.IsNullOrEmpty(tmp.text))
+                return false;
+
+            Vector3 screenPoint = HandleUtility.GUIPointToScreenPixelCoordinate(guiMousePos);
+            Camera cam = GetTmpPickCamera(tmp, sceneView);
+            int index = TMP_TextUtilities.FindIntersectingCharacter(tmp, screenPoint, cam, true);
+            return index >= 0;
         }
 
         private static bool PassesAlphaTest(GameObject go, SceneView sceneView, Vector2 guiMousePos, bool respectAlpha)
@@ -927,7 +837,19 @@ namespace Multitool.SelectVisible
                 // Разрешаем оба варианта: стандартный Raycast (если включен) и простой тест прямоугольника.
                 bool hitRaycast = g.Raycast(screenPoint, eventCamera);
                 bool hitRect = RectTransformUtility.RectangleContainsScreenPoint(g.rectTransform, screenPoint, eventCamera);
-                return hitRaycast || hitRect;
+                if (!hitRaycast && !hitRect)
+                    return false;
+
+                if (g is TMP_Text)
+                    return true;
+
+                if (g is Image image)
+                    return UiImagePassesAlphaAtPoint(image, screenPoint, eventCamera, effectiveAlpha);
+
+                if (g is RawImage rawImage)
+                    return UiRawImagePassesAlphaAtPoint(rawImage, screenPoint, eventCamera, effectiveAlpha);
+
+                return true;
             }
 
 
@@ -960,6 +882,168 @@ namespace Multitool.SelectVisible
             return alpha;
         }
 
+        private static bool UiImagePassesAlphaAtPoint(Image image, Vector2 screenPoint, Camera eventCamera, float effectiveAlpha)
+        {
+            if (image == null || image.sprite == null)
+                return true;
+
+            if (!RectTransformUtility.ScreenPointToLocalPointInRectangle(image.rectTransform, screenPoint, eventCamera, out Vector2 local))
+                return false;
+
+            if (TrySampleUiImageMeshAlpha(image, local, effectiveAlpha, out bool meshAlphaPassed))
+                return meshAlphaPassed;
+
+            if (image.type != Image.Type.Simple && image.type != Image.Type.Filled)
+                return true;
+
+            Sprite spr = image.sprite;
+            Texture2D tex = spr.texture;
+            if (tex == null)
+                return true;
+
+            Rect r = image.rectTransform.rect;
+            if (r.width <= 0f || r.height <= 0f)
+                return false;
+
+            float nx = (local.x - r.xMin) / r.width;
+            float ny = (local.y - r.yMin) / r.height;
+            if (nx < 0f || nx > 1f || ny < 0f || ny > 1f)
+                return false;
+
+            Rect tr = spr.textureRect;
+            float u = (tr.x + nx * tr.width) / tex.width;
+            float v = (tr.y + ny * tr.height) / tex.height;
+            float a = SampleTextureAlpha(tex, u, v) * effectiveAlpha;
+            return a >= AlphaThreshold;
+        }
+
+        private static bool TrySampleUiImageMeshAlpha(Image image, Vector2 local, float effectiveAlpha, out bool alphaPassed)
+        {
+            alphaPassed = true;
+
+            Mesh mesh = image.canvasRenderer != null ? image.canvasRenderer.GetMesh() : null;
+            if (mesh == null || mesh.vertexCount == 0)
+                return false;
+
+            Vector3[] vertices = mesh.vertices;
+            Vector2[] uvs = mesh.uv;
+            int[] triangles = mesh.triangles;
+            if (uvs == null || uvs.Length != vertices.Length || triangles == null || triangles.Length < 3)
+                return false;
+
+            Texture2D tex = image.sprite.texture;
+            if (tex == null)
+                return false;
+
+            for (int i = 0; i + 2 < triangles.Length; i += 3)
+            {
+                int i0 = triangles[i];
+                int i1 = triangles[i + 1];
+                int i2 = triangles[i + 2];
+                if (i0 < 0 || i0 >= vertices.Length || i1 < 0 || i1 >= vertices.Length || i2 < 0 || i2 >= vertices.Length)
+                    continue;
+
+                Vector2 a = vertices[i0];
+                Vector2 b = vertices[i1];
+                Vector2 c = vertices[i2];
+                if (!TryGetBarycentric(local, a, b, c, out Vector3 barycentric))
+                    continue;
+
+                Vector2 uv = uvs[i0] * barycentric.x + uvs[i1] * barycentric.y + uvs[i2] * barycentric.z;
+                alphaPassed = SampleTextureAlpha(tex, uv.x, uv.y) * effectiveAlpha >= AlphaThreshold;
+                return true;
+            }
+
+            alphaPassed = false;
+            return true;
+        }
+
+        private static bool TryGetBarycentric(Vector2 p, Vector2 a, Vector2 b, Vector2 c, out Vector3 barycentric)
+        {
+            barycentric = Vector3.zero;
+
+            Vector2 v0 = b - a;
+            Vector2 v1 = c - a;
+            Vector2 v2 = p - a;
+            float d00 = Vector2.Dot(v0, v0);
+            float d01 = Vector2.Dot(v0, v1);
+            float d11 = Vector2.Dot(v1, v1);
+            float d20 = Vector2.Dot(v2, v0);
+            float d21 = Vector2.Dot(v2, v1);
+            float denom = d00 * d11 - d01 * d01;
+            if (Mathf.Abs(denom) <= Mathf.Epsilon)
+                return false;
+
+            float v = (d11 * d20 - d01 * d21) / denom;
+            float w = (d00 * d21 - d01 * d20) / denom;
+            float u = 1f - v - w;
+            const float epsilon = 0.0001f;
+            if (u < -epsilon || v < -epsilon || w < -epsilon)
+                return false;
+
+            barycentric = new Vector3(u, v, w);
+            return true;
+        }
+
+        private static float SampleTextureAlpha(Texture2D tex, float u, float v)
+        {
+            u = Mathf.Clamp01(u);
+            v = Mathf.Clamp01(v);
+
+            if (tex.isReadable)
+                return tex.GetPixelBilinear(u, v).a;
+
+            RenderTexture previous = RenderTexture.active;
+            RenderTexture rt = RenderTexture.GetTemporary(tex.width, tex.height, 0, RenderTextureFormat.ARGB32);
+            Texture2D pixel = new Texture2D(1, 1, TextureFormat.RGBA32, false);
+
+            try
+            {
+                Graphics.Blit(tex, rt);
+                RenderTexture.active = rt;
+
+                int x = Mathf.Clamp(Mathf.RoundToInt(u * (tex.width - 1)), 0, tex.width - 1);
+                int y = Mathf.Clamp(Mathf.RoundToInt(v * (tex.height - 1)), 0, tex.height - 1);
+                pixel.ReadPixels(new Rect(x, y, 1, 1), 0, 0, false);
+                pixel.Apply(false, false);
+                return pixel.GetPixel(0, 0).a;
+            }
+            finally
+            {
+                RenderTexture.active = previous;
+                RenderTexture.ReleaseTemporary(rt);
+                Object.DestroyImmediate(pixel);
+            }
+        }
+
+        private static bool UiRawImagePassesAlphaAtPoint(RawImage rawImage, Vector2 screenPoint, Camera eventCamera, float effectiveAlpha)
+        {
+            if (rawImage == null || rawImage.texture == null)
+                return true;
+
+            Texture2D tex = rawImage.texture as Texture2D;
+            if (tex == null)
+                return true;
+
+            if (!RectTransformUtility.ScreenPointToLocalPointInRectangle(rawImage.rectTransform, screenPoint, eventCamera, out Vector2 local))
+                return false;
+
+            Rect r = rawImage.rectTransform.rect;
+            if (r.width <= 0f || r.height <= 0f)
+                return false;
+
+            float nx = (local.x - r.xMin) / r.width;
+            float ny = (local.y - r.yMin) / r.height;
+            if (nx < 0f || nx > 1f || ny < 0f || ny > 1f)
+                return false;
+
+            Rect uvRect = rawImage.uvRect;
+            float u = Mathf.Lerp(uvRect.xMin, uvRect.xMax, nx);
+            float v = Mathf.Lerp(uvRect.yMin, uvRect.yMax, ny);
+            float a = SampleTextureAlpha(tex, u, v) * effectiveAlpha;
+            return a >= AlphaThreshold;
+        }
+
         private static bool RendererPassesAlpha(Renderer renderer, SceneView sceneView, Vector2 guiMousePos)
         {
             Material material = renderer.sharedMaterial;
@@ -969,38 +1053,17 @@ namespace Multitool.SelectVisible
             if (IgnoreAdditiveEnabled() && IsAdditiveMaterial(material))
                 return false;
 
-            bool overlayClipEnabled = OverlayClipBypassEnabled();
-            Texture2D overlayTex = null;
-            bool hasOverlayClip = overlayClipEnabled && HasOverlayClipMaterial(material, out overlayTex);
-            if (hasOverlayClip && (overlayTex == null || !overlayTex.isReadable))
-            {
-                // Если не можем прочитать паттерн клипа — считаем прозрачным, чтобы не блокировать клик
-                return false;
-            }
-
             Mesh mesh = GetRendererMesh(renderer, out Matrix4x4 matrix);
             if (mesh == null)
             {
-                // fallback для объектов без читаемого меша
-                if (hasOverlayClip && TryEvaluateOverlayClip(material, overlayTex, sceneView, renderer.bounds.center, Color.white))
-                    return false;
-
                 return GetMaterialAlpha(material) >= AlphaThreshold;
             }
 
-            if (TrySampleMeshUV(guiMousePos, mesh, matrix, out Vector2 uv, out Vector3 hitWorldPos, out Color hitColor))
+            if (TrySampleMeshUV(guiMousePos, mesh, matrix, out Vector2 uv))
             {
-                // Спецкейс: шейдеры, которые клипуют по экранным UV (как ftue_highlight),
-                // но стоят в Opaque queue. Пытаемся вычислить реальный clip по OverlayTexture.
-                if (hasOverlayClip && TryEvaluateOverlayClip(material, overlayTex, sceneView, hitWorldPos, hitColor))
-                    return false;
-
                 float sampledAlpha = SampleMaterialAlpha(material, uv);
                 return sampledAlpha >= AlphaThreshold;
             }
-
-            if (hasOverlayClip && TryEvaluateOverlayClip(material, overlayTex, sceneView, renderer.bounds.center, Color.white))
-                return false;
 
             return GetMaterialAlpha(material) >= AlphaThreshold;
         }
@@ -1029,17 +1092,14 @@ namespace Multitool.SelectVisible
             return null;
         }
 
-        private static bool TrySampleMeshUV(Vector2 guiMousePos, Mesh mesh, Matrix4x4 matrix, out Vector2 uv, out Vector3 worldPos, out Color hitColor)
+        private static bool TrySampleMeshUV(Vector2 guiMousePos, Mesh mesh, Matrix4x4 matrix, out Vector2 uv)
         {
             uv = Vector2.zero;
-            worldPos = Vector3.zero;
-            hitColor = Color.white;
             if (mesh == null || !mesh.isReadable)
                 return false;
 
             var vertices = mesh.vertices;
             var uvs = mesh.uv;
-            var colors = mesh.colors;
             var indices = mesh.triangles;
 
             if (vertices == null || vertices.Length == 0 || uvs == null || uvs.Length == 0 || indices == null || indices.Length == 0)
@@ -1068,15 +1128,6 @@ namespace Multitool.SelectVisible
                         Vector2 uv2 = uvs.Length > i2 ? uvs[i2] : Vector2.zero;
 
                         uv = barycentric.x * uv0 + barycentric.y * uv1 + barycentric.z * uv2;
-                        worldPos = barycentric.x * v0 + barycentric.y * v1 + barycentric.z * v2;
-                        if (colors != null && colors.Length > 0)
-                        {
-                            Color c0 = colors.Length > i0 ? colors[i0] : Color.white;
-                            Color c1 = colors.Length > i1 ? colors[i1] : Color.white;
-                            Color c2 = colors.Length > i2 ? colors[i2] : Color.white;
-                            hitColor = barycentric.x * c0 + barycentric.y * c1 + barycentric.z * c2;
-                        }
-
                         bestDistance = distance;
                         hitFound = true;
                     }
@@ -1119,18 +1170,6 @@ namespace Multitool.SelectVisible
             return true;
         }
 
-        private static bool IsTransparentMaterial(Material material)
-        {
-            if (material == null)
-                return false;
-
-            if (material.renderQueue >= (int)RenderQueue.Transparent)
-                return true;
-
-            string renderType = material.GetTag("RenderType", false);
-            return renderType == "Transparent" || renderType == "Fade";
-        }
-
         private static bool IsAdditiveMaterial(Material material)
         {
             if (material == null)
@@ -1158,55 +1197,6 @@ namespace Multitool.SelectVisible
             }
 
             return alpha;
-        }
-
-        private static bool TryEvaluateOverlayClip(Material material, Texture2D overlayTex, SceneView sceneView, Vector3 hitWorldPos, Color hitColor)
-        {
-            // Поддержка шейдеров с клипом по экранным UV (например, shader_ftue_highlight),
-            // у которых RenderQueue/RenderType не говорят о прозрачности.
-            if (material == null || sceneView == null || sceneView.camera == null)
-                return false;
-
-            if (overlayTex == null || !overlayTex.isReadable)
-                return false;
-
-            Camera cam = sceneView.camera;
-            Vector3 viewport = cam.WorldToViewportPoint(hitWorldPos);
-            if (viewport.z <= 0f)
-                return false;
-
-            float aspect = (float)cam.pixelWidth / cam.pixelHeight;
-            Vector2 screenUV = new Vector2(viewport.x * aspect, viewport.y);
-
-            float scale = material.GetFloat("_OverlayScale");
-            Vector2 tiledUV = screenUV * scale;
-
-            float alphaPat = overlayTex.GetPixelBilinear(Mathf.Repeat(tiledUV.x, 1f), Mathf.Repeat(tiledUV.y, 1f)).r;
-            float lowCut = material.GetFloat("_LowCut");
-            float highCut = material.GetFloat("_HighCut");
-            float opac = Mathf.InverseLerp(lowCut, highCut, hitColor.r);
-            alphaPat = alphaPat >= opac ? 1f : 0f;
-
-            // В шейдере происходит clip, когда alphaPat > 0.5
-            return (1f - alphaPat) < 0.5f;
-        }
-
-        private static bool HasOverlayClipMaterial(Material material, out Texture2D overlayTex)
-        {
-            overlayTex = null;
-            if (material == null)
-                return false;
-
-            if (!material.HasProperty("_OverlayTexture") ||
-                !material.HasProperty("_OverlayScale") ||
-                !material.HasProperty("_LowCut") ||
-                !material.HasProperty("_HighCut"))
-            {
-                return false;
-            }
-
-            overlayTex = material.GetTexture("_OverlayTexture") as Texture2D;
-            return true;
         }
 
         private static float GetMaterialAlpha(Material material)
@@ -1253,10 +1243,7 @@ namespace Multitool.SelectVisible
             _lastMousePosition = mousePos;
 
             bool respectAlpha = RespectAlpha();
-            bool respectRenderQueue = RespectRenderQueue();
-            GameObject picked = respectRenderQueue
-                ? PickConsideringRenderOrder(sceneView, mousePos, respectAlpha)
-                : PickSimple(sceneView, mousePos, respectAlpha);
+            GameObject picked = PickConsideringRenderOrder(sceneView, mousePos, respectAlpha);
 
             picked = ApplySelectionMode(picked);
 
@@ -1358,7 +1345,10 @@ namespace Multitool.SelectVisible
                     else
                     {
                         // Для объектов без Renderer и RectTransform используем стандартный способ
-                        Handles.Label(textWorldPos, go.name, new GUIStyle(EditorStyles.label)
+                        if (GUI.skin == null)
+                            return;
+
+                        Handles.Label(textWorldPos, go.name, new GUIStyle(GUI.skin.label)
                         {
                             normal = { textColor = Color.yellow },
                             fontSize = 12,
@@ -1738,46 +1728,55 @@ namespace Multitool.SelectVisible
         private static void DrawTextInScreenSpace(string text, Rect screenRect, Color textColor)
         {
             Handles.BeginGUI();
-            const int GuiTopDepth = int.MinValue + 10; // максимум приоритета над гизмо и хэндлами
             int prevDepth = GUI.depth;
-            GUI.depth = GuiTopDepth;
-
-            const float paddingX = 6f;
-            const float paddingY = 4f;
-            Color bgColor = new Color(0f, 0f, 0f, 0.65f);
-
-            GUIStyle labelStyle = new GUIStyle(EditorStyles.label)
+            try
             {
-                normal = { textColor = textColor },
-                hover = { textColor = textColor },
-                active = { textColor = textColor },
-                focused = { textColor = textColor },
-                // Чуть меньше размер шрифта (было 12)
-                fontSize = 11,
-                fontStyle = FontStyle.Bold
-            };
+                if (GUI.skin == null)
+                    return;
 
-            Vector2 textSize = labelStyle.CalcSize(new GUIContent(text));
+                const int GuiTopDepth = int.MinValue + 10; // максимум приоритета над гизмо и хэндлами
+                GUI.depth = GuiTopDepth;
 
-            Rect bgRect = new Rect(
-                screenRect.xMin,
-                screenRect.yMin,
-                textSize.x + paddingX * 2f,
-                textSize.y + paddingY * 2f
-            );
+                const float paddingX = 6f;
+                const float paddingY = 4f;
+                Color bgColor = new Color(0f, 0f, 0f, 0.65f);
 
-            Rect labelRect = new Rect(
-                bgRect.xMin + paddingX,
-                bgRect.yMin + paddingY,
-                textSize.x,
-                textSize.y
-            );
+                GUIStyle labelStyle = new GUIStyle(GUI.skin.label)
+                {
+                    normal = { textColor = textColor },
+                    hover = { textColor = textColor },
+                    active = { textColor = textColor },
+                    focused = { textColor = textColor },
+                    // Чуть меньше размер шрифта (было 12)
+                    fontSize = 11,
+                    fontStyle = FontStyle.Bold
+                };
 
-            EditorGUI.DrawRect(bgRect, bgColor);
-            GUI.Label(labelRect, text, labelStyle);
+                Vector2 textSize = labelStyle.CalcSize(new GUIContent(text));
 
-            GUI.depth = prevDepth;
-            Handles.EndGUI();
+                Rect bgRect = new Rect(
+                    screenRect.xMin,
+                    screenRect.yMin,
+                    textSize.x + paddingX * 2f,
+                    textSize.y + paddingY * 2f
+                );
+
+                Rect labelRect = new Rect(
+                    bgRect.xMin + paddingX,
+                    bgRect.yMin + paddingY,
+                    textSize.x,
+                    textSize.y
+                );
+
+                EditorGUI.DrawRect(bgRect, bgColor);
+                GUI.Label(labelRect, text, labelStyle);
+
+            }
+            finally
+            {
+                GUI.depth = prevDepth;
+                Handles.EndGUI();
+            }
         }
 
         private static Rect BuildCursorLabelRect(Vector2 cursorGuiPos)
@@ -1794,7 +1793,6 @@ namespace Multitool.SelectVisible
     [Overlay(typeof(SceneView), "\u200B", true)]
     public class VisibleSelectionOverlay : IMGUIOverlay, ITransientOverlay
     {
-        private const float Padding = 1f;
         private const float Spacing = 1f;
         private const float PanelWidth = 120f;
         private const float SliderWidth = 120f;
@@ -1806,7 +1804,7 @@ namespace Multitool.SelectVisible
         {
             if (_toggleClippedStyle == null)
             {
-                _toggleClippedStyle = new GUIStyle(EditorStyles.toggle)
+                _toggleClippedStyle = new GUIStyle(GUI.skin.toggle)
                 {
                     wordWrap = false,
                     clipping = TextClipping.Clip
@@ -1823,6 +1821,9 @@ namespace Multitool.SelectVisible
             if (!VisibleSelection.OverlayEnabled)
                 return;
 
+            if (GUI.skin == null)
+                return;
+
             bool expanded = VisibleSelection.OverlayExpanded;
 
             // Let the overlay auto-size vertically to avoid empty space at the bottom.
@@ -1830,7 +1831,7 @@ namespace Multitool.SelectVisible
 
             if (_labelStyle == null)
             {
-                _labelStyle = new GUIStyle(EditorStyles.label)
+                _labelStyle = new GUIStyle(GUI.skin.label)
                 {
                     fontSize = 10,
                     fontStyle = FontStyle.Bold,
@@ -1936,13 +1937,6 @@ namespace Multitool.SelectVisible
                 }
 
                 GUILayout.Space(Spacing);
-
-                bool overlayClipBypass = VisibleSelection.OverlayClipBypassEnabled();
-                bool newOverlayClipBypass = ToggleLeftClipped("Bypass Overlay Clip", overlayClipBypass, 14f);
-                if (newOverlayClipBypass != overlayClipBypass)
-                {
-                    EditorPrefs.SetBool(VisibleSelection.PrefKeyOverlayClipBypass, newOverlayClipBypass);
-                }
             }
 
             GUILayout.EndVertical();

@@ -63,9 +63,12 @@ namespace Multitool.PrefabLocker
             if (go.GetComponent<PrefabLocker>() == null)
                 return;
 
+            if (GUI.skin == null)
+                return;
+
             // Вычисляем ширину имени объекта
             var content = new GUIContent(go.name);
-            var style = EditorStyles.label;
+            var style = GUI.skin.label;
             var nameWidth = style.CalcSize(content).x;
 
             // Иконка после имени (с небольшим отступом)
