@@ -13,5 +13,6 @@ public class LevelManagementInstaller : MonoInstaller
         Container.Bind<LevelSceneUIController>().FromInstance(levelSceneUIController).AsSingle();
         Container.Bind<LevelValuesManager>().FromInstance(levelValuesManager).AsSingle();
         Container.Bind<QuestPanel>().FromInstance(questPanel).AsSingle();
+        Container.Bind<PlayerController>().FromComponentInHierarchy().AsSingle();
     }
 }

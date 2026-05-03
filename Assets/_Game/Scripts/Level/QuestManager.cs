@@ -38,6 +38,7 @@ public class QuestManager : MonoBehaviour
         if (_quests.Count == 0)
         {
             _questPanel.Hide();
+            Actions.QuestTargetChanged(null);
             return;
         }
 
@@ -53,6 +54,7 @@ public class QuestManager : MonoBehaviour
             case QuestType.ReachPoint:
                 _questDestinationMarker = Instantiate(_questDestinationMarkerPrefab, quest.targetPoint.position, quest.targetPoint.rotation);
                 _questDestinationMarker.GetComponent<QuestDestinationMarker>().Init(quest.id);
+                Actions.QuestTargetChanged(_questDestinationMarker.transform);
                 break;
         }
 

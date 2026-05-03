@@ -40,6 +40,13 @@ public static class Actions
         OnQuestDestinationReached?.Invoke(questId);
     }
 
+    public static UnityAction<Transform> OnQuestTargetChanged;
+    public static void QuestTargetChanged(Transform questTarget)
+    {
+        Debug.Log($"<color={debugColor}>QuestTargetChanged</color>");
+        OnQuestTargetChanged?.Invoke(questTarget);
+    }
+
     // UI
     public static UnityAction OnNextLevelButtonPressed;
     public static void NextLevelButtonPressed()

@@ -282,4 +282,5 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 19b7bd8087c4c984ca78a178578d8dcd, type: 3}
   m_Name: 
   m_EditorClassIdentifier: '::'
+  _navigationPoint: {fileID: 4634287201977731317}
   _questId: q1

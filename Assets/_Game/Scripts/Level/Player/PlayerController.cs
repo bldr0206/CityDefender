@@ -1,6 +1,8 @@
 using System.Collections.Generic;
 using UnityEngine;
 using Zenject;
+using UnityEngine.Playables;
+using UnityEngine.Timeline;
 public class PlayerController : MonoBehaviour
 {
     // SERIALIZED FIELDS
@@ -11,6 +13,10 @@ public class PlayerController : MonoBehaviour
     [SerializeField] private float aimSmoothTime = 0.08f;
     [SerializeField] private float inputSmoothTime = 0.04f;
     [SerializeField] private GameObject _aimObject;
+
+    [SerializeField] PlayableDirector _playerAnimationDirector;
+    [SerializeField] TimelineAsset _idleTimeline;
+    [SerializeField] TimelineAsset _runTimeline;
     // PRIVATE FIELDS
     private Rigidbody _rigidbody;
     private Joystick _moveJoystick;
@@ -20,6 +26,7 @@ public class PlayerController : MonoBehaviour
     private Vector2 _moveInputVelocity;
     private Vector3 _aimVelocity;
     private readonly List<Vector3> _wallNormals = new List<Vector3>();
+    private TimelineAsset _currentAnimation;
 
     private bool _canMove = true;
     private bool _ignoreInputUntilReleased;
@@ -40,6 +47,7 @@ public class PlayerController : MonoBehaviour
         _rigidbody.interpolation = RigidbodyInterpolation.Interpolate;
         _playerModelTransform = _playerModel.transform;
         _aimTransform = _aimObject.transform;
+        PlayAnimation(_idleTimeline);
     }
     private void OnDestroy()
     {
@@ -117,6 +125,7 @@ public class PlayerController : MonoBehaviour
     {
         float inputMagnitudeSqr = _moveInput.sqrMagnitude;
         bool hasMoveInput = inputMagnitudeSqr > InputDeadZoneSqr;
+        PlayAnimation(hasMoveInput ? _runTimeline : _idleTimeline);
 
         if (hasMoveInput)
         {
@@ -175,5 +184,15 @@ public class PlayerController : MonoBehaviour
         _moveInput = Vector2.zero;
         _moveInputVelocity = Vector2.zero;
         _aimVelocity = Vector3.zero;
+        PlayAnimation(_idleTimeline);
+    }
+
+    private void PlayAnimation(TimelineAsset timeline)
+    {
+        if (_playerAnimationDirector == null || timeline == null || _currentAnimation == timeline) return;
+
+        _currentAnimation = timeline;
+        _playerAnimationDirector.playableAsset = timeline;
+        _playerAnimationDirector.Play();
     }
 }
