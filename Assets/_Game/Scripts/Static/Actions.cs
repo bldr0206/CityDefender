@@ -19,6 +19,20 @@ public static class Actions
         OnLevelStarted?.Invoke();
     }
 
+    public static UnityAction OnGamePaused;
+    public static void GamePaused()
+    {
+        Debug.Log($"<color={debugColor}>GamePaused</color>");
+        OnGamePaused?.Invoke();
+    }
+
+    public static UnityAction OnGameResumed;
+    public static void GameResumed()
+    {
+        Debug.Log($"<color={debugColor}>GameResumed</color>");
+        OnGameResumed?.Invoke();
+    }
+
     public static UnityAction<int> OnPlayerMoneyChanged;
     public static void PlayerMoneyChanged(int currentMoney)
     {

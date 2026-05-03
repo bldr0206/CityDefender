@@ -6,6 +6,7 @@ public class LevelManagementInstaller : MonoInstaller
     [SerializeField] private LevelSceneUIController levelSceneUIController;
     [SerializeField] private LevelValuesManager levelValuesManager;
     [SerializeField] private QuestPanel questPanel;
+    [SerializeField] private DialogueScreen dialogueScreen;
 
     public override void InstallBindings()
     {
@@ -13,6 +14,7 @@ public class LevelManagementInstaller : MonoInstaller
         Container.Bind<LevelSceneUIController>().FromInstance(levelSceneUIController).AsSingle();
         Container.Bind<LevelValuesManager>().FromInstance(levelValuesManager).AsSingle();
         Container.Bind<QuestPanel>().FromInstance(questPanel).AsSingle();
+        Container.Bind<DialogueScreen>().FromInstance(dialogueScreen).AsSingle();
         Container.Bind<PlayerController>().FromComponentInHierarchy().AsSingle();
     }
 }

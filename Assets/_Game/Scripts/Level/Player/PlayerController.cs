@@ -29,6 +29,7 @@ public class PlayerController : MonoBehaviour
     private TimelineAsset _currentAnimation;
 
     private bool _canMove = true;
+    private bool _canMoveBeforePause = true;
     private bool _ignoreInputUntilReleased;
     private const float InputDeadZoneSqr = 0.0004f; // (~0.02)^2
     private const float WallNormalMaxY = 0.5f;
@@ -42,6 +43,8 @@ public class PlayerController : MonoBehaviour
     {
         Actions.OnPlayerReachedFinish += HandlePlayerReachedFinish;
         Actions.OnLevelStarted += HandleLevelStarted;
+        Actions.OnGamePaused += HandleGamePaused;
+        Actions.OnGameResumed += HandleGameResumed;
 
         _rigidbody = GetComponent<Rigidbody>();
         _rigidbody.interpolation = RigidbodyInterpolation.Interpolate;
@@ -53,6 +56,8 @@ public class PlayerController : MonoBehaviour
     {
         Actions.OnPlayerReachedFinish -= HandlePlayerReachedFinish;
         Actions.OnLevelStarted -= HandleLevelStarted;
+        Actions.OnGamePaused -= HandleGamePaused;
+        Actions.OnGameResumed -= HandleGameResumed;
     }
     private void Update()
     {
@@ -169,6 +174,20 @@ public class PlayerController : MonoBehaviour
     private void HandleLevelStarted()
     {
         _canMove = true;
+        _ignoreInputUntilReleased = true;
+        StopMotionImmediately();
+    }
+
+    private void HandleGamePaused()
+    {
+        _canMoveBeforePause = _canMove;
+        _canMove = false;
+        StopMotionImmediately();
+    }
+
+    private void HandleGameResumed()
+    {
+        _canMove = _canMoveBeforePause;
         _ignoreInputUntilReleased = true;
         StopMotionImmediately();
     }

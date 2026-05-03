@@ -1,0 +1,80 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5b11a58205ec3474ca216360e9fa74a8, type: 3}
+  m_Name: Localisation_main Shared Data
+  m_EditorClassIdentifier: Unity.Localization::UnityEngine.Localization.Tables.SharedTableData
+  m_TableCollectionName: Localisation_main
+  m_TableCollectionNameGuidString: 8859809404f9047418316076b40b54f3
+  m_Entries:
+  - m_Id: 18138398720
+    m_Key: quest.find_exit
+    m_Metadata:
+      m_Items: []
+  - m_Id: 152976883712
+    m_Key: ui.next_button
+    m_Metadata:
+      m_Items: []
+  - m_Id: 698970406912
+    m_Key: sink.hire_worker
+    m_Metadata:
+      m_Items: []
+  - m_Id: 741962022912
+    m_Key: sink.return_bottles
+    m_Metadata:
+      m_Items: []
+  - m_Id: 858156826624
+    m_Key: ui.level
+    m_Metadata:
+      m_Items: []
+  - m_Id: 43564614680576
+    m_Key: quest.q1.line1.npc
+    m_Metadata:
+      m_Items: []
+  - m_Id: 43797570519040
+    m_Key: quest.q1.line2.npc
+    m_Metadata:
+      m_Items: []
+  - m_Id: 43966911348736
+    m_Key: quest.q1.line3.npc
+    m_Metadata:
+      m_Items: []
+  - m_Id: 44966623707136
+    m_Key: quest.q1.line4.player
+    m_Metadata:
+      m_Items: []
+  - m_Id: 44662775742464
+    m_Key: quest.q1.line5.npc
+    m_Metadata:
+      m_Items: []
+  - m_Id: 56506546520064
+    m_Key: ui.take_button
+    m_Metadata:
+      m_Items: []
+  - m_Id: 56771228073984
+    m_Key: ui.emtpy_bottle
+    m_Metadata:
+      m_Items: []
+  - m_Id: 63779922640896
+    m_Key: ui.tap_to_continue
+    m_Metadata:
+      m_Items: []
+  m_Metadata:
+    m_Items: []
+  m_KeyGenerator:
+    rid: 787770473075704459
+  references:
+    version: 2
+    RefIds:
+    - rid: 787770473075704459
+      type: {class: DistributedUIDGenerator, ns: UnityEngine.Localization.Tables, asm: Unity.Localization}
+      data:
+        m_CustomEpoch: 1777822130358

@@ -2,6 +2,8 @@ using UnityEngine;
 using System;
 using System.Collections.Generic;
 using Zenject;
+using UnityEngine.Localization;
+
 
 public class QuestManager : MonoBehaviour
 {
@@ -9,13 +11,15 @@ public class QuestManager : MonoBehaviour
     [SerializeField] private GameObject _questDestinationMarkerPrefab;
 
     QuestPanel _questPanel;
+    DialogueScreen _dialogueScreen;
     Quest _currentQuest;
     GameObject _questDestinationMarker;
 
     [Inject]
-    public void Construct(QuestPanel questPanel)
+    public void Construct(QuestPanel questPanel, DialogueScreen dialogueScreen)
     {
         _questPanel = questPanel;
+        _dialogueScreen = dialogueScreen;
     }
 
     void OnEnable()
@@ -42,12 +46,30 @@ public class QuestManager : MonoBehaviour
             return;
         }
 
-        _currentQuest = RunQuest(_quests[0]);
+        _currentQuest = _quests[0];
         _questPanel.Show();
         _questPanel.UpdateQuestText(_currentQuest.title);
+
+        PlayCutscene(_currentQuest.startCutscenePrefab, PlayStartDialogue);
     }
 
-    Quest RunQuest(Quest quest)
+    void PlayStartDialogue()
+    {
+        if (_currentQuest.startDialogueData != null)
+        {
+            _dialogueScreen.Play(_currentQuest.startDialogueData, RunCurrentQuest);
+            return;
+        }
+
+        RunCurrentQuest();
+    }
+
+    void RunCurrentQuest()
+    {
+        RunQuest(_currentQuest);
+    }
+
+    void RunQuest(Quest quest)
     {
         switch (quest.type)
         {
@@ -57,18 +79,40 @@ public class QuestManager : MonoBehaviour
                 Actions.QuestTargetChanged(_questDestinationMarker.transform);
                 break;
         }
-
-        return quest;
     }
 
     void CompleteReachPointQuest(string questId)
     {
         if (_currentQuest == null || _currentQuest.id != questId) return;
 
+        Quest completedQuest = _currentQuest;
         Destroy(_questDestinationMarker);
-        _quests.Remove(_currentQuest);
+        _quests.Remove(completedQuest);
         _currentQuest = null;
-        RunNextQuest();
+
+        if (completedQuest.endDialogueData != null)
+        {
+            _dialogueScreen.Play(completedQuest.endDialogueData, () => PlayEndCutscene(completedQuest));
+            return;
+        }
+
+        PlayEndCutscene(completedQuest);
+    }
+
+    void PlayEndCutscene(Quest completedQuest)
+    {
+        PlayCutscene(completedQuest.endCutscenePrefab, RunNextQuest);
+    }
+
+    void PlayCutscene(QuestCutscene cutscenePrefab, Action onFinished)
+    {
+        if (cutscenePrefab == null)
+        {
+            onFinished?.Invoke();
+            return;
+        }
+
+        Instantiate(cutscenePrefab).Play(onFinished);
     }
 }
 
@@ -77,10 +121,14 @@ public class QuestManager : MonoBehaviour
 public class Quest
 {
     public string id;
-    public string title;
+    public LocalizedString title;
     public QuestType type;
     public Transform targetPoint;
     public int requiredAmount;
+    public QuestCutscene startCutscenePrefab;
+    public QuestCutscene endCutscenePrefab;
+    public DialogueData startDialogueData;
+    public DialogueData endDialogueData;
 }
 
 public enum QuestType
