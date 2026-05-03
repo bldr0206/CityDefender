@@ -33,6 +33,13 @@ public static class Actions
         OnPlayerReachedFinish?.Invoke();
     }
 
+    public static UnityAction<string> OnQuestDestinationReached;
+    public static void QuestDestinationReached(string questId)
+    {
+        Debug.Log($"<color={debugColor}>QuestDestinationReached</color> {questId}");
+        OnQuestDestinationReached?.Invoke(questId);
+    }
+
     // UI
     public static UnityAction OnNextLevelButtonPressed;
     public static void NextLevelButtonPressed()
