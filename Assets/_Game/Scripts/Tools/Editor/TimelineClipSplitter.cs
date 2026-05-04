@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using System.Linq;
 using JetBrains.Annotations;
 using UnityEditor;
+using UnityEditor.ShortcutManagement;
 using UnityEditor.Timeline.Actions;
 using UnityEngine;
 using UnityEngine.Timeline;
@@ -53,6 +54,12 @@ namespace UnityEditor.Timeline
                 TimelineEditor.Refresh(RefreshReason.ContentsAddedOrRemoved);
 
             return success;
+        }
+
+        [TimelineShortcut("Editing/Split at Playhead", KeyCode.None)]
+        public static void HandleShortcut(ShortcutArguments args)
+        {
+            Invoker.InvokeWithSelectedClips<SplitAtPlayheadClipAction>();
         }
 
         static bool SplitAnimationClipAtTime(TimelineClip originalClip, double splitTime)
