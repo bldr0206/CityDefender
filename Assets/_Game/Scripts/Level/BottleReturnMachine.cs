@@ -55,7 +55,7 @@ public class BottleReturnMachine : MonoBehaviour
 
     void FillProgress()
     {
-        if (!_isPlayerInside || _playerCollector == null || !_playerCollector.HasBottles) return;
+        if (!_isPlayerInside || _playerCollector == null || !_playerCollector.HasItem(PickableItemType.Bottle)) return;
 
         _currentTween?.Kill();
         _currentTween = _progressBar
@@ -74,13 +74,18 @@ public class BottleReturnMachine : MonoBehaviour
 
     void ReturnBottle()
     {
-        if (!_isPlayerInside || _playerCollector == null || !_playerCollector.HasBottles)
+        if (!_isPlayerInside || _playerCollector == null)
         {
             _isReturningBottle = false;
             return;
         }
 
-        Bottle bottle = _playerCollector.RemoveLastBottle();
+        if (!_playerCollector.TryRemoveLastItem(PickableItemType.Bottle, out PickableItem bottle))
+        {
+            _isReturningBottle = false;
+            return;
+        }
+
         _progressBar.fillAmount = 0f;
         _isReturningBottle = true;
 
@@ -92,8 +97,11 @@ public class BottleReturnMachine : MonoBehaviour
             .Join(bottle.transform.DOLocalRotate(Vector3.zero, _gameUISettings.shortDelay).SetEase(Ease.InOutQuad))
             .OnComplete(() =>
             {
-                Destroy(bottle.gameObject);
                 _levelValuesManager.AddMoney(_moneyPerBottle);
+                if (bottle.IsQuestBound)
+                    Actions.QuestItemTurnedIn(bottle.QuestId);
+
+                Destroy(bottle.gameObject);
                 ReturnBottle();
             });
     }

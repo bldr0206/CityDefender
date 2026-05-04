@@ -36,6 +36,8 @@ public class DialogueScreen : MonoBehaviour
 
     public void Play(DialogueData dialogue, Action onFinished = null)
     {
+        Actions.DialogueStarted();
+
         _dialogue = dialogue;
         _onFinished = onFinished;
         _lineIndex = 0;
@@ -101,6 +103,9 @@ public class DialogueScreen : MonoBehaviour
         root.SetActive(false);
         _dialogue = null;
         _onFinished = null;
+
+        Actions.DialogueEnded();
+
         Game.ResumeGame();
         onFinished?.Invoke();
     }

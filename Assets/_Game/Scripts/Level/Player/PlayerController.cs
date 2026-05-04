@@ -29,6 +29,7 @@ public class PlayerController : MonoBehaviour
     private TimelineAsset _currentAnimation;
 
     private bool _canMove = true;
+    private bool _cutsceneBlockingMovement;
     private bool _canMoveBeforePause = true;
     private bool _ignoreInputUntilReleased;
     private const float InputDeadZoneSqr = 0.0004f; // (~0.02)^2
@@ -45,6 +46,8 @@ public class PlayerController : MonoBehaviour
         Actions.OnLevelStarted += HandleLevelStarted;
         Actions.OnGamePaused += HandleGamePaused;
         Actions.OnGameResumed += HandleGameResumed;
+        Actions.OnCutsceneStarted += HandleCutsceneStarted;
+        Actions.OnCutsceneEnded += HandleCutsceneEnded;
 
         _rigidbody = GetComponent<Rigidbody>();
         _rigidbody.interpolation = RigidbodyInterpolation.Interpolate;
@@ -58,6 +61,8 @@ public class PlayerController : MonoBehaviour
         Actions.OnLevelStarted -= HandleLevelStarted;
         Actions.OnGamePaused -= HandleGamePaused;
         Actions.OnGameResumed -= HandleGameResumed;
+        Actions.OnCutsceneStarted -= HandleCutsceneStarted;
+        Actions.OnCutsceneEnded -= HandleCutsceneEnded;
     }
     private void Update()
     {
@@ -72,7 +77,7 @@ public class PlayerController : MonoBehaviour
 
     private void UpdateInput()
     {
-        if (!_canMove)
+        if (!_canMove || _cutsceneBlockingMovement)
         {
             _moveInput = Vector2.zero;
             return;
@@ -104,7 +109,7 @@ public class PlayerController : MonoBehaviour
 
     private void MoveRigidbody()
     {
-        if (!_canMove)
+        if (!_canMove || _cutsceneBlockingMovement)
         {
             _wallNormals.Clear();
             return;
@@ -192,8 +197,25 @@ public class PlayerController : MonoBehaviour
         StopMotionImmediately();
     }
 
+    private void HandleCutsceneStarted()
+    {
+        _cutsceneBlockingMovement = true;
+        _ignoreInputUntilReleased = true;
+        StopMotionImmediately();
+    }
+
+    private void HandleCutsceneEnded()
+    {
+        _cutsceneBlockingMovement = false;
+        _ignoreInputUntilReleased = true;
+        StopMotionImmediately();
+    }
+
     private void StopMotionImmediately()
     {
+        if (_moveJoystick != null)
+            _moveJoystick.OnPointerUp(null);
+
         if (_rigidbody != null)
         {
             _rigidbody.linearVelocity = Vector3.zero;

@@ -60,10 +60,15 @@ public class DialogueLineDrawer : PropertyDrawer
         Filters[filterKey] = filter;
 
         row.y += EditorGUIUtility.singleLineHeight + Spacing;
+        Rect textKeyRect = row;
+        textKeyRect.width -= LocalizationTablesButton.Width + Spacing;
+
+        Rect buttonRect = new Rect(textKeyRect.xMax + Spacing, row.y, LocalizationTablesButton.Width, EditorGUIUtility.singleLineHeight);
 
         if (keys.Length == 0)
         {
-            EditorGUI.PropertyField(row, textKey);
+            EditorGUI.PropertyField(textKeyRect, textKey);
+            LocalizationTablesButton.Draw(buttonRect);
             return;
         }
 
@@ -86,8 +91,9 @@ public class DialogueLineDrawer : PropertyDrawer
         labels.AddRange(filteredKeys);
 
         int selectedIndex = Mathf.Max(0, values.IndexOf(textKey.stringValue));
-        selectedIndex = EditorGUI.Popup(row, textKey.displayName, selectedIndex, labels.ToArray());
+        selectedIndex = EditorGUI.Popup(textKeyRect, textKey.displayName, selectedIndex, labels.ToArray());
         textKey.stringValue = values[selectedIndex];
+        LocalizationTablesButton.Draw(buttonRect);
     }
 
     private static string GetFilterKey(SerializedProperty property)

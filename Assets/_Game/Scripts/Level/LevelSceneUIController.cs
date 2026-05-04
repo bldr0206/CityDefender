@@ -2,15 +2,17 @@ using UnityEngine;
 using UnityEngine.UI;
 using Zenject;
 using System.Collections;
-using System.Runtime.InteropServices;
 
 public class LevelSceneUIController : MonoBehaviour
 {
     [SerializeField] private GameObject gameHudRoot;
     [SerializeField] private GameObject winScreenRoot;
     [SerializeField] private Button nextLevelButton;
+    [SerializeField] private GameObject joystickRoot;
 
     GameUISettings _gameSettings;
+    bool _wantsGameHudShown;
+    int _hudHideBlocks;
 
     [Inject]
     public void Construct(GameUISettings gameSettings)
@@ -25,7 +27,33 @@ public class LevelSceneUIController : MonoBehaviour
             nextLevelButton.onClick.AddListener(OnNextLevelButtonClicked);
     }
 
+    void OnEnable()
+    {
+        Actions.OnCutsceneStarted += HideLevelHud;
+        Actions.OnCutsceneEnded += ShowLevelHud;
+        Actions.OnDialogueStarted += HideLevelHud;
+        Actions.OnDialogueEnded += ShowLevelHud;
+    }
 
+    void OnDisable()
+    {
+        Actions.OnCutsceneStarted -= HideLevelHud;
+        Actions.OnCutsceneEnded -= ShowLevelHud;
+        Actions.OnDialogueStarted -= HideLevelHud;
+        Actions.OnDialogueEnded -= ShowLevelHud;
+    }
+
+    void HideLevelHud()
+    {
+        _hudHideBlocks++;
+        ApplyGameHudVisibility();
+    }
+
+    void ShowLevelHud()
+    {
+        _hudHideBlocks = Mathf.Max(0, _hudHideBlocks - 1);
+        ApplyGameHudVisibility();
+    }
 
     public void LevelStarted()
     {
@@ -34,13 +62,13 @@ public class LevelSceneUIController : MonoBehaviour
     }
     public void ShowGameHud()
     {
-        if (gameHudRoot != null)
-            gameHudRoot.SetActive(true);
+        _wantsGameHudShown = true;
+        ApplyGameHudVisibility();
     }
     public void HideGameHud()
     {
-        if (gameHudRoot != null)
-            gameHudRoot.SetActive(false);
+        _wantsGameHudShown = false;
+        ApplyGameHudVisibility();
     }
     public void HideWinscreen()
     {
@@ -48,11 +76,10 @@ public class LevelSceneUIController : MonoBehaviour
             winScreenRoot.SetActive(false);
     }
 
-    Coroutine _winScreenCoroutine;
     public void WinLevel()
     {
         HideGameHud();
-        _winScreenCoroutine = StartCoroutine(ShowWinScreenWithDelay(_gameSettings.standardDelay));
+        StartCoroutine(ShowWinScreenWithDelay(_gameSettings.standardDelay));
     }
     IEnumerator ShowWinScreenWithDelay(float delay)
     {
@@ -66,5 +93,14 @@ public class LevelSceneUIController : MonoBehaviour
         Actions.NextLevelButtonPressed();
     }
 
+    void ApplyGameHudVisibility()
+    {
+        bool isVisible = _wantsGameHudShown && _hudHideBlocks == 0;
 
+        if (gameHudRoot != null)
+            gameHudRoot.SetActive(isVisible);
+
+        if (joystickRoot != null)
+            joystickRoot.SetActive(isVisible);
+    }
 }

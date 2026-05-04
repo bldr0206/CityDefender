@@ -1,0 +1,126 @@
+using UnityEditor;
+using UnityEngine;
+
+[CustomPropertyDrawer(typeof(Quest))]
+public class QuestDrawer : PropertyDrawer
+{
+    const float Spacing = 2f;
+
+    public override void OnGUI(Rect position, SerializedProperty property, GUIContent label)
+    {
+        EditorGUI.BeginProperty(position, label, property);
+
+        Rect row = new Rect(position.x, position.y, position.width, EditorGUIUtility.singleLineHeight);
+        property.isExpanded = EditorGUI.Foldout(row, property.isExpanded, label, true);
+
+        if (property.isExpanded)
+        {
+            EditorGUI.indentLevel++;
+            DrawQuest(ref row, property);
+            EditorGUI.indentLevel--;
+        }
+
+        EditorGUI.EndProperty();
+    }
+
+    public override float GetPropertyHeight(SerializedProperty property, GUIContent label)
+    {
+        if (!property.isExpanded)
+            return EditorGUIUtility.singleLineHeight;
+
+        float height = EditorGUIUtility.singleLineHeight;
+        height += GetPropertyHeight(property, "id");
+        height += GetPropertyHeight(property, "title");
+        height += GetPropertyHeight(property, "type");
+        if (GetQuestType(property) == QuestType.ReachPoint)
+            height += GetPropertyHeight(property, "targetPoint");
+
+        height += GetPropertyHeight(property, "requiredAmount");
+        height += GetPropertyHeight(property, "startSequence");
+        height += GetPropertyHeight(property, "endSequence");
+
+        return height;
+    }
+
+    static void DrawQuest(ref Rect row, SerializedProperty property)
+    {
+        DrawProperty(ref row, property.FindPropertyRelative("id"));
+        DrawTitle(ref row, property.FindPropertyRelative("title"));
+        DrawProperty(ref row, property.FindPropertyRelative("type"));
+        if (GetQuestType(property) == QuestType.ReachPoint)
+            DrawProperty(ref row, property.FindPropertyRelative("targetPoint"));
+
+        DrawProperty(ref row, property.FindPropertyRelative("requiredAmount"));
+        DrawProperty(ref row, property.FindPropertyRelative("startSequence"));
+        DrawProperty(ref row, property.FindPropertyRelative("endSequence"));
+    }
+
+    static QuestType GetQuestType(SerializedProperty property)
+    {
+        return (QuestType)property.FindPropertyRelative("type").enumValueIndex;
+    }
+
+    static void DrawProperty(ref Rect row, SerializedProperty property)
+    {
+        MoveToNextRow(ref row);
+        row.height = EditorGUI.GetPropertyHeight(property, true);
+        EditorGUI.PropertyField(row, property, true);
+    }
+
+    static void DrawTitle(ref Rect row, SerializedProperty title)
+    {
+        MoveToNextRow(ref row);
+        row.height = EditorGUI.GetPropertyHeight(title, true);
+
+        Rect titleRect = row;
+        titleRect.width -= LocalizationTablesButton.Width + Spacing;
+
+        Rect buttonRect = new Rect(titleRect.xMax + Spacing, row.y, LocalizationTablesButton.Width, EditorGUIUtility.singleLineHeight);
+
+        EditorGUI.PropertyField(titleRect, title, true);
+        LocalizationTablesButton.Draw(buttonRect);
+    }
+
+    static float GetPropertyHeight(SerializedProperty property, string name)
+    {
+        return EditorGUI.GetPropertyHeight(property.FindPropertyRelative(name), true) + Spacing;
+    }
+
+    static void MoveToNextRow(ref Rect row)
+    {
+        row.y += row.height + Spacing;
+    }
+}
+
+[CustomPropertyDrawer(typeof(QuestSequenceStep))]
+public class QuestSequenceStepDrawer : PropertyDrawer
+{
+    const float Spacing = 2f;
+
+    public override void OnGUI(Rect position, SerializedProperty property, GUIContent label)
+    {
+        EditorGUI.BeginProperty(position, label, property);
+
+        Rect row = new Rect(position.x, position.y, position.width, EditorGUIUtility.singleLineHeight);
+        SerializedProperty type = property.FindPropertyRelative("type");
+
+        EditorGUI.PropertyField(row, type);
+
+        row.y += EditorGUIUtility.singleLineHeight + Spacing;
+        EditorGUI.PropertyField(row, GetStepProperty(property, type));
+
+        EditorGUI.EndProperty();
+    }
+
+    public override float GetPropertyHeight(SerializedProperty property, GUIContent label)
+    {
+        return EditorGUIUtility.singleLineHeight * 2f + Spacing;
+    }
+
+    static SerializedProperty GetStepProperty(SerializedProperty property, SerializedProperty type)
+    {
+        return (QuestSequenceStepType)type.enumValueIndex == QuestSequenceStepType.Cutscene
+            ? property.FindPropertyRelative("cutscenePrefab")
+            : property.FindPropertyRelative("dialogueData");
+    }
+}

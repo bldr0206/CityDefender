@@ -23,6 +23,7 @@ public class QuestCutscene : MonoBehaviour
     public void Play(Action onFinished)
     {
         _onFinished = onFinished;
+        Actions.CutsceneStarted();
         _director.stopped += HandleStopped;
         _director.Play();
     }
@@ -32,6 +33,8 @@ public class QuestCutscene : MonoBehaviour
         if (director != _director) return;
 
         _director.stopped -= HandleStopped;
+
+        Actions.CutsceneEnded();
 
         Action onFinished = _onFinished;
         _onFinished = null;

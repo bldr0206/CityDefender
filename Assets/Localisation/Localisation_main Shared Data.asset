@@ -16,7 +16,7 @@ MonoBehaviour:
   m_TableCollectionNameGuidString: 8859809404f9047418316076b40b54f3
   m_Entries:
   - m_Id: 18138398720
-    m_Key: quest.find_exit
+    m_Key: quest.q1.find_job
     m_Metadata:
       m_Items: []
   - m_Id: 152976883712
@@ -24,7 +24,7 @@ MonoBehaviour:
     m_Metadata:
       m_Items: []
   - m_Id: 698970406912
-    m_Key: sink.hire_worker
+    m_Key: sink.rent_agent
     m_Metadata:
       m_Items: []
   - m_Id: 741962022912
@@ -65,6 +65,58 @@ MonoBehaviour:
       m_Items: []
   - m_Id: 63779922640896
     m_Key: ui.tap_to_continue
+    m_Metadata:
+      m_Items: []
+  - m_Id: 378817430552576
+    m_Key: quest.q2_start.line1.player
+    m_Metadata:
+      m_Items: []
+  - m_Id: 378995248070656
+    m_Key: quest.q2_start.line2.player
+    m_Metadata:
+      m_Items: []
+  - m_Id: 379283665190912
+    m_Key: quest.q2_start.line3.player
+    m_Metadata:
+      m_Items: []
+  - m_Id: 380431813967872
+    m_Key: quest.q2.find_money
+    m_Metadata:
+      m_Items: []
+  - m_Id: 403554798010368
+    m_Key: quest.q1_start.line1.player
+    m_Metadata:
+      m_Items: []
+  - m_Id: 403760176300032
+    m_Key: quest.q1_start.line2.player
+    m_Metadata:
+      m_Items: []
+  - m_Id: 403995468365824
+    m_Key: quest.q1_start.line3.player
+    m_Metadata:
+      m_Items: []
+  - m_Id: 427547118665728
+    m_Key: quest.q3_bottles
+    m_Metadata:
+      m_Items: []
+  - m_Id: 429457989042176
+    m_Key: quest.q3_start.line1.player
+    m_Metadata:
+      m_Items: []
+  - m_Id: 429681671274496
+    m_Key: quest.q3_start.line2.player
+    m_Metadata:
+      m_Items: []
+  - m_Id: 429777905385472
+    m_Key: quest.q3_start.line3.player
+    m_Metadata:
+      m_Items: []
+  - m_Id: 435558788759552
+    m_Key: quest.q3_start_2.line1.player
+    m_Metadata:
+      m_Items: []
+  - m_Id: 435723968839680
+    m_Key: quest.q3_start_2.line2.player
     m_Metadata:
       m_Items: []
   m_Metadata:

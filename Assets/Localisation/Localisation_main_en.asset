@@ -23,11 +23,11 @@ MonoBehaviour:
     m_Metadata:
       m_Items: []
   - m_Id: 698970406912
-    m_Localized: Hire Worker $120
+    m_Localized: Rent Agent $120
     m_Metadata:
       m_Items: []
   - m_Id: 18138398720
-    m_Localized: Find an exit
+    m_Localized: Find a job
     m_Metadata:
       m_Items: []
   - m_Id: 43564614680576
@@ -49,7 +49,8 @@ MonoBehaviour:
     m_Metadata:
       m_Items: []
   - m_Id: 44966623707136
-    m_Localized: Where can I find this CV?
+    m_Localized: "And where am I supposed to find this CV? I don\u2019t even know
+      how to write one!"
     m_Metadata:
       m_Items: []
   - m_Id: 56506546520064
@@ -70,6 +71,62 @@ MonoBehaviour:
       m_Items: []
   - m_Id: 63779922640896
     m_Localized: Tap to continue
+    m_Metadata:
+      m_Items: []
+  - m_Id: 378817430552576
+    m_Localized: I think I see something... but it's not like I can just walk in
+      there.
+    m_Metadata:
+      m_Items: []
+  - m_Id: 378995248070656
+    m_Localized: I need to figure out how to get in.
+    m_Metadata:
+      m_Items: []
+  - m_Id: 379283665190912
+    m_Localized: I think I've got a plan! But first I need to get my hands on some
+      money.
+    m_Metadata:
+      m_Items: []
+  - m_Id: 380431813967872
+    m_Localized: Find a way to earn money
+    m_Metadata:
+      m_Items: []
+  - m_Id: 403554798010368
+    m_Localized: God, I'm so tired of being broke.
+    m_Metadata:
+      m_Items: []
+  - m_Id: 403760176300032
+    m_Localized: Time to find a job.
+    m_Metadata:
+      m_Items: []
+  - m_Id: 403995468365824
+    m_Localized: "I'll go try my luck\u2014maybe they've got something for me."
+    m_Metadata:
+      m_Items: []
+  - m_Id: 427547118665728
+    m_Localized: Return bottles
+    m_Metadata:
+      m_Items: []
+  - m_Id: 429457989042176
+    m_Localized: That's it!
+    m_Metadata:
+      m_Items: []
+  - m_Id: 429681671274496
+    m_Localized: "Thanks to this machine, I\u2019ll be able to earn some money"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 429777905385472
+    m_Localized: 'I need to look for bottles around the area; I think I saw a few
+
+'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 435558788759552
+    m_Localized: "Then I\u2019ll be able to rent an agent with that money"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 435723968839680
+    m_Localized: And the agent will clear out these stupid boxes
     m_Metadata:
       m_Items: []
   references:

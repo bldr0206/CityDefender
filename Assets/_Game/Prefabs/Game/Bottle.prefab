@@ -248,7 +248,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8d215460cc9d28e49a0d4ed14414b838, type: 3}
   m_Name: 
   m_EditorClassIdentifier: '::'
+  _type: 0
   _uiRoot: {fileID: 5571134204525021701}
+  _questId: q2
 --- !u!1 &5571134204525021701
 GameObject:
   m_ObjectHideFlags: 0
@@ -262,6 +264,7 @@ GameObject:
   - component: {fileID: 1423969781542722673}
   - component: {fileID: 6867885294777120823}
   - component: {fileID: 1663598466428288413}
+  - component: {fileID: 5275633508806875459}
   m_Layer: 5
   m_Name: UI ROOT
   m_TagString: Untagged
@@ -365,6 +368,20 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: '::'
   _is180Rotation: 0
+--- !u!114 &5275633508806875459
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5571134204525021701}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 303df845260464c4282a3322a263a1d6, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: '::'
+  preset: 2
+  duration: 0.5
 --- !u!1 &8103278002507809431
 GameObject:
   m_ObjectHideFlags: 0

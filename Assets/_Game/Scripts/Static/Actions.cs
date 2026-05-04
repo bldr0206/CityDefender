@@ -33,6 +33,34 @@ public static class Actions
         OnGameResumed?.Invoke();
     }
 
+    public static UnityAction OnCutsceneStarted;
+    public static void CutsceneStarted()
+    {
+        Debug.Log($"<color={debugColor}>CutsceneStarted</color>");
+        OnCutsceneStarted?.Invoke();
+    }
+
+    public static UnityAction OnCutsceneEnded;
+    public static void CutsceneEnded()
+    {
+        Debug.Log($"<color={debugColor}>CutsceneEnded</color>");
+        OnCutsceneEnded?.Invoke();
+    }
+
+    public static UnityAction OnDialogueStarted;
+    public static void DialogueStarted()
+    {
+        Debug.Log($"<color={debugColor}>DialogueStarted</color>");
+        OnDialogueStarted?.Invoke();
+    }
+
+    public static UnityAction OnDialogueEnded;
+    public static void DialogueEnded()
+    {
+        Debug.Log($"<color={debugColor}>DialogueEnded</color>");
+        OnDialogueEnded?.Invoke();
+    }
+
     public static UnityAction<int> OnPlayerMoneyChanged;
     public static void PlayerMoneyChanged(int currentMoney)
     {
@@ -59,6 +87,27 @@ public static class Actions
     {
         Debug.Log($"<color={debugColor}>QuestTargetChanged</color>");
         OnQuestTargetChanged?.Invoke(questTarget);
+    }
+
+    public static UnityAction<PickableItem> OnQuestPickableRegistered;
+    public static void QuestPickableRegistered(PickableItem item)
+    {
+        Debug.Log($"<color={debugColor}>QuestPickableRegistered</color> {item.QuestId}");
+        OnQuestPickableRegistered?.Invoke(item);
+    }
+
+    public static UnityAction<PickableItem> OnQuestPickableUnregistered;
+    public static void QuestPickableUnregistered(PickableItem item)
+    {
+        Debug.Log($"<color={debugColor}>QuestPickableUnregistered</color> {item.QuestId}");
+        OnQuestPickableUnregistered?.Invoke(item);
+    }
+
+    public static UnityAction<string> OnQuestItemTurnedIn;
+    public static void QuestItemTurnedIn(string questId)
+    {
+        Debug.Log($"<color={debugColor}>QuestItemTurnedIn</color> {questId}");
+        OnQuestItemTurnedIn?.Invoke(questId);
     }
 
     // UI
