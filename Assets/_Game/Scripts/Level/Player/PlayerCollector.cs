@@ -20,6 +20,7 @@ public class PlayerCollector : MonoBehaviour
     LevelValuesManager _levelValuesManager;
 
     public bool HasItem(PickableItemType type) => _items.Count > 0 && _items[0].Type == type;
+    bool IsInventoryFull => _items.Count >= _maxItems;
 
     [Inject]
     public void Construct(GameUISettings gameUISettings, LevelValuesManager levelValuesManager)
@@ -109,6 +110,12 @@ public class PlayerCollector : MonoBehaviour
 
     private void CollectKey(Collectable collectable)
     {
+        if (IsInventoryFull)
+        {
+            Debug.Log("You can't carry a key while your inventory is full!");
+            return;
+        }
+
         if (_currentItem != null) return;
 
         PullToBackpack(collectable, () =>
@@ -119,7 +126,7 @@ public class PlayerCollector : MonoBehaviour
 
     public void CollectItem(PickableItem item)
     {
-        if (_items.Count >= _maxItems)
+        if (IsInventoryFull)
         {
             Debug.Log("You can't carry more items!");
             return;
