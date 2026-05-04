@@ -276,6 +276,14 @@ PrefabInstance:
       propertyPath: _quests.Array.data[0].endCutscenePrefab
       value: 
       objectReference: {fileID: 8307263744053223609, guid: 7b88dcbdd86452d4eb9219781576fd9b, type: 3}
+    - target: {fileID: 2607631888749555193, guid: 1f8f6872f22f13d44b8dddc8da2f8133, type: 3}
+      propertyPath: Priority.Enabled
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 2607631888749555193, guid: 1f8f6872f22f13d44b8dddc8da2f8133, type: 3}
+      propertyPath: Priority.m_Value
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 6228963236950809224, guid: 1f8f6872f22f13d44b8dddc8da2f8133, type: 3}
       propertyPath: m_Name
       value: Level
