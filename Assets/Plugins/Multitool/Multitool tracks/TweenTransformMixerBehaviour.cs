@@ -89,14 +89,23 @@ namespace MultitoolTracks
         {
             Vector3 start = GetStartPosition(b, useLocal);
             Vector3 end = GetEndPosition(b, useLocal);
+            Vector3 lerped = Vector3.Lerp(start, end, t);
 
             Vector3 desired = new Vector3(
-                EasingUtility.HasAxis(b.positionAxisMode, 0) ? Mathf.Lerp(start.x, end.x, t) : initial.x,
-                EasingUtility.HasAxis(b.positionAxisMode, 1) ? Mathf.Lerp(start.y, end.y, t) : initial.y,
-                EasingUtility.HasAxis(b.positionAxisMode, 2) ? Mathf.Lerp(start.z, end.z, t) : initial.z
+                GetPositionAxisValue(b, lerped, initial, 0),
+                GetPositionAxisValue(b, lerped, initial, 1),
+                GetPositionAxisValue(b, lerped, initial, 2)
             );
             accum += desired * weight;
             totalWeight += weight;
+        }
+
+        static float GetPositionAxisValue(TweenTransformBehaviour b, Vector3 value, Vector3 initial, int axis)
+        {
+            if (!EasingUtility.HasAxis(b.positionAxisMode, axis))
+                return initial[axis];
+
+            return value[axis];
         }
 
         void AccumulateScale(TweenTransformBehaviour b, float t, float weight, ref Vector3 accum, ref float totalWeight)

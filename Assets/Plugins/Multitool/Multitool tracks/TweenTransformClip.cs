@@ -11,13 +11,13 @@ namespace MultitoolTracks
     public class TweenTransformClip : PlayableAsset, ITimelineClipAsset, IPropertyPreview
     {
         [Tooltip("Enable position tweening")]
-        public bool tweenPosition = true;
+        public bool tweenPosition;
 
         [Tooltip("Enable scale tweening")]
-        public bool tweenScale = true;
+        public bool tweenScale;
 
         [Tooltip("Enable rotation tweening")]
-        public bool tweenRotation = true;
+        public bool tweenRotation;
 
         public ExposedReference<Transform> startTarget;
         public ExposedReference<Transform> endTarget;
@@ -57,6 +57,7 @@ namespace MultitoolTracks
         public ScaleValueMode scaleValueMode = ScaleValueMode.Uniform;
 
         public ClipCaps clipCaps => ClipCaps.Blending;
+        public override double duration => 1d;
 
         public override Playable CreatePlayable(PlayableGraph graph, GameObject owner)
         {

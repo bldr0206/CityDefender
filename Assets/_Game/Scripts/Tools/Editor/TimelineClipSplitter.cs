@@ -6,7 +6,7 @@ using UnityEditor.ShortcutManagement;
 using UnityEditor.Timeline.Actions;
 using UnityEngine;
 using UnityEngine.Timeline;
-using UnityEngine.Playables;
+using Object = UnityEngine.Object;
 
 namespace UnityEditor.Timeline
 {
@@ -23,22 +23,24 @@ namespace UnityEditor.Timeline
 
         public override ActionValidity Validate(IEnumerable<TimelineClip> clips)
         {
-            if (clips == null || clips.Count() != 1)
+            var selectedClips = clips?.ToArray();
+            if (selectedClips == null || selectedClips.Length != 1)
                 return ActionValidity.Invalid;
 
-            var clip = clips.First();
+            var clip = selectedClips[0];
             if (clip == null || clip.asset == null)
                 return ActionValidity.Invalid;
-
-            if (clip.asset as AnimationPlayableAsset == null)
-                return ActionValidity.NotApplicable;
 
             var splitTime = GetPlayheadTime();
             if (splitTime <= clip.start || splitTime >= clip.end)
                 return ActionValidity.Invalid;
 
+            var track = clip.GetParentTrack();
+            if (track == null || track.timelineAsset == null)
+                return ActionValidity.Invalid;
+
             var animAsset = clip.asset as AnimationPlayableAsset;
-            if (animAsset?.clip == null || animAsset.clip.empty)
+            if (animAsset != null && (animAsset.clip == null || animAsset.clip.empty))
                 return ActionValidity.Invalid;
 
             return ActionValidity.Valid;
@@ -49,7 +51,9 @@ namespace UnityEditor.Timeline
             var clip = clips.First();
             var splitTime = GetPlayheadTime();
 
-            var success = SplitAnimationClipAtTime(clip, splitTime);
+            var success = clip.asset is AnimationPlayableAsset
+                ? SplitAnimationClipAtTime(clip, splitTime)
+                : SplitTimelineClipAtTime(clip, splitTime);
             if (success)
                 TimelineEditor.Refresh(RefreshReason.ContentsAddedOrRemoved);
 
@@ -133,6 +137,51 @@ namespace UnityEditor.Timeline
             timelineAsset.DeleteClip(originalClip);
 
             return true;
+        }
+
+        static bool SplitTimelineClipAtTime(TimelineClip originalClip, double splitTime)
+        {
+            var track = originalClip.GetParentTrack();
+            if (track == null || track.timelineAsset == null)
+                return false;
+
+            UndoExtensions.RegisterCompleteTimeline(track.timelineAsset, L10n.Tr("Split at Playhead"));
+
+            var rightClip = CreateClip(track, originalClip.asset);
+            if (rightClip == null || rightClip.asset == null)
+                return false;
+
+            EditorUtility.CopySerialized(originalClip.asset, rightClip.asset);
+
+            var originalEnd = originalClip.end;
+            var originalClipIn = originalClip.clipIn;
+            var originalEaseOut = originalClip.easeOutDuration;
+            var originalDisplayName = originalClip.displayName;
+
+            originalClip.duration = splitTime - originalClip.start;
+            originalClip.easeOutDuration = 0;
+            originalClip.displayName = originalDisplayName + " (L)";
+
+            rightClip.start = splitTime;
+            rightClip.duration = originalEnd - splitTime;
+            rightClip.timeScale = originalClip.timeScale;
+            rightClip.clipIn = originalClipIn + (splitTime - originalClip.start) * originalClip.timeScale;
+            rightClip.easeInDuration = 0;
+            rightClip.easeOutDuration = originalEaseOut;
+            rightClip.displayName = originalDisplayName + " (R)";
+
+            EditorUtility.SetDirty(rightClip.asset);
+            EditorUtility.SetDirty(track.timelineAsset);
+
+            return true;
+        }
+
+        static TimelineClip CreateClip(TrackAsset track, Object asset)
+        {
+            var method = typeof(TrackAsset).GetMethods()
+                .First(x => x.Name == nameof(TrackAsset.CreateClip) && x.IsGenericMethodDefinition && x.GetParameters().Length == 0);
+
+            return method.MakeGenericMethod(asset.GetType()).Invoke(track, null) as TimelineClip;
         }
 
         #region Animation clip splitting

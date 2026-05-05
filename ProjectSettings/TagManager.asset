@@ -11,6 +11,7 @@ TagManager:
   - LiftTrigger
   - Interactable
   - Contact
+  - Breakable
   layers:
   - Default
   - TransparentFX
@@ -20,8 +21,8 @@ TagManager:
   - UI
   - Collectables
   - Contact
-  - 
-  - 
+  - Agents
+  - Player
   - 
   - 
   - 
@@ -57,4 +58,3 @@ TagManager:
   - Light Layer 5
   - Light Layer 6
   - Light Layer 7
-  m_MigratedRenderPipelines: []
