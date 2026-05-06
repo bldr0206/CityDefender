@@ -127,6 +127,26 @@ public class LevelSaveController : IInitializable, IDisposable
         return data;
     }
 
+    public SaveData PeekAutoSaveData()
+    {
+        return _saveService.LoadAutoSave();
+    }
+
+    public void SaveAutoCheckpoint()
+    {
+        SaveData data = CaptureSaveData("autosave");
+        data.displayName = "Auto-save";
+        _saveService.SaveAutoSave(data);
+    }
+
+    public void ResetAutoProgressAndReload()
+    {
+        _saveService.DeleteAutoSave();
+        Game.ClearPendingLoadSlot();
+        ResetBlockingSequences();
+        SceneManager.LoadScene(SceneManager.GetActiveScene().name);
+    }
+
     public string GetDefaultSaveName()
     {
         string questName = _questManager != null ? _questManager.GetCurrentQuestSaveName() : "Level";

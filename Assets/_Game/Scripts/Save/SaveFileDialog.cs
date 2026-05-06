@@ -1,4 +1,6 @@
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.IO;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -14,13 +16,16 @@ public class SaveFileDialog : MonoBehaviour
     [SerializeField] TMP_Text _confirmText;
 
     LevelSaveController _saveController;
+    SaveService _saveService;
+    Button _openFolderButton;
     SaveFileDialogMode _mode;
     string _selectedFilePath;
 
     [Inject]
-    public void Construct(LevelSaveController saveController)
+    public void Construct(LevelSaveController saveController, SaveService saveService)
     {
         _saveController = saveController;
+        _saveService = saveService;
     }
 
     void Awake()
@@ -30,6 +35,8 @@ public class SaveFileDialog : MonoBehaviour
 
         _confirmButton.onClick.AddListener(Confirm);
         _nameInput.onValueChanged.AddListener(_ => UpdateConfirmButton());
+        if (_openFolderButton != null)
+            _openFolderButton.onClick.AddListener(OpenSaveFolderInFileManager);
         Close();
     }
 
@@ -37,6 +44,8 @@ public class SaveFileDialog : MonoBehaviour
     {
         _confirmButton.onClick.RemoveListener(Confirm);
         _nameInput.onValueChanged.RemoveAllListeners();
+        if (_openFolderButton != null)
+            _openFolderButton.onClick.RemoveListener(OpenSaveFolderInFileManager);
     }
 
     public void OpenSave()
@@ -69,6 +78,35 @@ public class SaveFileDialog : MonoBehaviour
         _root.SetActive(false);
     }
 
+    void OpenSaveFolderInFileManager()
+    {
+        string path = Path.GetFullPath(_saveService.SaveFolderPath);
+        try
+        {
+            if (!Directory.Exists(path))
+                Directory.CreateDirectory(path);
+
+#if UNITY_EDITOR_WIN || UNITY_STANDALONE_WIN
+            Process.Start(new ProcessStartInfo
+            {
+                FileName = "explorer.exe",
+                Arguments = path,
+                UseShellExecute = true,
+            });
+#elif UNITY_EDITOR_OSX || UNITY_STANDALONE_OSX
+            Process.Start("open", path);
+#elif UNITY_EDITOR_LINUX || UNITY_STANDALONE_LINUX
+            Process.Start("xdg-open", path);
+#else
+            Application.OpenURL("file://" + path.Replace("\\", "/"));
+#endif
+        }
+        catch (System.Exception exception)
+        {
+            UnityEngine.Debug.LogWarning($"Could not open save folder: {exception.Message}");
+        }
+    }
+
     void Confirm()
     {
         if (_mode == SaveFileDialogMode.Save)
@@ -90,7 +128,12 @@ public class SaveFileDialog : MonoBehaviour
         List<SaveSlotInfo> slots = _saveController.GetSlots();
         if (slots.Count == 0)
         {
-            CreateText("No saves found", _listRoot, 24, TextAlignmentOptions.Center);
+            GameObject emptyRow = CreateSizedRect("Empty Row", _listRoot, 84f);
+            LayoutElement emptyLayout = emptyRow.GetComponent<LayoutElement>();
+            emptyLayout.minHeight = 84f;
+            emptyLayout.flexibleHeight = 0f;
+            TMP_Text emptyText = CreateText("No saves found", emptyRow.transform, 24, TextAlignmentOptions.MidlineLeft);
+            emptyText.margin = new Vector4(16f, 0f, 16f, 0f);
             return;
         }
 
@@ -100,11 +143,19 @@ public class SaveFileDialog : MonoBehaviour
 
     void CreateSlotButton(SaveSlotInfo slot)
     {
-        GameObject row = CreateSizedRect("Save Row", _listRoot, 84f);
+        const float rowHeight = 84f;
+        GameObject row = CreateSizedRect("Save Row", _listRoot, rowHeight);
+        LayoutElement rowLayout = row.GetComponent<LayoutElement>();
+        rowLayout.minHeight = rowHeight;
+        rowLayout.preferredHeight = rowHeight;
+        rowLayout.flexibleHeight = 0f;
+
         HorizontalLayoutGroup layout = row.AddComponent<HorizontalLayoutGroup>();
         layout.spacing = 10f;
+        layout.childAlignment = TextAnchor.MiddleCenter;
         layout.childControlHeight = true;
         layout.childControlWidth = true;
+        layout.childForceExpandHeight = false;
         layout.childForceExpandWidth = false;
 
         Button button = CreateButton(slot.displayName, row.transform);
@@ -112,6 +163,7 @@ public class SaveFileDialog : MonoBehaviour
         Button deleteButton = CreateButton("Delete", row.transform);
         SetFixedWidth(deleteButton.gameObject, 150f);
         deleteButton.targetGraphic.color = new Color(0.65f, 0.08f, 0.08f, 1f);
+        ConfigureSlotNameLabel(button.GetComponentInChildren<TMP_Text>());
         string filePath = slot.filePath;
         string displayName = slot.displayName;
 
@@ -171,6 +223,8 @@ public class SaveFileDialog : MonoBehaviour
         HorizontalLayoutGroup buttons = CreateButtonsRoot(panel.transform);
         _confirmButton = CreateButton("Save", buttons.transform);
         _confirmText = _confirmButton.GetComponentInChildren<TMP_Text>();
+        _openFolderButton = CreateButton("Open folder", buttons.transform);
+        SetFixedWidth(_openFolderButton.gameObject, 200f);
         CreateButton("Cancel", buttons.transform).onClick.AddListener(Close);
     }
 
@@ -230,12 +284,103 @@ public class SaveFileDialog : MonoBehaviour
 
     Transform CreateListRoot(Transform parent)
     {
-        GameObject obj = CreateSizedRect("Saves List", parent, 520f);
-        VerticalLayoutGroup layout = obj.AddComponent<VerticalLayoutGroup>();
+        const float scrollbarWidth = 16f;
+        const float scrollbarGap = 4f;
+
+        GameObject scrollGo = CreateSizedRect("Saves Scroll", parent, 520f);
+        ScrollRect scroll = scrollGo.AddComponent<ScrollRect>();
+        scroll.horizontal = false;
+        scroll.vertical = true;
+        scroll.movementType = ScrollRect.MovementType.Clamped;
+        scroll.scrollSensitivity = 40f;
+        scroll.inertia = true;
+        scroll.verticalScrollbarVisibility = ScrollRect.ScrollbarVisibility.Permanent;
+
+        GameObject viewport = CreateRect("Viewport", scrollGo.transform, Vector2.zero, Vector2.one);
+        viewport.AddComponent<Image>().color = new Color(0f, 0f, 0f, 0.01f);
+        viewport.AddComponent<RectMask2D>();
+        RectTransform viewportRect = viewport.GetComponent<RectTransform>();
+        viewportRect.offsetMin = Vector2.zero;
+        viewportRect.offsetMax = new Vector2(-(scrollbarWidth + scrollbarGap), 0f);
+
+        Scrollbar scrollbar = CreateVerticalScrollbar(scrollGo.transform, scrollbarWidth);
+        scroll.verticalScrollbar = scrollbar;
+
+        GameObject content = new GameObject("Content", typeof(RectTransform));
+        content.transform.SetParent(viewport.transform, false);
+        RectTransform contentRect = content.GetComponent<RectTransform>();
+        contentRect.anchorMin = new Vector2(0f, 1f);
+        contentRect.anchorMax = new Vector2(1f, 1f);
+        contentRect.pivot = new Vector2(0.5f, 1f);
+        contentRect.anchoredPosition = Vector2.zero;
+        contentRect.sizeDelta = new Vector2(0f, 0f);
+
+        VerticalLayoutGroup layout = content.AddComponent<VerticalLayoutGroup>();
         layout.spacing = 10f;
+        layout.childAlignment = TextAnchor.UpperCenter;
         layout.childControlHeight = true;
         layout.childControlWidth = true;
-        return obj.transform;
+        layout.childForceExpandHeight = false;
+        layout.childForceExpandWidth = true;
+
+        ContentSizeFitter fitter = content.AddComponent<ContentSizeFitter>();
+        fitter.horizontalFit = ContentSizeFitter.FitMode.Unconstrained;
+        fitter.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
+
+        scroll.viewport = viewportRect;
+        scroll.content = contentRect;
+
+        return content.transform;
+    }
+
+    Scrollbar CreateVerticalScrollbar(Transform parent, float width)
+    {
+        GameObject root = new GameObject("Scrollbar Vertical", typeof(RectTransform));
+        root.transform.SetParent(parent, false);
+        RectTransform rootRt = root.GetComponent<RectTransform>();
+        rootRt.anchorMin = new Vector2(1f, 0f);
+        rootRt.anchorMax = new Vector2(1f, 1f);
+        rootRt.pivot = new Vector2(1f, 0.5f);
+        rootRt.sizeDelta = new Vector2(width, 0f);
+        rootRt.anchoredPosition = Vector2.zero;
+
+        Image track = root.AddComponent<Image>();
+        track.color = new Color(0.12f, 0.12f, 0.12f, 1f);
+
+        GameObject sliding = new GameObject("Sliding Area", typeof(RectTransform));
+        sliding.transform.SetParent(root.transform, false);
+        RectTransform slidingRt = sliding.GetComponent<RectTransform>();
+        slidingRt.anchorMin = Vector2.zero;
+        slidingRt.anchorMax = Vector2.one;
+        slidingRt.offsetMin = new Vector2(2f, 4f);
+        slidingRt.offsetMax = new Vector2(-2f, -4f);
+
+        GameObject handle = new GameObject("Handle", typeof(RectTransform));
+        handle.transform.SetParent(sliding.transform, false);
+        RectTransform handleRt = handle.GetComponent<RectTransform>();
+        handleRt.anchorMin = Vector2.zero;
+        handleRt.anchorMax = Vector2.one;
+        handleRt.sizeDelta = Vector2.zero;
+
+        Image handleImg = handle.AddComponent<Image>();
+        handleImg.color = new Color(0.52f, 0.52f, 0.52f, 1f);
+
+        Scrollbar scrollbar = root.AddComponent<Scrollbar>();
+        scrollbar.targetGraphic = handleImg;
+        scrollbar.handleRect = handleRt;
+        scrollbar.direction = Scrollbar.Direction.BottomToTop;
+
+        return scrollbar;
+    }
+
+    static void ConfigureSlotNameLabel(TMP_Text text)
+    {
+        if (text == null) return;
+
+        text.enableWordWrapping = false;
+        text.overflowMode = TextOverflowModes.Ellipsis;
+        text.alignment = TextAlignmentOptions.MidlineLeft;
+        text.margin = new Vector4(16f, 0f, 12f, 0f);
     }
 
     HorizontalLayoutGroup CreateButtonsRoot(Transform parent)

@@ -21,12 +21,14 @@ public class QuestManager : MonoBehaviour
     int _currentCollectAmount;
     int _currentCollectTarget;
     bool _hasRestoredSave;
+    LevelSaveController _levelSaveController;
 
     [Inject]
-    public void Construct(QuestPanel questPanel, DialogueScreen dialogueScreen)
+    public void Construct(QuestPanel questPanel, DialogueScreen dialogueScreen, LevelSaveController levelSaveController)
     {
         _questPanel = questPanel;
         _dialogueScreen = dialogueScreen;
+        _levelSaveController = levelSaveController;
     }
 
     void OnEnable()
@@ -77,6 +79,9 @@ public class QuestManager : MonoBehaviour
 
     void RunCurrentQuest()
     {
+        if (_currentQuest != null)
+            _levelSaveController.SaveAutoCheckpoint();
+
         RunQuest(_currentQuest);
     }
 

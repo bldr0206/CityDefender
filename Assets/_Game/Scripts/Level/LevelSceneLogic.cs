@@ -90,6 +90,19 @@ public class LevelSceneLogic : MonoBehaviour
             return;
         }
 
+        SaveData autoSave = _saveController.PeekAutoSaveData();
+        if (autoSave != null)
+        {
+            if (testLevelPrefab == null)
+                LoadLevel(autoSave.levelIndex);
+            else
+                UseTestLevelPrefab();
+
+            _saveController.ApplyLoadedData(autoSave);
+            RestoreLevelFinished(autoSave.isLevelFinished);
+            return;
+        }
+
         if (testLevelPrefab == null)
         {
             Debug.Log($"<color={DebugColor}>Test level prefab is not assigned! Loading next level from the list.</color>");

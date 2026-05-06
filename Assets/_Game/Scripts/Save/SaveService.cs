@@ -7,6 +7,7 @@ public class SaveService
 {
     const string SaveFolderName = "Saves";
     const string SaveExtension = ".json";
+    public const string AutoSaveFileName = "autosave.json";
 
     public string SaveFolderPath => Path.Combine(Application.persistentDataPath, SaveFolderName);
 
@@ -18,6 +19,9 @@ public class SaveService
         string[] files = Directory.GetFiles(SaveFolderPath, "*" + SaveExtension);
         for (int i = 0; i < files.Length; i++)
         {
+            if (string.Equals(Path.GetFileName(files[i]), AutoSaveFileName, StringComparison.OrdinalIgnoreCase))
+                continue;
+
             SaveData data = LoadFromPath(files[i]);
             if (data == null) continue;
 
@@ -77,6 +81,33 @@ public class SaveService
     {
         if (File.Exists(filePath))
             File.Delete(filePath);
+    }
+
+    public void SaveAutoSave(SaveData data)
+    {
+        data.slotId = "autosave";
+        if (string.IsNullOrEmpty(data.displayName))
+            data.displayName = "Auto-save";
+
+        SaveToPath(GetAutoSavePath(), data);
+    }
+
+    public SaveData LoadAutoSave()
+    {
+        string path = GetAutoSavePath();
+        return File.Exists(path) ? LoadFromPath(path) : null;
+    }
+
+    public void DeleteAutoSave()
+    {
+        string path = GetAutoSavePath();
+        if (File.Exists(path))
+            File.Delete(path);
+    }
+
+    string GetAutoSavePath()
+    {
+        return Path.Combine(SaveFolderPath, AutoSaveFileName);
     }
 
     string GetSlotPath(string slotId)
