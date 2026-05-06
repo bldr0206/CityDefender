@@ -11,12 +11,16 @@ public class LevelSceneLogic : MonoBehaviour
     // VARIABLES
     private const string DebugColor = "#ff3aa6";
     private DiContainer _container;
+    private LevelSaveController _saveController;
     [Inject]
-    public void Construct(DiContainer container)
+    public void Construct(DiContainer container, LevelSaveController saveController)
     {
         _container = container;
+        _saveController = saveController;
     }
     private GameObject _currentLevel;
+    private int _currentLevelIndex = -1;
+    private bool _isLevelFinished;
     private LevelSceneUIController _uiController;
     [Inject]
     public void Init(LevelSceneUIController uiController)
@@ -28,29 +32,33 @@ public class LevelSceneLogic : MonoBehaviour
 
     public void LoadNextLevel()
     {
-        DeleteCurrentLevel();
+        LoadLevel(_currentLevelIndex + 1);
+    }
 
-        if (levels.Count > 0)
+    public void LoadLevel(int levelIndex)
+    {
+        if (levelIndex >= 0 && levelIndex < levels.Count)
         {
-            // ДОПИСАТЬ НОРМАЛЬНУЮ СИСТЕМУ ЗАГРУЗКИ УРОВНЕЙ
-            // СЕЙЧАС ПРОСТО ВЗЯТЬ ПЕРВЫЙ ИЗ СПИСКА
-            GameObject nextLevel = levels[0];
-            _container.InstantiatePrefab(nextLevel, Vector3.zero, Quaternion.identity, null);
-            _currentLevel = nextLevel;
+            DeleteCurrentLevel();
+            GameObject nextLevel = levels[levelIndex];
+            _currentLevel = _container.InstantiatePrefab(nextLevel, Vector3.zero, Quaternion.identity, null);
+            _saveController.SetLevelContext(_currentLevel);
+            _currentLevelIndex = levelIndex;
+            Game.SetCurrentLevelIndex(_currentLevelIndex);
             Debug.Log($"<color={DebugColor}>Loaded level: {nextLevel.name}</color>");
+            StartLevel();
+            return;
         }
-        else
-        {
-            Debug.Log($"<color={DebugColor}>No more levels to load!</color>");
-        }
-        _uiController.LevelStarted();
-        Actions.LevelStarted();
+
+        Debug.Log($"<color={DebugColor}>No more levels to load!</color>");
     }
     void DeleteCurrentLevel()
     {
         if (_currentLevel != null)
         {
-            Destroy(_currentLevel);
+            if (_currentLevel.scene.IsValid())
+                Destroy(_currentLevel);
+
             _currentLevel = null;
         }
     }
@@ -61,12 +69,27 @@ public class LevelSceneLogic : MonoBehaviour
         // КОГДА ВЫПОЛНИЛИ КВЕСТ
         Debug.Log($"<color={DebugColor}>Level finished!</color>");
         // show win screen, give rewards, etc.
+        _isLevelFinished = true;
+        Game.SetLevelFinished(true);
         _uiController.WinLevel();
     }
 
     // LIFE CYCLE
     private void Start()
     {
+        SaveData pendingSave = _saveController.LoadPendingSaveData();
+        if (pendingSave != null)
+        {
+            if (testLevelPrefab == null)
+                LoadLevel(pendingSave.levelIndex);
+            else
+                UseTestLevelPrefab();
+
+            _saveController.ApplyLoadedData(pendingSave);
+            RestoreLevelFinished(pendingSave.isLevelFinished);
+            return;
+        }
+
         if (testLevelPrefab == null)
         {
             Debug.Log($"<color={DebugColor}>Test level prefab is not assigned! Loading next level from the list.</color>");
@@ -74,13 +97,43 @@ public class LevelSceneLogic : MonoBehaviour
         }
         else
         {
-            Debug.Log($"<color={DebugColor}>Loading test level prefab: {testLevelPrefab.name}</color>");
-            _currentLevel = testLevelPrefab;
-            _uiController.LevelStarted();
-            Actions.LevelStarted();
+            UseTestLevelPrefab();
         }
 
     }
+
+    private void UseTestLevelPrefab()
+    {
+        Debug.Log($"<color={DebugColor}>Loading test level prefab: {testLevelPrefab.name}</color>");
+        _currentLevel = testLevelPrefab;
+        _saveController.SetLevelContext(_currentLevel);
+        _currentLevelIndex = 0;
+        Game.SetCurrentLevelIndex(_currentLevelIndex);
+        StartLevel();
+    }
+
+    private void StartLevel()
+    {
+        _isLevelFinished = false;
+        Game.SetLevelFinished(false);
+        Game.ResetHiredAgents();
+        _uiController.LevelStarted();
+        Actions.LevelStarted();
+    }
+
+    public bool IsLevelFinished()
+    {
+        return _isLevelFinished;
+    }
+
+    public void RestoreLevelFinished(bool isLevelFinished)
+    {
+        _isLevelFinished = isLevelFinished;
+        Game.SetLevelFinished(isLevelFinished);
+        if (isLevelFinished)
+            _uiController.WinLevel();
+    }
+
     private void Awake()
     {
         Actions.OnNextLevelButtonPressed += LoadNextLevel;

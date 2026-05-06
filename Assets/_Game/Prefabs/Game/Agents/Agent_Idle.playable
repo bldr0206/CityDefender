@@ -64,7 +64,7 @@ MonoBehaviour:
   rotationEasing: 6
   space: 1
   rotationMode: 1
-  scaleMode: 1
+  scaleMode: 0
   scaleValueMode: 1
 --- !u!114 &7831559680956691611
 MonoBehaviour:
@@ -270,5 +270,5 @@ MonoBehaviour:
   rotationEasing: 6
   space: 1
   rotationMode: 1
-  scaleMode: 1
+  scaleMode: 0
   scaleValueMode: 1

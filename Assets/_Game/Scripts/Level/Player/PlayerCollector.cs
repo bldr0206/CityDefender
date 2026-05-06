@@ -49,7 +49,7 @@ public class PlayerCollector : MonoBehaviour
                 )
             {
                 door.OpenDoor();
-                Destroy(_currentItem.gameObject);
+                _currentItem.SetCollected();
                 _currentItem = null;
             }
 
@@ -104,7 +104,7 @@ public class PlayerCollector : MonoBehaviour
         PullToBackpack(collectable, () =>
         {
             _levelValuesManager.AddMoney(collectable.value);
-            Destroy(collectable.gameObject);
+            collectable.SetCollected();
         });
     }
 
@@ -158,6 +158,55 @@ public class PlayerCollector : MonoBehaviour
         item = _items[_items.Count - 1];
         _items.RemoveAt(_items.Count - 1);
         return true;
+    }
+
+    public List<string> CaptureInventoryItemIds()
+    {
+        List<string> itemIds = new List<string>();
+        for (int i = 0; i < _items.Count; i++)
+            itemIds.Add(_items[i].SaveId);
+
+        return itemIds;
+    }
+
+    public int GetInventoryIndex(PickableItem item)
+    {
+        return _items.IndexOf(item);
+    }
+
+    public string CaptureCurrentKeyId()
+    {
+        return _currentItem != null ? _currentItem.SaveId : null;
+    }
+
+    public void RestoreInventory(List<string> itemIds, Dictionary<string, Queue<PickableItem>> poolsById)
+    {
+        _items.Clear();
+        if (itemIds == null) return;
+
+        for (int i = 0; i < itemIds.Count; i++)
+        {
+            string id = itemIds[i];
+            if (string.IsNullOrEmpty(id)) continue;
+            if (!poolsById.TryGetValue(id, out Queue<PickableItem> q) || q.Count == 0) continue;
+
+            PickableItem item = q.Dequeue();
+            _items.Add(item);
+            item.RestoreAsInventoryItem(backpackPoint, i, _itemYOffset);
+        }
+    }
+
+    public void RestoreCurrentKey(string collectableId)
+    {
+        _currentItem = null;
+        if (string.IsNullOrEmpty(collectableId)) return;
+        if (!SaveableRegistry.TryGet(collectableId, out Collectable collectable)) return;
+
+        _currentItem = collectable;
+        collectable.gameObject.SetActive(true);
+        collectable.transform.SetParent(backpackPoint);
+        collectable.transform.localPosition = Vector3.zero;
+        collectable.transform.localRotation = Quaternion.identity;
     }
 
     private void PullToBackpack(Collectable collectable, TweenCallback onComplete)

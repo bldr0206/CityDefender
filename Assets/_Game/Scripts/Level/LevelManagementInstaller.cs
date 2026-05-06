@@ -16,5 +16,9 @@ public class LevelManagementInstaller : MonoInstaller
         Container.Bind<QuestPanel>().FromInstance(questPanel).AsSingle();
         Container.Bind<DialogueScreen>().FromInstance(dialogueScreen).AsSingle();
         Container.Bind<PlayerController>().FromComponentInHierarchy().AsSingle();
+        Container.Bind<PlayerCollector>().FromComponentInHierarchy().AsSingle();
+        Container.Bind<BreakableTrigger>().FromComponentInHierarchy().AsSingle();
+        Container.Bind<SaveService>().AsSingle();
+        Container.BindInterfacesAndSelfTo<LevelSaveController>().AsSingle();
     }
 }

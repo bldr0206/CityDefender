@@ -15,9 +15,12 @@ public class QuestManager : MonoBehaviour
     Quest _currentQuest;
     GameObject _questDestinationMarker;
     readonly List<PickableItem> _questPickables = new List<PickableItem>();
+    readonly List<Quest> _allQuests = new List<Quest>();
+    readonly List<string> _completedQuestIds = new List<string>();
     string _activeCollectQuestId;
     int _currentCollectAmount;
     int _currentCollectTarget;
+    bool _hasRestoredSave;
 
     [Inject]
     public void Construct(QuestPanel questPanel, DialogueScreen dialogueScreen)
@@ -44,13 +47,19 @@ public class QuestManager : MonoBehaviour
 
     void Start()
     {
+        InitializeQuestList();
+        if (_hasRestoredSave) return;
+
         SetQuestPickablesInteraction(null);
         RunNextQuest();
     }
 
     void RunNextQuest()
     {
-        if (_quests.Count == 0)
+        InitializeQuestList();
+        _currentQuest = GetNextQuest();
+
+        if (_currentQuest == null)
         {
             _questPanel.Hide();
             Actions.QuestTargetChanged(null);
@@ -58,7 +67,6 @@ public class QuestManager : MonoBehaviour
             return;
         }
 
-        _currentQuest = _quests[0];
         _activeCollectQuestId = null;
         _questPanel.Show();
         _questPanel.SetProgress(0, 0);
@@ -77,9 +85,7 @@ public class QuestManager : MonoBehaviour
         switch (quest.type)
         {
             case QuestType.ReachPoint:
-                _questDestinationMarker = Instantiate(_questDestinationMarkerPrefab, quest.targetPoint.position, quest.targetPoint.rotation);
-                _questDestinationMarker.GetComponent<QuestDestinationMarker>().Init(quest.id);
-                Actions.QuestTargetChanged(_questDestinationMarker.transform);
+                RunReachPointQuest(quest);
                 break;
 
             case QuestType.CollectItems:
@@ -100,7 +106,9 @@ public class QuestManager : MonoBehaviour
         Quest completedQuest = _currentQuest;
         Destroy(_questDestinationMarker);
         _questDestinationMarker = null;
-        _quests.Remove(completedQuest);
+        if (!_completedQuestIds.Contains(completedQuest.id))
+            _completedQuestIds.Add(completedQuest.id);
+
         _currentQuest = null;
         _activeCollectQuestId = null;
 
@@ -123,6 +131,16 @@ public class QuestManager : MonoBehaviour
 
         if (_currentCollectTarget <= 0)
             CompleteCurrentQuest();
+    }
+
+    void RunReachPointQuest(Quest quest)
+    {
+        if (_questDestinationMarker != null)
+            Destroy(_questDestinationMarker);
+
+        _questDestinationMarker = Instantiate(_questDestinationMarkerPrefab, quest.targetPoint.position, quest.targetPoint.rotation);
+        _questDestinationMarker.GetComponent<QuestDestinationMarker>().Init(quest.id);
+        Actions.QuestTargetChanged(_questDestinationMarker.transform);
     }
 
     void CompleteCollectItem(string questId)
@@ -198,6 +216,105 @@ public class QuestManager : MonoBehaviour
     void ApplyQuestPickableInteraction(PickableItem item)
     {
         item.SetInteractionEnabled(item.QuestId == _activeCollectQuestId);
+    }
+
+    public QuestSaveData CaptureSaveData()
+    {
+        return new QuestSaveData
+        {
+            currentQuestId = _currentQuest != null ? _currentQuest.id : null,
+            currentCollectAmount = _currentCollectAmount,
+            currentCollectTarget = _currentCollectTarget,
+            completedQuestIds = new List<string>(_completedQuestIds),
+        };
+    }
+
+    public string GetCurrentQuestSaveName()
+    {
+        if (_currentQuest == null)
+            return "Level";
+
+        string questName = _currentQuest.title.GetLocalizedString();
+        if (string.IsNullOrWhiteSpace(questName))
+            questName = _currentQuest.id;
+
+        return string.IsNullOrWhiteSpace(questName) ? "Level" : questName;
+    }
+
+    public void RestoreSaveData(QuestSaveData data)
+    {
+        _hasRestoredSave = true;
+        InitializeQuestList();
+        if (_questDestinationMarker != null)
+            Destroy(_questDestinationMarker);
+
+        _completedQuestIds.Clear();
+        if (data != null && data.completedQuestIds != null)
+            _completedQuestIds.AddRange(data.completedQuestIds);
+
+        _currentQuest = data != null ? GetQuest(data.currentQuestId) : GetNextQuest();
+        _activeCollectQuestId = null;
+        _currentCollectAmount = data != null ? data.currentCollectAmount : 0;
+        _currentCollectTarget = data != null ? data.currentCollectTarget : 0;
+
+        if (_currentQuest == null)
+        {
+            RunNextQuest();
+            return;
+        }
+
+        _questPanel.Show();
+        _questPanel.UpdateQuestText(_currentQuest.title);
+
+        if (_currentQuest.type == QuestType.ReachPoint)
+        {
+            _questPanel.SetProgress(0, 0);
+            RunReachPointQuest(_currentQuest);
+            return;
+        }
+
+        _activeCollectQuestId = _currentQuest.id;
+        if (_currentCollectTarget <= 0)
+        {
+            _currentCollectTarget = _currentQuest.requiredAmount > 0
+                ? _currentQuest.requiredAmount
+                : CountQuestPickables(_currentQuest.id);
+        }
+
+        SetQuestPickablesInteraction(_currentQuest.id);
+        UpdateCollectItemsProgress();
+        Actions.QuestTargetChanged(null);
+    }
+
+    void InitializeQuestList()
+    {
+        if (_allQuests.Count > 0) return;
+
+        _allQuests.AddRange(_quests);
+    }
+
+    Quest GetNextQuest()
+    {
+        for (int i = 0; i < _allQuests.Count; i++)
+        {
+            if (!_completedQuestIds.Contains(_allQuests[i].id))
+                return _allQuests[i];
+        }
+
+        return null;
+    }
+
+    Quest GetQuest(string questId)
+    {
+        if (string.IsNullOrEmpty(questId)) return null;
+
+        for (int i = 0; i < _allQuests.Count; i++)
+        {
+            if (_allQuests[i].id == questId)
+                return _allQuests[i];
+        }
+
+        return null;
     }
 
     void PlaySequence(List<QuestSequenceStep> sequence, Action onFinished, int index = 0)

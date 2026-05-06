@@ -3,6 +3,7 @@ using UnityEngine.AI;
 using Zenject;
 
 [RequireComponent(typeof(NavMeshAgent))]
+[RequireComponent(typeof(SaveId))]
 public class Agent : MonoBehaviour
 {
     [SerializeField] private float followStartDistance = 4f;
@@ -15,24 +16,33 @@ public class Agent : MonoBehaviour
     [SerializeField] private float navMeshSampleRadius = 1f;
     [SerializeField] private float occupiedCheckRadius = 0.35f;
     [SerializeField] private LayerMask occupiedMask;
+    [SerializeField] private float breakableAttackDistance = 1.2f;
 
     [SerializeField] private AgentAnimator _agentAnimator;
+    [SerializeField] private Hammer _hammer;
 
     private NavMeshAgent _agent;
     private Transform _player;
+    private BreakableTrigger _breakableTrigger;
     private NavMeshPath _path;
     private Vector3 _lastPlayerPosition;
     private float _nextRepathTime;
     private bool _hasDestination;
+    private bool _hasBreakableTarget;
+    private Transform _lastBreakableTarget;
 
     [Inject]
-    public void Construct(PlayerController player)
+    public void Construct(PlayerController player, BreakableTrigger breakableTrigger)
     {
         _player = player.transform;
+        _breakableTrigger = breakableTrigger;
     }
 
     private void Awake()
     {
+        if (!TryGetComponent<SaveId>(out _))
+            gameObject.AddComponent<SaveId>();
+
         _agent = GetComponent<NavMeshAgent>();
         _path = new NavMeshPath();
     }
@@ -41,10 +51,56 @@ public class Agent : MonoBehaviour
     {
         if (!_agent.isOnNavMesh)
         {
+            _hammer.StopHitAnimation();
             _agentAnimator.PlayIdleAnimation();
             return;
         }
 
+        if (UpdateBreakableAttack())
+        {
+            return;
+        }
+
+        UpdateFollowing();
+        UpdateAnimation();
+    }
+
+    private bool UpdateBreakableAttack()
+    {
+        Transform target = _breakableTrigger.Target;
+        if (target == null)
+        {
+            StopBreakableAttack();
+            return false;
+        }
+
+        if (!_hasBreakableTarget || _lastBreakableTarget != target)
+        {
+            _hasBreakableTarget = true;
+            _lastBreakableTarget = target;
+            _nextRepathTime = 0f;
+            StopFollowing();
+        }
+
+        Vector3 hitPoint = GetBreakableHitPoint(target);
+        if (IsReadyToHitBreakable(hitPoint))
+        {
+            _agent.ResetPath();
+            _hasDestination = false;
+            FacePoint(hitPoint);
+            _agentAnimator.PlayIdleAnimation();
+            _hammer.PlayHitAnimation();
+            return true;
+        }
+
+        _hammer.StopHitAnimation();
+        TrySetBreakableDestination(hitPoint);
+        UpdateAnimation();
+        return true;
+    }
+
+    private void UpdateFollowing()
+    {
         float distanceToPlayer = GetFlatDistanceToPlayer();
         if (distanceToPlayer <= followStopDistance)
         {
@@ -57,13 +113,48 @@ public class Agent : MonoBehaviour
                 TrySetNewDestination();
             }
         }
+    }
 
-        UpdateAnimation();
+    public void StartFollowingPlayer()
+    {
+        if (!_agent.isOnNavMesh) return;
+
+        _nextRepathTime = 0f;
+        _hasDestination = false;
+        TrySetNewDestination();
+    }
+
+    public AgentSaveData CaptureSaveData()
+    {
+        return new AgentSaveData
+        {
+            transform = new SaveTransformData(transform),
+        };
+    }
+
+    public void RestoreSaveData(AgentSaveData data)
+    {
+        if (data == null || data.transform == null) return;
+
+        if (_agent != null)
+            _agent.enabled = false;
+
+        data.transform.ApplyTo(transform);
+
+        if (_agent != null)
+            _agent.enabled = true;
+
+        StartFollowingPlayer();
     }
 
     private float GetFlatDistanceToPlayer()
     {
-        Vector3 offset = _player.position - transform.position;
+        return GetFlatDistance(_player.position);
+    }
+
+    private float GetFlatDistance(Vector3 point)
+    {
+        Vector3 offset = point - transform.position;
         offset.y = 0f;
         return offset.magnitude;
     }
@@ -87,7 +178,12 @@ public class Agent : MonoBehaviour
             return true;
         }
 
-        return !_agent.pathPending && _agent.remainingDistance <= _agent.stoppingDistance + occupiedCheckRadius;
+        return HasReachedDestination();
+    }
+
+    private bool IsReadyToHitBreakable(Vector3 hitPoint)
+    {
+        return GetFlatDistance(hitPoint) <= breakableAttackDistance || (_hasDestination && HasReachedDestination());
     }
 
     private void TrySetNewDestination()
@@ -133,6 +229,72 @@ public class Agent : MonoBehaviour
         return _agent.CalculatePath(point, _path) && _path.status == NavMeshPathStatus.PathComplete;
     }
 
+    private bool HasReachedDestination()
+    {
+        return !_agent.pathPending && _agent.remainingDistance <= _agent.stoppingDistance + occupiedCheckRadius;
+    }
+
+    private Vector3 GetBreakableHitPoint(Transform target)
+    {
+        Collider targetCollider = target.GetComponent<Collider>();
+        return targetCollider != null ? targetCollider.ClosestPoint(transform.position) : target.position;
+    }
+
+    private void TrySetBreakableDestination(Vector3 targetPosition)
+    {
+        if (Time.time < _nextRepathTime)
+        {
+            return;
+        }
+
+        _nextRepathTime = Time.time + repathInterval;
+        Vector3 direction = transform.position - targetPosition;
+        direction.y = 0f;
+        if (direction == Vector3.zero)
+        {
+            direction = -transform.forward;
+        }
+
+        if (TrySetDestinationNear(targetPosition + direction.normalized * breakableAttackDistance, breakableAttackDistance))
+        {
+            return;
+        }
+
+        for (int i = 0; i < sampleAttempts; i++)
+        {
+            float angle = Mathf.PI * 2f * i / sampleAttempts;
+            Vector3 point = targetPosition + new Vector3(Mathf.Cos(angle), 0f, Mathf.Sin(angle)) * breakableAttackDistance;
+            if (TrySetDestinationNear(point, navMeshSampleRadius))
+            {
+                return;
+            }
+        }
+    }
+
+    private bool TrySetDestinationNear(Vector3 point, float sampleRadius)
+    {
+        if (!NavMesh.SamplePosition(point, out NavMeshHit hit, sampleRadius, NavMesh.AllAreas) || !HasCompletePath(hit.position))
+        {
+            return false;
+        }
+
+        _agent.SetDestination(hit.position);
+        _hasDestination = true;
+        return true;
+    }
+
+    private void FacePoint(Vector3 point)
+    {
+        Vector3 direction = point - transform.position;
+        direction.y = 0f;
+        if (direction == Vector3.zero)
+        {
+            return;
+        }
+
+        transform.rotation = Quaternion.LookRotation(direction);
+    }
+
     private void StopFollowing()
     {
         if (_hasDestination)
@@ -140,6 +302,20 @@ public class Agent : MonoBehaviour
             _agent.ResetPath();
             _hasDestination = false;
         }
+    }
+
+    private void StopBreakableAttack()
+    {
+        if (!_hasBreakableTarget)
+        {
+            return;
+        }
+
+        _hammer.StopHitAnimation();
+        _agent.ResetPath();
+        _hasDestination = false;
+        _hasBreakableTarget = false;
+        _lastBreakableTarget = null;
     }
 
     private void UpdateAnimation()

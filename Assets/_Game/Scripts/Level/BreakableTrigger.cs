@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using DG.Tweening;
 using UnityEngine;
 
 public class BreakableTrigger : MonoBehaviour
@@ -6,13 +7,37 @@ public class BreakableTrigger : MonoBehaviour
     [SerializeField]
     private GameObject _breakableAimObject;
 
+    [SerializeField] private GameObject _handPointerObject;
+    [SerializeField] private float _handScaleDuration = 0.2f;
+    [SerializeField] private float _handPulseDuration = 0.45f;
+    [SerializeField] private float _handPulseZScale = 1.12f;
+
     private readonly List<Transform> _breakables = new();
     private Transform _target;
+    private Vector3 _handStartScale;
+    private Tween _handScaleTween;
+    private Tween _handPulseTween;
+    private bool _isHandVisible;
+
+    public Transform Target => _target;
+
+    private void Awake()
+    {
+        _handStartScale = _handPointerObject.transform.localScale;
+        _handPointerObject.transform.localScale = Vector3.zero;
+        _handPointerObject.SetActive(false);
+    }
 
     private void Update()
     {
         UpdateTarget();
         UpdateAimObject();
+    }
+
+    private void OnDestroy()
+    {
+        _handScaleTween?.Kill();
+        _handPulseTween?.Kill();
     }
 
     private void OnTriggerEnter(Collider other)
@@ -34,6 +59,11 @@ public class BreakableTrigger : MonoBehaviour
     private void UpdateTarget()
     {
         _target = null;
+        if (!Game.HasHiredAgents)
+        {
+            return;
+        }
+
         float closestSqrDistance = float.MaxValue;
 
         for (int i = _breakables.Count - 1; i >= 0; i--)
@@ -58,10 +88,65 @@ public class BreakableTrigger : MonoBehaviour
     {
         bool hasTarget = _target != null;
         _breakableAimObject.SetActive(hasTarget);
+        UpdateHandPointer(hasTarget);
 
         if (hasTarget)
         {
             _breakableAimObject.transform.position = _target.position;
         }
+    }
+
+    private void UpdateHandPointer(bool hasTarget)
+    {
+        if (hasTarget)
+        {
+            ShowHandPointer();
+        }
+        else
+        {
+            HideHandPointer();
+        }
+    }
+
+    private void ShowHandPointer()
+    {
+        if (_isHandVisible)
+        {
+            return;
+        }
+
+        _isHandVisible = true;
+        _handScaleTween?.Kill();
+        _handPulseTween?.Kill();
+        _handPointerObject.SetActive(true);
+        _handPointerObject.transform.localScale = Vector3.zero;
+        _handScaleTween = _handPointerObject.transform
+            .DOScale(_handStartScale, _handScaleDuration)
+            .SetEase(Ease.OutBack)
+            .OnComplete(StartHandPulse);
+    }
+
+    private void HideHandPointer()
+    {
+        if (!_isHandVisible)
+        {
+            return;
+        }
+
+        _isHandVisible = false;
+        _handScaleTween?.Kill();
+        _handPulseTween?.Kill();
+        _handScaleTween = _handPointerObject.transform
+            .DOScale(Vector3.zero, _handScaleDuration)
+            .SetEase(Ease.InBack)
+            .OnComplete(() => _handPointerObject.SetActive(false));
+    }
+
+    private void StartHandPulse()
+    {
+        _handPulseTween = _handPointerObject.transform
+            .DOScaleZ(_handStartScale.z * _handPulseZScale, _handPulseDuration)
+            .SetEase(Ease.InOutSine)
+            .SetLoops(-1, LoopType.Yoyo);
     }
 }

@@ -118,5 +118,33 @@ public static class Actions
         OnNextLevelButtonPressed?.Invoke();
     }
 
+    public static UnityAction<string> OnSaveRequested;
+    public static void SaveRequested(string slotId)
+    {
+        Debug.Log($"<color={debugColor}>SaveRequested</color> {slotId}");
+        OnSaveRequested?.Invoke(slotId);
+    }
+
+    public static UnityAction<string> OnLoadRequested;
+    public static void LoadRequested(string slotId)
+    {
+        Debug.Log($"<color={debugColor}>LoadRequested</color> {slotId}");
+        OnLoadRequested?.Invoke(slotId);
+    }
+
+    public static UnityAction<string> OnSaveCompleted;
+    public static void SaveCompleted(string slotId)
+    {
+        Debug.Log($"<color={debugColor}>SaveCompleted</color> {slotId}");
+        OnSaveCompleted?.Invoke(slotId);
+    }
+
+    public static UnityAction<string> OnLoadCompleted;
+    public static void LoadCompleted(string slotId)
+    {
+        Debug.Log($"<color={debugColor}>LoadCompleted</color> {slotId}");
+        OnLoadCompleted?.Invoke(slotId);
+    }
+
     #endregion
 }

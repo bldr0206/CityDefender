@@ -8,11 +8,7 @@ public class PlayerController : MonoBehaviour
     // SERIALIZED FIELDS
     [SerializeField] private float speed = 5f;
     [SerializeField] private GameObject _playerModel;
-    [SerializeField] private float aimObjectMinDistance = 1f;
-    [SerializeField] private float aimObjectMaxDistance = 2f;
-    [SerializeField] private float aimSmoothTime = 0.08f;
     [SerializeField] private float inputSmoothTime = 0.04f;
-    [SerializeField] private GameObject _aimObject;
 
     [SerializeField] PlayableDirector _playerAnimationDirector;
     [SerializeField] TimelineAsset _idleTimeline;
@@ -20,11 +16,10 @@ public class PlayerController : MonoBehaviour
     // PRIVATE FIELDS
     private Rigidbody _rigidbody;
     private Joystick _moveJoystick;
+    private BreakableTrigger _breakableTrigger;
     private Transform _playerModelTransform;
-    private Transform _aimTransform;
     private Vector2 _moveInput;
     private Vector2 _moveInputVelocity;
-    private Vector3 _aimVelocity;
     private readonly List<Vector3> _wallNormals = new List<Vector3>();
     private TimelineAsset _currentAnimation;
 
@@ -36,9 +31,10 @@ public class PlayerController : MonoBehaviour
     private const float WallNormalMaxY = 0.5f;
 
     [Inject]
-    public void Construct(Joystick moveJoystick)
+    public void Construct(Joystick moveJoystick, BreakableTrigger breakableTrigger)
     {
         _moveJoystick = moveJoystick;
+        _breakableTrigger = breakableTrigger;
     }
     private void Awake()
     {
@@ -52,7 +48,6 @@ public class PlayerController : MonoBehaviour
         _rigidbody = GetComponent<Rigidbody>();
         _rigidbody.interpolation = RigidbodyInterpolation.Interpolate;
         _playerModelTransform = _playerModel.transform;
-        _aimTransform = _aimObject.transform;
         PlayAnimation(_idleTimeline);
     }
     private void OnDestroy()
@@ -137,24 +132,24 @@ public class PlayerController : MonoBehaviour
         bool hasMoveInput = inputMagnitudeSqr > InputDeadZoneSqr;
         PlayAnimation(hasMoveInput ? _runTimeline : _idleTimeline);
 
-        if (hasMoveInput)
+        Transform breakableTarget = _breakableTrigger.Target;
+        if (breakableTarget != null)
         {
-            Vector3 move = new Vector3(_moveInput.x, 0f, _moveInput.y);
-            Quaternion targetRotation = Quaternion.LookRotation(move);
-            _playerModelTransform.rotation = Quaternion.Slerp(_playerModelTransform.rotation, targetRotation, Time.deltaTime * 10f);
+            RotateModel(breakableTarget.position - _playerModelTransform.position);
         }
+        else if (hasMoveInput)
+        {
+            RotateModel(new Vector3(_moveInput.x, 0f, _moveInput.y));
+        }
+    }
 
-        float inputStrength = hasMoveInput ? Mathf.Clamp01(Mathf.Sqrt(inputMagnitudeSqr)) : 0f;
-        float distance = Mathf.Lerp(aimObjectMinDistance, aimObjectMaxDistance, inputStrength);
-        Vector3 aimPosition = _playerModelTransform.position + _playerModelTransform.forward * distance;
-        _aimTransform.position = Vector3.SmoothDamp(
-            _aimTransform.position,
-            aimPosition,
-            ref _aimVelocity,
-            aimSmoothTime,
-            Mathf.Infinity,
-            Time.deltaTime
-        );
+    private void RotateModel(Vector3 direction)
+    {
+        direction.y = 0f;
+        if (direction == Vector3.zero) return;
+
+        Quaternion targetRotation = Quaternion.LookRotation(direction);
+        _playerModelTransform.rotation = Quaternion.Slerp(_playerModelTransform.rotation, targetRotation, Time.deltaTime * 10f);
     }
 
     private void OnCollisionStay(Collision collision)
@@ -224,8 +219,33 @@ public class PlayerController : MonoBehaviour
 
         _moveInput = Vector2.zero;
         _moveInputVelocity = Vector2.zero;
-        _aimVelocity = Vector3.zero;
         PlayAnimation(_idleTimeline);
+    }
+
+    public SaveTransformData CaptureSaveData()
+    {
+        return _rigidbody != null
+            ? new SaveTransformData { position = _rigidbody.position, rotation = _rigidbody.rotation }
+            : new SaveTransformData(transform);
+    }
+
+    public void RestoreSaveData(SaveTransformData data)
+    {
+        if (data == null) return;
+
+        if (_rigidbody != null)
+        {
+            _rigidbody.position = data.position;
+            _rigidbody.rotation = data.rotation;
+            transform.SetPositionAndRotation(data.position, data.rotation);
+            Physics.SyncTransforms();
+        }
+        else
+        {
+            data.ApplyTo(transform);
+        }
+
+        StopMotionImmediately();
     }
 
     private void PlayAnimation(TimelineAsset timeline)

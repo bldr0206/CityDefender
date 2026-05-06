@@ -101,7 +101,7 @@ public class BottleReturnMachine : MonoBehaviour
                 if (bottle.IsQuestBound)
                     Actions.QuestItemTurnedIn(bottle.QuestId);
 
-                Destroy(bottle.gameObject);
+                bottle.gameObject.SetActive(false);
                 ReturnBottle();
             });
     }

@@ -1,6 +1,7 @@
 using UnityEngine;
 using DG.Tweening;
 
+[RequireComponent(typeof(SaveId))]
 public class Lift : MonoBehaviour
 {
     [SerializeField] private Rigidbody platformRigidbody;
@@ -8,12 +9,16 @@ public class Lift : MonoBehaviour
     [SerializeField] private Transform topPoint;
     [SerializeField] private float moveDuration = 2f;
 
-    private Tween _moveTween;
-    private bool _isMoving;
-    private bool _isAtTop;
+    Tween _moveTween;
+    bool _isMoving;
+    bool _isAtTop;
+    SaveId _saveId;
 
-    private void Awake()
+    public string SaveId => GetSaveId().Id;
+
+    void Awake()
     {
+        GetSaveId();
         if (platformRigidbody == null)
         {
             Debug.LogError($"{nameof(Lift)}: Platform Rigidbody is not assigned.", this);
@@ -27,9 +32,7 @@ public class Lift : MonoBehaviour
             return;
         }
 
-        float toTop = Vector3.SqrMagnitude(platformRigidbody.position - topPoint.position);
-        float toBottom = Vector3.SqrMagnitude(platformRigidbody.position - bottomPoint.position);
-        _isAtTop = toTop < toBottom;
+        _isAtTop = ComputeIsAtTopFromPlatformPosition();
     }
 
     public void MoveUp()
@@ -49,6 +52,7 @@ public class Lift : MonoBehaviour
                 _isAtTop = true;
             });
     }
+
     public void MoveDown()
     {
         if (_isMoving) return;
@@ -67,12 +71,48 @@ public class Lift : MonoBehaviour
             });
     }
 
-    public bool IsMoving()
+    public bool IsMoving() => _isMoving;
+
+    public bool IsAtTop() => _isAtTop;
+
+    public LiftSaveData CaptureSaveData()
     {
-        return _isMoving;
+        return new LiftSaveData
+        {
+            id = SaveId,
+            isAtTop = ComputeIsAtTopFromPlatformPosition(),
+        };
     }
-    public bool IsAtTop()
+
+    public void RestoreSaveData(LiftSaveData data)
     {
-        return _isAtTop;
+        if (data == null || platformRigidbody == null || bottomPoint == null || topPoint == null) return;
+
+        _moveTween?.Kill();
+        _moveTween = null;
+        _isMoving = false;
+
+        Transform targetPoint = data.isAtTop ? topPoint : bottomPoint;
+        platformRigidbody.position = targetPoint.position;
+        platformRigidbody.rotation = targetPoint.rotation;
+        _isAtTop = data.isAtTop;
+        Physics.SyncTransforms();
+    }
+
+    bool ComputeIsAtTopFromPlatformPosition()
+    {
+        if (platformRigidbody == null || bottomPoint == null || topPoint == null) return false;
+
+        float toTop = Vector3.SqrMagnitude(platformRigidbody.position - topPoint.position);
+        float toBottom = Vector3.SqrMagnitude(platformRigidbody.position - bottomPoint.position);
+        return toTop < toBottom;
+    }
+
+    SaveId GetSaveId()
+    {
+        if (_saveId == null && !TryGetComponent(out _saveId))
+            _saveId = gameObject.AddComponent<SaveId>();
+
+        return _saveId;
     }
 }

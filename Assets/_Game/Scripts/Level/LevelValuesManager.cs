@@ -11,9 +11,7 @@ public class LevelValuesManager : MonoBehaviour
 
     private void InitializeLevelValues()
     {
-
-        _playersMoney = 0;
-        Actions.PlayerMoneyChanged(_playersMoney);
+        SetMoney(0);
     }
 
     public void AddMoney(int amount)
@@ -43,5 +41,11 @@ public class LevelValuesManager : MonoBehaviour
     public int GetMoney()
     {
         return _playersMoney;
+    }
+
+    public void SetMoney(int amount)
+    {
+        _playersMoney = Mathf.Max(0, amount);
+        Actions.PlayerMoneyChanged(_playersMoney);
     }
 }
