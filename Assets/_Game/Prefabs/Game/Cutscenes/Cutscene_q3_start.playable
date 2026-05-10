@@ -35,10 +35,10 @@ MonoBehaviour:
   m_Children: []
   m_Clips:
   - m_Version: 1
-    m_Start: 5.000000000000001
+    m_Start: 4
     m_ClipIn: 0
     m_Asset: {fileID: -5953941003756982195}
-    m_Duration: 1.5
+    m_Duration: 1
     m_TimeScale: 1
     m_ParentTrack: {fileID: -9051446261757200915}
     m_EaseInDuration: 0
@@ -140,7 +140,7 @@ MonoBehaviour:
   m_Children: []
   m_Clips:
   - m_Version: 1
-    m_Start: 9.5
+    m_Start: 7
     m_ClipIn: 0
     m_Asset: {fileID: 1008266877533422603}
     m_Duration: 1
@@ -209,10 +209,10 @@ MonoBehaviour:
     m_PreExtrapolationTime: 0
     m_DisplayName: CinemachinePriorityClip
   - m_Version: 1
-    m_Start: 8
+    m_Start: 6
     m_ClipIn: 0
     m_Asset: {fileID: 4050598792795615717}
-    m_Duration: 1.5
+    m_Duration: 1
     m_TimeScale: 1
     m_ParentTrack: {fileID: -7005053769139154929}
     m_EaseInDuration: 0
@@ -317,7 +317,7 @@ MonoBehaviour:
     m_Start: 2
     m_ClipIn: 0
     m_Asset: {fileID: -1035290174761525663}
-    m_Duration: 1.5
+    m_Duration: 1
     m_TimeScale: 1
     m_ParentTrack: {fileID: -5690464441105141597}
     m_EaseInDuration: 0
@@ -406,10 +406,10 @@ MonoBehaviour:
   m_Children: []
   m_Clips:
   - m_Version: 1
-    m_Start: 6.500000000000001
+    m_Start: 5
     m_ClipIn: 0
     m_Asset: {fileID: 5494182297334641599}
-    m_Duration: 1.5
+    m_Duration: 1
     m_TimeScale: 1
     m_ParentTrack: {fileID: -5191117113913252584}
     m_EaseInDuration: 0
@@ -642,10 +642,10 @@ MonoBehaviour:
   m_Children: []
   m_Clips:
   - m_Version: 1
-    m_Start: 3.5
+    m_Start: 3
     m_ClipIn: 0
     m_Asset: {fileID: -8500229176794612796}
-    m_Duration: 1.5
+    m_Duration: 1
     m_TimeScale: 1
     m_ParentTrack: {fileID: 1744082751595694114}
     m_EaseInDuration: 0
