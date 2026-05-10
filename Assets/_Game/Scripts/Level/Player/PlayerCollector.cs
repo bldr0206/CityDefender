@@ -142,7 +142,9 @@ public class PlayerCollector : MonoBehaviour
 
         int stackIndex = _items.Count;
         _items.Add(item);
-        item.transform.SetParent(backpackPoint);
+        item.transform.DOKill();
+        item.transform.SetParent(backpackPoint, true);
+        item.transform.localScale = Vector3.one;
 
         Vector3 targetWorld = backpackPoint.position + Vector3.up * (stackIndex * _itemYOffset);
         Vector3 targetLocal = backpackPoint.InverseTransformPoint(targetWorld);
@@ -204,7 +206,8 @@ public class PlayerCollector : MonoBehaviour
 
         _currentItem = collectable;
         collectable.gameObject.SetActive(true);
-        collectable.transform.SetParent(backpackPoint);
+        collectable.transform.SetParent(backpackPoint, false);
+        collectable.transform.localScale = Vector3.one;
         collectable.transform.localPosition = Vector3.zero;
         collectable.transform.localRotation = Quaternion.identity;
     }
@@ -213,7 +216,9 @@ public class PlayerCollector : MonoBehaviour
     {
         Debug.Log($"Player collected a {collectable.type} worth {collectable.value}!");
 
-        collectable.transform.SetParent(backpackPoint);
+        collectable.transform.DOKill();
+        collectable.transform.SetParent(backpackPoint, true);
+        collectable.transform.localScale = Vector3.one;
         DOTween.Sequence()
             .Join(collectable.transform.DOLocalMove(Vector3.zero, _gameUISettings.shortDelay).SetEase(Ease.InOutQuad))
             .Join(collectable.transform.DOLocalRotate(new Vector3(0, 0, 0), _gameUISettings.shortDelay).SetEase(Ease.InOutQuad))

@@ -190,6 +190,8 @@ GameObject:
   - component: {fileID: 7404751791497903198}
   - component: {fileID: 6537770576700403832}
   - component: {fileID: 2729484631005806617}
+  - component: {fileID: 5979963968393735327}
+  - component: {fileID: 3570081168974329219}
   m_Layer: 0
   m_Name: Bottle
   m_TagString: Interactable
@@ -251,6 +253,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: '::'
   _type: 0
   _uiRoot: {fileID: 5571134204525021701}
+  _modelRoot: {fileID: 8514151029946855776}
   _questId: q2
 --- !u!114 &2729484631005806617
 MonoBehaviour:
@@ -272,6 +275,31 @@ MonoBehaviour:
   m_IgnoreFromBuild: 1
   m_ApplyToChildren: 1
   m_AffectedAgents: ffffffff
+--- !u!114 &5979963968393735327
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2517305005634429956}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d5882659d25db8d429ba46f054047f0f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::SaveId
+  _id: b591d30995e64ade8c4d6dcd8df20e2d
+--- !u!114 &3570081168974329219
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2517305005634429956}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b358adebf98b480419d4c8cbaa87ab05, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp-firstpass::Multitool.PrefabLocker.PrefabLocker
 --- !u!1 &5571134204525021701
 GameObject:
   m_ObjectHideFlags: 0
@@ -819,11 +847,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: a66ead7ceae078c4f9e6da8194d96997, type: 3}
       propertyPath: m_LocalPosition.y
-      value: 0.06265074
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: a66ead7ceae078c4f9e6da8194d96997, type: 3}
       propertyPath: m_LocalPosition.z
-      value: 0.036295414
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: a66ead7ceae078c4f9e6da8194d96997, type: 3}
       propertyPath: m_LocalRotation.w

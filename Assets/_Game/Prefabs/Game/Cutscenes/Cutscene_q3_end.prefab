@@ -162,7 +162,7 @@ GameObject:
   - component: {fileID: 2198316148088182399}
   - component: {fileID: -2836641514105218848}
   m_Layer: 0
-  m_Name: Cutscene_q3_start_2
+  m_Name: Cutscene_q3_end
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0

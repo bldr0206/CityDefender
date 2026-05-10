@@ -81,6 +81,12 @@ namespace Multitool.SelectVisible
             public int PickOrder;
         }
 
+        private struct HiddenHierarchyObject
+        {
+            public GameObject GameObject;
+            public HideFlags HideFlags;
+        }
+
         private struct RenderOrderInfo
         {
             public int SortingLayerValue;
@@ -317,6 +323,17 @@ namespace Multitool.SelectVisible
             }
         }
 
+        private static GameObject GetVisibleHierarchyTarget(GameObject go, HashSet<GameObject> hiddenHierarchyObjects = null)
+        {
+            Transform t = go != null ? go.transform : null;
+            while (t != null && IsHiddenInHierarchy(t.gameObject, hiddenHierarchyObjects))
+            {
+                t = t.parent;
+            }
+
+            return t != null ? t.gameObject : null;
+        }
+
         private static GameObject GetNearestPrefabRoot(GameObject go)
         {
             if (go == null)
@@ -472,6 +489,7 @@ namespace Multitool.SelectVisible
             if (candidates.Count == 0)
                 return null;
 
+            NormalizeCandidatePickOrder(candidates);
             candidates.Sort(CompareCandidatesByRenderOrder);
 
             foreach (var candidate in candidates)
@@ -484,6 +502,42 @@ namespace Multitool.SelectVisible
         }
 
         private static List<PickCandidate> CollectPickCandidates(SceneView sceneView, Vector2 mousePos, bool respectAlpha)
+        {
+            var candidates = CollectPickCandidates(sceneView, mousePos, respectAlpha, hiddenHierarchyObjects: null);
+
+            candidates.AddRange(CollectPickCandidatesWithHiddenHierarchy(sceneView, mousePos, respectAlpha));
+            candidates.AddRange(CollectHiddenHierarchyRendererCandidates(sceneView, mousePos, respectAlpha));
+            return candidates;
+        }
+
+        private static void NormalizeCandidatePickOrder(List<PickCandidate> candidates)
+        {
+            for (int i = 0; i < candidates.Count; i++)
+            {
+                var candidate = candidates[i];
+                candidate.PickOrder = i;
+                candidates[i] = candidate;
+            }
+        }
+
+        private static List<PickCandidate> CollectPickCandidatesWithHiddenHierarchy(SceneView sceneView, Vector2 mousePos, bool respectAlpha)
+        {
+            var hiddenHierarchyObjects = new HashSet<GameObject>();
+            var revealedObjects = RevealHiddenHierarchyObjects(hiddenHierarchyObjects);
+            if (revealedObjects.Count == 0)
+                return new List<PickCandidate>(0);
+
+            try
+            {
+                return CollectPickCandidates(sceneView, mousePos, respectAlpha, hiddenHierarchyObjects);
+            }
+            finally
+            {
+                RestoreHiddenHierarchyObjects(revealedObjects);
+            }
+        }
+
+        private static List<PickCandidate> CollectPickCandidates(SceneView sceneView, Vector2 mousePos, bool respectAlpha, HashSet<GameObject> hiddenHierarchyObjects)
         {
             var candidates = new List<PickCandidate>(8);
             var ignore = new List<GameObject>(8);
@@ -499,13 +553,17 @@ namespace Multitool.SelectVisible
 
                 ignore.Add(picked);
 
-                if (!IsPickable(picked, mousePos, sceneView))
+                if (hiddenHierarchyObjects != null && !IsHiddenInHierarchyBranch(picked, hiddenHierarchyObjects))
+                    continue;
+
+                GameObject selectionTarget = GetVisibleHierarchyTarget(picked, hiddenHierarchyObjects);
+                if (selectionTarget == null || !IsPickable(picked, mousePos, sceneView, selectionTarget, hiddenHierarchyObjects))
                     continue;
 
                 bool alphaPassed = !respectAlpha || PassesAlphaTest(picked, sceneView, mousePos, respectAlpha);
                 candidates.Add(new PickCandidate
                 {
-                    GameObject = picked,
+                    GameObject = selectionTarget,
                     AlphaPassed = alphaPassed,
                     PickOrder = candidates.Count,
                     OrderInfo = BuildRenderOrderInfo(picked, sceneView, mousePos)
@@ -513,6 +571,80 @@ namespace Multitool.SelectVisible
             }
 
             return candidates;
+        }
+
+        private static List<PickCandidate> CollectHiddenHierarchyRendererCandidates(SceneView sceneView, Vector2 mousePos, bool respectAlpha)
+        {
+            var candidates = new List<PickCandidate>(8);
+            var renderers = Resources.FindObjectsOfTypeAll<Renderer>();
+
+            foreach (Renderer renderer in renderers)
+            {
+                if (renderer == null || !renderer.enabled)
+                    continue;
+
+                GameObject picked = renderer.gameObject;
+                if (EditorUtility.IsPersistent(picked) || !picked.scene.IsValid())
+                    continue;
+
+                if (!IsHiddenInHierarchyBranch(picked))
+                    continue;
+
+                GameObject selectionTarget = GetVisibleHierarchyTarget(picked);
+                if (selectionTarget == null || !IsPickable(picked, mousePos, sceneView, selectionTarget))
+                    continue;
+
+                if (!RendererHitsMouse(renderer, sceneView, mousePos, out float distance))
+                    continue;
+
+                RenderOrderInfo orderInfo = BuildRenderOrderInfo(picked, sceneView, mousePos);
+                orderInfo.SurfaceDistance = Mathf.Min(orderInfo.SurfaceDistance, distance);
+
+                bool alphaPassed = !respectAlpha || PassesAlphaTest(picked, sceneView, mousePos, respectAlpha);
+                candidates.Add(new PickCandidate
+                {
+                    GameObject = selectionTarget,
+                    AlphaPassed = alphaPassed,
+                    PickOrder = candidates.Count,
+                    OrderInfo = orderInfo
+                });
+            }
+
+            return candidates;
+        }
+
+        private static List<HiddenHierarchyObject> RevealHiddenHierarchyObjects(HashSet<GameObject> hiddenHierarchyObjects)
+        {
+            var revealedObjects = new List<HiddenHierarchyObject>();
+            var allObjects = Resources.FindObjectsOfTypeAll<GameObject>();
+
+            foreach (GameObject go in allObjects)
+            {
+                if (go == null || EditorUtility.IsPersistent(go) || !go.scene.IsValid())
+                    continue;
+
+                if ((go.hideFlags & HideFlags.HideInHierarchy) == 0)
+                    continue;
+
+                hiddenHierarchyObjects.Add(go);
+                revealedObjects.Add(new HiddenHierarchyObject
+                {
+                    GameObject = go,
+                    HideFlags = go.hideFlags
+                });
+                go.hideFlags &= ~HideFlags.HideInHierarchy;
+            }
+
+            return revealedObjects;
+        }
+
+        private static void RestoreHiddenHierarchyObjects(List<HiddenHierarchyObject> revealedObjects)
+        {
+            foreach (var revealedObject in revealedObjects)
+            {
+                if (revealedObject.GameObject != null)
+                    revealedObject.GameObject.hideFlags = revealedObject.HideFlags;
+            }
         }
 
         private static int CompareCandidatesByRenderOrder(PickCandidate a, PickCandidate b)
@@ -719,7 +851,7 @@ namespace Multitool.SelectVisible
             return distance <= IconClickRadius;
         }
 
-        private static bool IsPickable(GameObject go, Vector2? mousePos, SceneView sceneView)
+        private static bool IsPickable(GameObject go, Vector2? mousePos, SceneView sceneView, GameObject hierarchyTarget = null, HashSet<GameObject> hiddenHierarchyObjects = null)
         {
             if (!go.activeInHierarchy)
                 return false;
@@ -747,7 +879,7 @@ namespace Multitool.SelectVisible
 
             if ((go.hideFlags & HideFlags.NotEditable) != 0)
                 return false;
-            if ((go.hideFlags & HideFlags.HideInHierarchy) != 0)
+            if (IsHiddenInHierarchy(go, hiddenHierarchyObjects) && (hierarchyTarget == null || hierarchyTarget == go))
                 return false;
 
             if (mousePos.HasValue && sceneView != null)
@@ -757,6 +889,52 @@ namespace Multitool.SelectVisible
                     return false;
             }
 
+            return true;
+        }
+
+        private static bool IsHiddenInHierarchy(GameObject go, HashSet<GameObject> hiddenHierarchyObjects)
+        {
+            if (go == null)
+                return false;
+
+            return hiddenHierarchyObjects != null
+                ? hiddenHierarchyObjects.Contains(go)
+                : (go.hideFlags & HideFlags.HideInHierarchy) != 0;
+        }
+
+        private static bool IsHiddenInHierarchyBranch(GameObject go)
+        {
+            return IsHiddenInHierarchyBranch(go, hiddenHierarchyObjects: null);
+        }
+
+        private static bool IsHiddenInHierarchyBranch(GameObject go, HashSet<GameObject> hiddenHierarchyObjects)
+        {
+            Transform t = go != null ? go.transform : null;
+            while (t != null)
+            {
+                if (IsHiddenInHierarchy(t.gameObject, hiddenHierarchyObjects))
+                    return true;
+
+                t = t.parent;
+            }
+
+            return false;
+        }
+
+        private static bool RendererHitsMouse(Renderer renderer, SceneView sceneView, Vector2 mousePos, out float distance)
+        {
+            if (TryGetRendererSurfaceDistance(renderer, mousePos, out distance))
+                return true;
+
+            distance = float.PositiveInfinity;
+            if (sceneView == null || sceneView.camera == null)
+                return false;
+
+            Rect? screenRect = CalculateScreenRect(GetWorldBoundsCorners(renderer.bounds, Matrix4x4.identity), sceneView);
+            if (!screenRect.HasValue || !screenRect.Value.Contains(mousePos))
+                return false;
+
+            distance = Vector3.Distance(sceneView.camera.transform.position, renderer.bounds.center);
             return true;
         }
 
@@ -1286,8 +1464,16 @@ namespace Multitool.SelectVisible
                 }
                 else
                 {
-                    Vector3 pos = go.transform.position;
-                    Handles.DrawWireCube(pos, Vector3.one * 0.5f);
+                    Bounds? childBounds = CalculatePrefabBounds(go);
+                    if (childBounds.HasValue && childBounds.Value.size.sqrMagnitude > Mathf.Epsilon)
+                    {
+                        screenRect = DrawPrefabBoundsOutline(childBounds.Value, sceneView);
+                    }
+                    else
+                    {
+                        Vector3 pos = go.transform.position;
+                        Handles.DrawWireCube(pos, Vector3.one * 0.5f);
+                    }
                 }
             }
 

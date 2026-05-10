@@ -12,6 +12,7 @@ TagManager:
   - Interactable
   - Contact
   - Breakable
+  - QuestDestinationMarker
   layers:
   - Default
   - TransparentFX

@@ -11,6 +11,7 @@ public class PickableItem : MonoBehaviour
 {
     [SerializeField] private PickableItemType _type = PickableItemType.Bottle;
     [SerializeField] private GameObject _uiRoot;
+    [SerializeField] private Transform _modelRoot;
     [SerializeField] private string _questId;
 
     bool _isCollected;
@@ -105,7 +106,14 @@ public class PickableItem : MonoBehaviour
         if (data.transform != null)
             data.transform.ApplyTo(transform);
 
-        gameObject.SetActive(data.activeSelf && !data.isInInventory && !data.isCollected);
+        bool isOnGround = data.activeSelf && !data.isInInventory && !data.isCollected;
+        if (isOnGround && _modelRoot != null)
+        {
+            _modelRoot.localPosition = Vector3.zero;
+            _modelRoot.localRotation = Quaternion.identity;
+        }
+
+        gameObject.SetActive(isOnGround);
         HideUI();
     }
 
@@ -114,7 +122,8 @@ public class PickableItem : MonoBehaviour
         _isCollected = true;
         TakeClicked = null;
         gameObject.SetActive(true);
-        transform.SetParent(parent);
+        transform.SetParent(parent, false);
+        transform.localScale = Vector3.one;
         Vector3 targetWorld = parent.position + Vector3.up * (stackIndex * itemYOffset);
         transform.localPosition = parent.InverseTransformPoint(targetWorld);
         transform.localRotation = Quaternion.Euler(180f, 0f, 90f);

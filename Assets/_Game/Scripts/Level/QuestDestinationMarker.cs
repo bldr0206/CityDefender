@@ -9,11 +9,10 @@ public class QuestDestinationMarker : MonoBehaviour
         _questId = questId;
     }
 
-    void OnTriggerEnter(Collider other)
+
+
+    public void Reached()
     {
-        if (other.attachedRigidbody != null && other.attachedRigidbody.CompareTag("Player"))
-        {
-            Actions.QuestDestinationReached(_questId);
-        }
+        Actions.QuestDestinationReached(_questId);
     }
 }

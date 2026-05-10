@@ -264,6 +264,66 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 0}
     m_Modifications:
+    - target: {fileID: 36532322369857898, guid: 1f8f6872f22f13d44b8dddc8da2f8133, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 404840909534186984, guid: 1f8f6872f22f13d44b8dddc8da2f8133, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 404840909534186984, guid: 1f8f6872f22f13d44b8dddc8da2f8133, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2324998687395180105, guid: 1f8f6872f22f13d44b8dddc8da2f8133, type: 3}
+      propertyPath: _quests.Array.data[2].endSequence.Array.size
+      value: 2
+      objectReference: {fileID: 0}
+    - target: {fileID: 2324998687395180105, guid: 1f8f6872f22f13d44b8dddc8da2f8133, type: 3}
+      propertyPath: _quests.Array.data[2].startSequence.Array.size
+      value: 2
+      objectReference: {fileID: 0}
+    - target: {fileID: 2324998687395180105, guid: 1f8f6872f22f13d44b8dddc8da2f8133, type: 3}
+      propertyPath: _quests.Array.data[2].endSequence.Array.data[0].type
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 2324998687395180105, guid: 1f8f6872f22f13d44b8dddc8da2f8133, type: 3}
+      propertyPath: _quests.Array.data[2].endSequence.Array.data[1].type
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2324998687395180105, guid: 1f8f6872f22f13d44b8dddc8da2f8133, type: 3}
+      propertyPath: _quests.Array.data[2].endSequence.Array.data[0].dialogueData
+      value: 
+      objectReference: {fileID: 11400000, guid: 01e6658846af0594f87aa46124ccbdb7, type: 2}
+    - target: {fileID: 2324998687395180105, guid: 1f8f6872f22f13d44b8dddc8da2f8133, type: 3}
+      propertyPath: _quests.Array.data[2].endSequence.Array.data[1].dialogueData
+      value: 
+      objectReference: {fileID: 11400000, guid: 01e6658846af0594f87aa46124ccbdb7, type: 2}
+    - target: {fileID: 2324998687395180105, guid: 1f8f6872f22f13d44b8dddc8da2f8133, type: 3}
+      propertyPath: _quests.Array.data[2].endSequence.Array.data[1].cutscenePrefab
+      value: 
+      objectReference: {fileID: -2836641514105218848, guid: f84db79cf6cf80a4590d974ee3c723be, type: 3}
+    - target: {fileID: 4006965287547130210, guid: 1f8f6872f22f13d44b8dddc8da2f8133, type: 3}
+      propertyPath: m_Size.x
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 4006965287547130210, guid: 1f8f6872f22f13d44b8dddc8da2f8133, type: 3}
+      propertyPath: m_Size.y
+      value: 2
+      objectReference: {fileID: 0}
+    - target: {fileID: 4006965287547130210, guid: 1f8f6872f22f13d44b8dddc8da2f8133, type: 3}
+      propertyPath: m_Size.z
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 4006965287547130210, guid: 1f8f6872f22f13d44b8dddc8da2f8133, type: 3}
+      propertyPath: m_Center.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4006965287547130210, guid: 1f8f6872f22f13d44b8dddc8da2f8133, type: 3}
+      propertyPath: m_IsTrigger
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 6228963236950809224, guid: 1f8f6872f22f13d44b8dddc8da2f8133, type: 3}
       propertyPath: m_Name
       value: Level

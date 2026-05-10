@@ -90,7 +90,8 @@ public class BottleReturnMachine : MonoBehaviour
         _isReturningBottle = true;
 
         bottle.transform.DOKill();
-        bottle.transform.SetParent(_bottleReturnPoint);
+        bottle.transform.SetParent(_bottleReturnPoint, true);
+        bottle.transform.localScale = Vector3.one;
 
         _currentTween = DOTween.Sequence()
             .Join(bottle.transform.DOLocalMove(Vector3.zero, _gameUISettings.shortDelay).SetEase(Ease.InOutQuad))
