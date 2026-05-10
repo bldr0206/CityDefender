@@ -17,6 +17,7 @@ public class Agent : MonoBehaviour
     [SerializeField] private float occupiedCheckRadius = 0.35f;
     [SerializeField] private LayerMask occupiedMask;
     [SerializeField] private float breakableAttackDistance = 1.2f;
+    [SerializeField] private int _breakableDamage = 25;
 
     [SerializeField] private AgentAnimator _agentAnimator;
     [SerializeField] private Hammer _hammer;
@@ -30,6 +31,10 @@ public class Agent : MonoBehaviour
     private bool _hasDestination;
     private bool _hasBreakableTarget;
     private Transform _lastBreakableTarget;
+    private Breakable _breakableTarget;
+    private bool _isLiftPassenger;
+
+    public bool IsLiftPassenger => _isLiftPassenger;
 
     [Inject]
     public void Construct(PlayerController player, BreakableTrigger breakableTrigger)
@@ -47,12 +52,34 @@ public class Agent : MonoBehaviour
         _path = new NavMeshPath();
     }
 
+    private void OnEnable()
+    {
+        _hammer.OnHit += HitBreakable;
+    }
+
+    private void OnDisable()
+    {
+        _hammer.OnHit -= HitBreakable;
+    }
+
     private void Update()
     {
+        if (_isLiftPassenger)
+        {
+            _agentAnimator.PlayIdleAnimation();
+            return;
+        }
+
         if (!_agent.isOnNavMesh)
         {
             _hammer.StopHitAnimation();
             _agentAnimator.PlayIdleAnimation();
+            return;
+        }
+
+        if (_hammer.IsPlaying)
+        {
+            WaitForHammer();
             return;
         }
 
@@ -68,7 +95,7 @@ public class Agent : MonoBehaviour
     private bool UpdateBreakableAttack()
     {
         Transform target = _breakableTrigger.Target;
-        if (target == null)
+        if (target == null || !target.TryGetComponent(out Breakable breakable) || breakable.IsBroken)
         {
             StopBreakableAttack();
             return false;
@@ -78,6 +105,7 @@ public class Agent : MonoBehaviour
         {
             _hasBreakableTarget = true;
             _lastBreakableTarget = target;
+            _breakableTarget = breakable;
             _nextRepathTime = 0f;
             StopFollowing();
         }
@@ -144,6 +172,36 @@ public class Agent : MonoBehaviour
         if (_agent != null)
             _agent.enabled = true;
 
+        StartFollowingPlayer();
+    }
+
+    public void EnterLift(Transform seatPoint)
+    {
+        _isLiftPassenger = true;
+        _hammer.StopHitAnimation();
+        StopBreakableAttack();
+        StopFollowing();
+
+        if (_agent.enabled)
+            _agent.enabled = false;
+
+        transform.SetPositionAndRotation(seatPoint.position, seatPoint.rotation);
+        transform.SetParent(seatPoint, true);
+        _agentAnimator.PlayIdleAnimation();
+    }
+
+    public void ExitLift(Transform exitPoint)
+    {
+        transform.SetParent(null, true);
+        transform.SetPositionAndRotation(exitPoint.position, exitPoint.rotation);
+
+        if (!_agent.enabled)
+            _agent.enabled = true;
+
+        if (NavMesh.SamplePosition(exitPoint.position, out NavMeshHit hit, navMeshSampleRadius, NavMesh.AllAreas))
+            _agent.Warp(hit.position);
+
+        _isLiftPassenger = false;
         StartFollowingPlayer();
     }
 
@@ -234,6 +292,24 @@ public class Agent : MonoBehaviour
         return !_agent.pathPending && _agent.remainingDistance <= _agent.stoppingDistance + occupiedCheckRadius;
     }
 
+    private void WaitForHammer()
+    {
+        _agent.ResetPath();
+        _hasDestination = false;
+        _agentAnimator.PlayIdleAnimation();
+    }
+
+    private void HitBreakable()
+    {
+        if (_breakableTarget == null || _breakableTarget.IsBroken)
+        {
+            StopBreakableAttack();
+            return;
+        }
+
+        _breakableTarget.TakeDamage(_breakableDamage);
+    }
+
     private Vector3 GetBreakableHitPoint(Transform target)
     {
         Collider targetCollider = target.GetComponent<Collider>();
@@ -316,6 +392,7 @@ public class Agent : MonoBehaviour
         _hasDestination = false;
         _hasBreakableTarget = false;
         _lastBreakableTarget = null;
+        _breakableTarget = null;
     }
 
     private void UpdateAnimation()

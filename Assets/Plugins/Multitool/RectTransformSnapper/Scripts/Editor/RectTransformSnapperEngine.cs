@@ -112,7 +112,12 @@ namespace Multitool.RectTransformSnapper
         }
         public static int MaxDots
         {
-            get => Mathf.Clamp(EditorPrefs.GetInt("RTS_MaxDots", 8192 * 2), 1000, 200000); set => EditorPrefs.SetInt("RTS_MaxDots", Mathf.Clamp(value, 1000, 200000));
+            get => Mathf.Clamp(EditorPrefs.GetInt("RTS_MaxDots", 8192 * 2), 1000, 200000);
+            set
+            {
+                EditorPrefs.SetInt("RTS_MaxDots", Mathf.Clamp(value, 1000, 200000));
+                SceneView.RepaintAll();
+            }
         }
         public static bool Enabled { get => EditorPrefs.GetBool("RTS_Enabled", false); set => EditorPrefs.SetBool("RTS_Enabled", value); }
         public static bool ShowGrid { get => EditorPrefs.GetBool("RTS_ShowGrid", true); set => EditorPrefs.SetBool("RTS_ShowGrid", value); }
@@ -204,6 +209,7 @@ namespace Multitool.RectTransformSnapper
             asset.snapOffsetPercentX = SnapOffsetPercentX;
             asset.snapOffsetPercentY = SnapOffsetPercentY;
             asset.showGrid = ShowGrid;
+            asset.maxDots = MaxDots;
             asset.dotSize = DotSize;
             asset.dotColor = DotColor;
             asset.referenceColor = ReferenceColor;
@@ -235,6 +241,9 @@ namespace Multitool.RectTransformSnapper
             SnapOffsetPercentX = Mathf.Clamp(asset.snapOffsetPercentX, -1f, 1f);
             SnapOffsetPercentY = Mathf.Clamp(asset.snapOffsetPercentY, -1f, 1f);
             ShowGrid = asset.showGrid;
+            int md = asset.maxDots;
+            if (md < 1000 || md > 200000) md = 8192 * 2;
+            MaxDots = md;
             DotSize = Mathf.Clamp(asset.dotSize, 1f, 4f);
             DotColor = asset.dotColor;
             ReferenceColor = asset.referenceColor;

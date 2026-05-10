@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using TMPro;
 using UnityEditor;
 using UnityEditor.Overlays;
+using UnityEditor.SceneManagement;
 using UnityEngine;
 using UnityEngine.Rendering;
 using UnityEngine.UI;
@@ -33,6 +34,11 @@ namespace Multitool.SelectVisible
         private const float DefaultBoundsOutlineAlpha = 0.8f;
         private const float FlatBoundsRelativeThreshold = 0.025f;
         private const float FlatBoundsAbsoluteThreshold = 0.0005f;
+
+        /// <summary>
+        /// Соглашение с опциональным пакетом Prefab Locker без compile-time ссылки. Должно совпадать с FullName типа <c>PrefabLocker</c> там.
+        /// </summary>
+        private const string PrefabLockerComponentFullName = "Multitool.PrefabLocker.PrefabLocker";
 
         public static bool OverlayEnabled
         {
@@ -323,6 +329,75 @@ namespace Multitool.SelectVisible
             }
         }
 
+        private static GameObject ApplySelectionModeAndOutermostLocker(GameObject go)
+        {
+            if (go == null)
+                return null;
+
+            go = ApplySelectionMode(go);
+            return MapPickToOutermostConventionPrefabLockerRoot(go);
+        }
+
+        /// <summary>
+        /// Та же идея, что private MapToBlockerRoot в Prefab Locker: внешний предок с компонентом PrefabLocker (поиск по FullName).
+        /// </summary>
+        private static GameObject MapPickToOutermostConventionPrefabLockerRoot(GameObject go)
+        {
+            if (go == null)
+                return null;
+
+            StageHandle stageHandle = StageUtility.GetStageHandle(go);
+            StageHandle mainHandle = StageUtility.GetMainStageHandle();
+            StageHandle currentHandle = StageUtility.GetCurrentStageHandle();
+            if (stageHandle != mainHandle && stageHandle != currentHandle)
+                return go;
+
+            GameObject editingRoot = null;
+            var currentStage = PrefabStageUtility.GetCurrentPrefabStage();
+            if (currentStage != null)
+                editingRoot = currentStage.prefabContentsRoot;
+
+            Transform t = go.transform;
+            GameObject topMostLocker = null;
+
+            while (t != null)
+            {
+                if (TryGetConventionPrefabLockerOnGameObject(t.gameObject, out GameObject lockerGo)
+                    && lockerGo != editingRoot)
+                {
+                    topMostLocker = lockerGo;
+                }
+
+                t = t.parent;
+            }
+
+            return topMostLocker != null ? topMostLocker : go;
+        }
+
+        private static bool TryGetConventionPrefabLockerOnGameObject(GameObject host, out GameObject lockerGameObject)
+        {
+            lockerGameObject = null;
+            if (host == null)
+                return false;
+
+            foreach (Component c in host.GetComponents<Component>())
+            {
+                if (c == null)
+                    continue;
+
+                if (c.GetType().FullName != PrefabLockerComponentFullName)
+                    continue;
+
+                if (c is Behaviour behaviour && !behaviour.enabled)
+                    continue;
+
+                lockerGameObject = c.gameObject;
+                return true;
+            }
+
+            return false;
+        }
+
         private static GameObject GetVisibleHierarchyTarget(GameObject go, HashSet<GameObject> hiddenHierarchyObjects = null)
         {
             Transform t = go != null ? go.transform : null;
@@ -452,7 +527,7 @@ namespace Multitool.SelectVisible
             bool respectAlpha = RespectAlpha();
             GameObject picked = PickConsideringRenderOrder(sceneView, mousePos, respectAlpha);
 
-            picked = ApplySelectionMode(picked);
+            picked = ApplySelectionModeAndOutermostLocker(picked);
 
             if (e.shift)
             {
@@ -1423,7 +1498,7 @@ namespace Multitool.SelectVisible
             bool respectAlpha = RespectAlpha();
             GameObject picked = PickConsideringRenderOrder(sceneView, mousePos, respectAlpha);
 
-            picked = ApplySelectionMode(picked);
+            picked = ApplySelectionModeAndOutermostLocker(picked);
 
             _hoveredObject = picked;
         }
@@ -1433,7 +1508,7 @@ namespace Multitool.SelectVisible
             if (go == null || !go.activeInHierarchy)
                 return;
 
-            go = ApplySelectionMode(go);
+            go = ApplySelectionModeAndOutermostLocker(go);
             if (go == null || !go.activeInHierarchy)
                 return;
 
@@ -1840,6 +1915,13 @@ namespace Multitool.SelectVisible
             foreach (Renderer r in renderers)
             {
                 if (r == null || !r.enabled)
+                    continue;
+
+                // ParticleSystemRenderer.bounds в редакторе часто не соответствует видимым частицам и даёт мусор у начала координат.
+                if (r is ParticleSystemRenderer)
+                    continue;
+
+                if (r.bounds.size.sqrMagnitude <= Mathf.Epsilon)
                     continue;
 
                 if (!hasBounds)

@@ -17,6 +17,7 @@ namespace Multitool.RectTransformSnapper
         public float snapOffsetPercentX = 0f;
         public float snapOffsetPercentY = 0f;
         public bool showGrid = true;
+        public int maxDots = 8192 * 2;
         public float dotSize = 1f;
         public Color dotColor = new Color(0.6784314f, 0.6784314f, 0.6784314f, 1f);
 

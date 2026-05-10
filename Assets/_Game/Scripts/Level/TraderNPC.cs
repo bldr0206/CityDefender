@@ -61,6 +61,7 @@ public class TraderNPC : MonoBehaviour
 
         Agent agent = SpawnAgent(_spawnPoint.position, _spawnPoint.rotation);
         Game.RegisterHiredAgent();
+        Actions.AgentHired();
         agent.StartFollowingPlayer();
         UpdateBuyButton();
     }

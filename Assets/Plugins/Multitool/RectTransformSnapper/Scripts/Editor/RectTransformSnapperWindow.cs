@@ -34,6 +34,7 @@ namespace Multitool.RectTransformSnapper
         private static readonly GUIContent GridOffsetLabelContent = new GUIContent("Grid Offset", "Shift the grid horizontally (X) and vertically (Y) in percentage of the grid size.");
         private static readonly GUIContent DotSizeSliderContent = new GUIContent("Dot Size", "Adjust the size of grid dots drawn in the Scene view.");
         private static readonly GUIContent DotColorFieldContent = new GUIContent("Dot Color", "Set the color for grid dots in the Scene view.");
+        private static readonly GUIContent MaxDotsFieldContent = new GUIContent("Max Visible Dots", "Upper limit on grid dots drawn in the Scene view. If there would be more, the grid is thinned for performance (1000–200000).");
         private static readonly GUIContent ResizeChildrenToggleContent = new GUIContent("Resize Children", "Scale child RectTransforms proportionally when resizing their parent.");
         private static readonly GUIContent SnapToRectEdgesToggleContent = new GUIContent("Snap to Rect Edges", "Snap edges to edges of other RectTransform objects.");
         private static readonly GUIContent AddReferenceButtonContent = new GUIContent("Add Ref", "Pick a Sprite or Texture2D from the object selector.");
@@ -609,6 +610,17 @@ namespace Multitool.RectTransformSnapper
                     EditorUtility.SetDirty(st);
                     RectTransformSnapperEngine.DotColor = col;
                     SceneView.RepaintAll();
+                }
+                EditorGUILayout.Space(SPACING_SMALL);
+                int maxDots = EditorGUILayout.IntField(MaxDotsFieldContent, RectTransformSnapperEngine.MaxDots);
+                maxDots = Mathf.Clamp(maxDots, 1000, 200000);
+                if (maxDots != RectTransformSnapperEngine.MaxDots)
+                {
+                    var st = UndoState;
+                    Undo.RecordObject(st, "Change Max Visible Grid Dots");
+                    st.maxDots = maxDots;
+                    EditorUtility.SetDirty(st);
+                    RectTransformSnapperEngine.MaxDots = maxDots;
                 }
                 EditorGUI.indentLevel--;
             }

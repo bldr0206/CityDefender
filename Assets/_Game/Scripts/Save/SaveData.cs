@@ -22,6 +22,7 @@ public class SaveData
     public List<CollectableSaveData> collectables = new List<CollectableSaveData>();
     public List<DoorSaveData> doors = new List<DoorSaveData>();
     public List<LiftSaveData> lifts = new List<LiftSaveData>();
+    public List<BreakableSaveData> breakables = new List<BreakableSaveData>();
     public List<AgentSaveData> agents = new List<AgentSaveData>();
 }
 
@@ -63,6 +64,7 @@ public class SaveTransformData
 public class QuestSaveData
 {
     public string currentQuestId;
+    /// <summary>Прогресс только для CollectItems (при загрузке BreakBreakables пересчитывается из BreakableSaveData).</summary>
     public int currentCollectAmount;
     public int currentCollectTarget;
     public List<string> completedQuestIds = new List<string>();
@@ -77,6 +79,9 @@ public class PickableItemSaveData
     public int inventoryIndex;
     public bool activeSelf;
     public SaveTransformData transform;
+    public bool spawnedLootFromBreak;
+    public string spawnedByBreakableId;
+    public int lootEntryIndex = -1;
 }
 
 [Serializable]
@@ -85,6 +90,9 @@ public class CollectableSaveData
     public string id;
     public bool activeSelf;
     public SaveTransformData transform;
+    public bool spawnedLootFromBreak;
+    public string spawnedByBreakableId;
+    public int lootEntryIndex = -1;
 }
 
 [Serializable]
@@ -99,6 +107,15 @@ public class LiftSaveData
 {
     public string id;
     public bool isAtTop;
+}
+
+[Serializable]
+public class BreakableSaveData
+{
+    public string id;
+    public int health;
+    public bool isBroken;
+    public int lootIdCounter;
 }
 
 [Serializable]

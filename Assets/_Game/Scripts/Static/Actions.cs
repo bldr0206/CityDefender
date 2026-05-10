@@ -110,6 +110,38 @@ public static class Actions
         OnQuestItemTurnedIn?.Invoke(questId);
     }
 
+    public static UnityAction<Breakable> OnQuestBreakableRegistered;
+    public static void QuestBreakableRegistered(Breakable breakable)
+    {
+        if (breakable == null) return;
+
+        Debug.Log($"<color={debugColor}>QuestBreakableRegistered</color> {breakable.QuestId}");
+        OnQuestBreakableRegistered?.Invoke(breakable);
+    }
+
+    public static UnityAction<Breakable> OnQuestBreakableUnregistered;
+    public static void QuestBreakableUnregistered(Breakable breakable)
+    {
+        if (breakable == null) return;
+
+        Debug.Log($"<color={debugColor}>QuestBreakableUnregistered</color> {breakable.QuestId}");
+        OnQuestBreakableUnregistered?.Invoke(breakable);
+    }
+
+    public static UnityAction<string> OnQuestBreakableBroken;
+    public static void QuestBreakableBroken(string questId)
+    {
+        Debug.Log($"<color={debugColor}>QuestBreakableBroken</color> {questId}");
+        OnQuestBreakableBroken?.Invoke(questId);
+    }
+
+    public static UnityAction OnAgentHired;
+    public static void AgentHired()
+    {
+        Debug.Log($"<color={debugColor}>AgentHired</color>");
+        OnAgentHired?.Invoke();
+    }
+
     // UI
     public static UnityAction OnNextLevelButtonPressed;
     public static void NextLevelButtonPressed()
@@ -144,6 +176,12 @@ public static class Actions
     {
         Debug.Log($"<color={debugColor}>LoadCompleted</color> {slotId}");
         OnLoadCompleted?.Invoke(slotId);
+    }
+
+    public static UnityAction<GameObject> OnWorldLootPickupReady;
+    public static void WorldLootPickupReady(GameObject lootRoot)
+    {
+        OnWorldLootPickupReady?.Invoke(lootRoot);
     }
 
     #endregion

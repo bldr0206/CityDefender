@@ -8,6 +8,7 @@ namespace Multitool.RectTransformSnapper
         public int snapDivisor;
         public float offsetX;
         public float offsetY;
+        public int maxDots;
         public float dotSize;
         public Color dotColor;
         public int canvasOriginIndex;
@@ -35,6 +36,7 @@ namespace Multitool.RectTransformSnapper
             snapDivisor = RectTransformSnapperEngine.SnapDivisor;
             offsetX = RectTransformSnapperEngine.SnapOffsetPercentX;
             offsetY = RectTransformSnapperEngine.SnapOffsetPercentY;
+            maxDots = RectTransformSnapperEngine.MaxDots;
             dotSize = RectTransformSnapperEngine.DotSize;
             dotColor = RectTransformSnapperEngine.DotColor;
             canvasOriginIndex = RectTransformSnapperEngine.CanvasOriginIndex;
@@ -49,6 +51,7 @@ namespace Multitool.RectTransformSnapper
             RectTransformSnapperEngine.SnapDivisor = Mathf.Max(1, snapDivisor);
             RectTransformSnapperEngine.SnapOffsetPercentX = Mathf.Clamp(offsetX, -1f, 1f);
             RectTransformSnapperEngine.SnapOffsetPercentY = Mathf.Clamp(offsetY, -1f, 1f);
+            RectTransformSnapperEngine.MaxDots = maxDots;
             RectTransformSnapperEngine.DotSize = Mathf.Clamp(dotSize, 1f, 4f);
             RectTransformSnapperEngine.DotColor = dotColor;
             RectTransformSnapperEngine.CanvasOriginIndex = Mathf.Clamp(canvasOriginIndex, 0, 8);

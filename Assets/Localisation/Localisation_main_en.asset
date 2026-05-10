@@ -35,7 +35,7 @@ MonoBehaviour:
     m_Metadata:
       m_Items: []
   - m_Id: 43797570519040
-    m_Localized: I am an HR representative from "%Corporation_name%", and I handle
+    m_Localized: I am an HR representative from EVERYTHING POSSIBLE inc., and I handle
       the initial screening.
     m_Metadata:
       m_Items: []
@@ -122,11 +122,23 @@ MonoBehaviour:
     m_Metadata:
       m_Items: []
   - m_Id: 435558788759552
-    m_Localized: "Then I\u2019ll be able to rent an agent with that money"
+    m_Localized: Great, I have money!
     m_Metadata:
       m_Items: []
   - m_Id: 435723968839680
-    m_Localized: And the agent will clear out these stupid boxes
+    m_Localized: Now I can hire an agent!
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2569656732909568
+    m_Localized: Hire an agent
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2569536205389824
+    m_Localized: "And he\u2019ll clear out these stupid boxes."
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2579951102623744
+    m_Localized: Break the boxes near the elevator
     m_Metadata:
       m_Items: []
   references:

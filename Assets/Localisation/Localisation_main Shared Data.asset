@@ -112,11 +112,23 @@ MonoBehaviour:
     m_Metadata:
       m_Items: []
   - m_Id: 435558788759552
-    m_Key: quest.q3_start_2.line1.player
+    m_Key: quest.q4_start.line1.player
     m_Metadata:
       m_Items: []
   - m_Id: 435723968839680
-    m_Key: quest.q3_start_2.line2.player
+    m_Key: quest.q4_start.line2.player
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2569536205389824
+    m_Key: quest.q4_start.line3.player
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2569656732909568
+    m_Key: quest.q4_buy_agent
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2579951102623744
+    m_Key: quest.q5_break_obstacles
     m_Metadata:
       m_Items: []
   m_Metadata:

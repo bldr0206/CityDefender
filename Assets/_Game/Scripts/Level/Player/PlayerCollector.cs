@@ -30,6 +30,44 @@ public class PlayerCollector : MonoBehaviour
     }
 
 
+    void OnEnable()
+    {
+        Actions.OnWorldLootPickupReady += HandleWorldLootPickupReady;
+    }
+
+    void OnDisable()
+    {
+        Actions.OnWorldLootPickupReady -= HandleWorldLootPickupReady;
+    }
+
+    void HandleWorldLootPickupReady(GameObject lootRoot)
+    {
+        if (!isActiveAndEnabled || lootRoot == null || !lootRoot.activeInHierarchy)
+            return;
+
+        Collider playerReach = GetComponent<Collider>();
+        if (playerReach == null || !playerReach.enabled)
+            return;
+
+        Physics.SyncTransforms();
+        Bounds pb = playerReach.bounds;
+
+        Collider[] lootColliders = lootRoot.GetComponentsInChildren<Collider>(false);
+        for (int i = 0; i < lootColliders.Length; i++)
+        {
+            Collider lc = lootColliders[i];
+            if (lc == null || !lc.enabled || !lc.gameObject.activeInHierarchy)
+                continue;
+            if (!pb.Intersects(lc.bounds))
+                continue;
+
+            if (lc.CompareTag("Collectable"))
+                TryCollect(lc);
+            if (lc.CompareTag("Interactable"))
+                SubscribePickableFromCollider(lc);
+        }
+    }
+
     void OnTriggerEnter(Collider other)
     {
         if (other.CompareTag("Collectable"))
@@ -58,22 +96,24 @@ public class PlayerCollector : MonoBehaviour
         }
 
         if (other.CompareTag("Interactable"))
-        {
-            PickableItem item = other.GetComponent<PickableItem>();
-            if (item != null)
-            {
-                item.TakeClicked -= CollectItem;
-                item.TakeClicked += CollectItem;
-                item.ShowUI();
-            }
-        }
+            SubscribePickableFromCollider(other);
+    }
+
+    void SubscribePickableFromCollider(Collider other)
+    {
+        PickableItem item = other.GetComponent<PickableItem>() ?? other.GetComponentInParent<PickableItem>();
+        if (item == null) return;
+
+        item.TakeClicked -= CollectItem;
+        item.TakeClicked += CollectItem;
+        item.ShowUI();
     }
 
     void OnTriggerExit(Collider other)
     {
         if (other.CompareTag("Interactable"))
         {
-            PickableItem item = other.GetComponent<PickableItem>();
+            PickableItem item = other.GetComponent<PickableItem>() ?? other.GetComponentInParent<PickableItem>();
             if (item != null)
             {
                 item.TakeClicked -= CollectItem;
@@ -84,8 +124,8 @@ public class PlayerCollector : MonoBehaviour
 
     private void TryCollect(Collider other)
     {
-        Collectable collectable = other.GetComponent<Collectable>();
-        if (collectable == null) return;
+        Collectable collectable = other.GetComponent<Collectable>() ?? other.GetComponentInParent<Collectable>();
+        if (collectable == null || !collectable.CanCollect) return;
 
         if (collectable.type == CollectableType.Money)
         {

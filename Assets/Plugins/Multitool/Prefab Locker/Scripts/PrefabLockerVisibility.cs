@@ -77,6 +77,10 @@ namespace Multitool.PrefabLocker
             if (e.type != EventType.MouseDown || e.button != 0 || e.alt || e.control || e.command || e.shift)
                 return;
 
+            // Не перехватывать клики по ручкам SceneView (Move/Rotate/Scale и т.д.) — иначе PickGameObject бьёт в меш под гизмой и мы делаем e.Use() до тулов.
+            if (HandleUtility.nearestControl != 0)
+                return;
+
             var currentStage = PrefabStageUtility.GetCurrentPrefabStage();
 
             // Сначала пробуем pick без раскрытия — если объект уже видим (например, сам локер).
@@ -229,7 +233,7 @@ namespace Multitool.PrefabLocker
             while (t != null)
             {
                 var blocker = t.GetComponent<PrefabLocker>();
-                if (blocker != null && blocker.gameObject != editingRoot)
+                if (blocker != null && blocker.enabled && blocker.gameObject != editingRoot)
                 {
                     // Запоминаем самый верхний (последний найденный при проходе вверх)
                     topMostBlocker = blocker;

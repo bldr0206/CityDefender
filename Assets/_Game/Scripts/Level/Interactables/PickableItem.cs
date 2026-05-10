@@ -16,6 +16,8 @@ public class PickableItem : MonoBehaviour
 
     bool _isCollected;
     bool _isInteractionEnabled = true;
+    string _spawnedByBreakableId;
+    int _spawnLootEntryIndex = -1;
     SaveId _saveId;
 
     public string SaveId => GetSaveId().Id;
@@ -24,6 +26,8 @@ public class PickableItem : MonoBehaviour
     public bool IsQuestBound => !string.IsNullOrEmpty(_questId);
     public bool IsCollected => _isCollected;
     public event Action<PickableItem> TakeClicked;
+
+    bool SpawnedLootFromBreak => _spawnLootEntryIndex >= 0 && !string.IsNullOrEmpty(_spawnedByBreakableId);
 
     void Awake()
     {
@@ -78,6 +82,26 @@ public class PickableItem : MonoBehaviour
             HideUI();
     }
 
+    public void SetSpawnedFromBreakable(string breakableSaveId, int lootEntryIndex)
+    {
+        _spawnedByBreakableId = breakableSaveId ?? string.Empty;
+        _spawnLootEntryIndex = lootEntryIndex;
+    }
+
+    public void FinishLootReveal()
+    {
+        if (_isCollected) return;
+
+        if (!IsQuestBound)
+            SetInteractionEnabled(true);
+    }
+
+    void ApplySpawnSnapshot(string breakableId, int lootEntryIndex)
+    {
+        _spawnedByBreakableId = breakableId ?? string.Empty;
+        _spawnLootEntryIndex = lootEntryIndex;
+    }
+
     public void Collect()
     {
         _isCollected = true;
@@ -95,6 +119,9 @@ public class PickableItem : MonoBehaviour
             inventoryIndex = inventoryIndex,
             activeSelf = gameObject.activeSelf,
             transform = new SaveTransformData(transform),
+            spawnedLootFromBreak = SpawnedLootFromBreak,
+            spawnedByBreakableId = _spawnedByBreakableId,
+            lootEntryIndex = _spawnLootEntryIndex,
         };
     }
 
@@ -102,6 +129,14 @@ public class PickableItem : MonoBehaviour
     {
         _isCollected = data.isCollected;
         TakeClicked = null;
+
+        if (data.spawnedLootFromBreak)
+            ApplySpawnSnapshot(data.spawnedByBreakableId, data.lootEntryIndex);
+        else
+        {
+            _spawnedByBreakableId = string.Empty;
+            _spawnLootEntryIndex = -1;
+        }
 
         if (data.transform != null)
             data.transform.ApplyTo(transform);
@@ -128,6 +163,14 @@ public class PickableItem : MonoBehaviour
         transform.localPosition = parent.InverseTransformPoint(targetWorld);
         transform.localRotation = Quaternion.Euler(180f, 0f, 90f);
         HideUI();
+    }
+
+    public void DiscardExcessAfterLoad()
+    {
+        TakeClicked = null;
+        _isCollected = true;
+        HideUI();
+        gameObject.SetActive(false);
     }
 
     void RegisterQuestPickable()

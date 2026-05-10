@@ -1,5 +1,9 @@
+using System;
 using System.Collections.Generic;
 using UnityEngine;
+#if UNITY_EDITOR
+using UnityEditor;
+#endif
 
 public class SaveId : MonoBehaviour
 {
@@ -30,12 +34,59 @@ public class SaveId : MonoBehaviour
     }
 
 #if UNITY_EDITOR
+    static bool s_ResolvingSaveIdDuplicateCluster;
+
     void OnValidate()
     {
-        if (!Application.isPlaying && string.IsNullOrEmpty(_id))
-            _id = System.Guid.NewGuid().ToString("N");
+        if (Application.isPlaying) return;
+        if (s_ResolvingSaveIdDuplicateCluster) return;
+
+        if (string.IsNullOrEmpty(_id))
+        {
+            _id = Guid.NewGuid().ToString("N");
+            return;
+        }
+
+        SaveId[] all = UnityEngine.Object.FindObjectsByType<SaveId>(FindObjectsInactive.Include, FindObjectsSortMode.InstanceID);
+        var cluster = new List<SaveId>();
+        for (int i = 0; i < all.Length; i++)
+        {
+            SaveId s = all[i];
+            if (s != null && !string.IsNullOrEmpty(s._id) && s._id == _id)
+                cluster.Add(s);
+        }
+
+        if (cluster.Count < 2) return;
+
+        cluster.Sort((a, b) => a.GetInstanceID().CompareTo(b.GetInstanceID()));
+        if (cluster[0] != this) return;
+
+        s_ResolvingSaveIdDuplicateCluster = true;
+        try
+        {
+            for (int i = 0; i < cluster.Count; i++)
+            {
+                SaveId s = cluster[i];
+                Undo.RecordObject(s, "Fix duplicate SaveId");
+                s._id = Guid.NewGuid().ToString("N");
+                EditorUtility.SetDirty(s);
+            }
+
+            Debug.LogWarning(
+                $"SaveId: {cluster.Count} объектов делили один id — всем назначены новые id. Сохраните сцены и сделайте новый сейв.");
+        }
+        finally
+        {
+            s_ResolvingSaveIdDuplicateCluster = false;
+        }
     }
 #endif
+
+    /// <summary>Задаёт id до активации объекта (Instantiate inactive → SetRuntimeId → SetActive).</summary>
+    public void SetRuntimeId(string id)
+    {
+        _id = id;
+    }
 
     string BuildFallbackId()
     {

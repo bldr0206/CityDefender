@@ -283,7 +283,7 @@ GameObject:
   - component: {fileID: 2495317938606900592}
   - component: {fileID: 8858684312254020231}
   - component: {fileID: 4713755802573950819}
-  - component: {fileID: 7332329826776484339}
+  - component: {fileID: 1106677193986016981}
   m_Layer: 8
   m_Name: Agent
   m_TagString: Untagged
@@ -354,6 +354,7 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 0
   breakableAttackDistance: 1
+  _breakableDamage: 25
   _agentAnimator: {fileID: 4713755802573950819}
   _hammer: {fileID: 6496310397697826101}
 --- !u!320 &8858684312254020231
@@ -392,7 +393,7 @@ MonoBehaviour:
   _agentAnimationDirector: {fileID: 8858684312254020231}
   _idleTimeline: {fileID: 11400000, guid: 35336511956614c4bbe419de327737a3, type: 2}
   _runTimeline: {fileID: 11400000, guid: f42577ac79a50924a897fb52fe90f8f8, type: 2}
---- !u!114 &7332329826776484339
+--- !u!114 &1106677193986016981
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -401,12 +402,10 @@ MonoBehaviour:
   m_GameObject: {fileID: 3469174108092843082}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 24101ded5d2d2e44886c6fa5e5a81cec, type: 3}
+  m_Script: {fileID: 11500000, guid: d5882659d25db8d429ba46f054047f0f, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: '::'
-  _agentAnimationDirector: {fileID: 0}
-  _idleTimeline: {fileID: 0}
-  _runTimeline: {fileID: 0}
+  m_EditorClassIdentifier: Assembly-CSharp::SaveId
+  _id: d1b253f28a4e41f9bda9b0e0b9de6f98
 --- !u!1 &4879345949930316787
 GameObject:
   m_ObjectHideFlags: 0
@@ -598,6 +597,7 @@ GameObject:
   - component: {fileID: 4351785991959145382}
   - component: {fileID: 8914923099202960033}
   - component: {fileID: 6496310397697826101}
+  - component: {fileID: 8519270179360387123}
   m_Layer: 0
   m_Name: Hammer
   m_TagString: Untagged
@@ -613,14 +613,14 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 7819276631113506293}
   serializedVersion: 2
-  m_LocalRotation: {x: -0.012092726, y: -0.77946883, z: -0.029293634, w: 0.62563896}
-  m_LocalPosition: {x: 0.5528573, y: 0, z: -0.07142884}
+  m_LocalRotation: {x: 0, y: -0.77162457, z: 0, w: 0.63607824}
+  m_LocalPosition: {x: 0.373, y: 0, z: -0.071428835}
   m_LocalScale: {x: 1.2, y: 1.2, z: 1.2}
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 6361940286354993377}
   m_Father: {fileID: 9039522489866529986}
-  m_LocalEulerAnglesHint: {x: -3.486, y: -102.465, z: -1.022}
+  m_LocalEulerAnglesHint: {x: 0, y: -101, z: 0}
 --- !u!320 &8914923099202960033
 PlayableDirector:
   m_ObjectHideFlags: 0
@@ -656,3 +656,33 @@ MonoBehaviour:
   m_EditorClassIdentifier: '::'
   _hammerAnimationDirector: {fileID: 8914923099202960033}
   _hammerHitTimeline: {fileID: 11400000, guid: c15615c5056a278499142cb7c477ed7c, type: 2}
+--- !u!114 &8519270179360387123
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7819276631113506293}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e52de21a22b6dd44c9cc19f810c65059, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Unity.Timeline::UnityEngine.Timeline.SignalReceiver
+  m_Events:
+    m_Signals:
+    - {fileID: 11400000, guid: c56618d715daba041b069b0615e286c4, type: 2}
+    m_Events:
+    - m_PersistentCalls:
+        m_Calls:
+        - m_Target: {fileID: 6496310397697826101}
+          m_TargetAssemblyTypeName: Hammer, Assembly-CSharp
+          m_MethodName: Hit
+          m_Mode: 1
+          m_Arguments:
+            m_ObjectArgument: {fileID: 0}
+            m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+            m_IntArgument: 0
+            m_FloatArgument: 0
+            m_StringArgument: 
+            m_BoolArgument: 0
+          m_CallState: 2

@@ -43,8 +43,9 @@ GameObject:
   m_Component:
   - component: {fileID: 404603963328828239}
   - component: {fileID: 75487010893162791}
-  m_Layer: 7
-  m_Name: Triangle (1)
+  - component: {fileID: 4979279624267990456}
+  m_Layer: 5
+  m_Name: Arrow
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -58,7 +59,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 5133643115102629728}
   serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalRotation: {x: -0.000000022871246, y: 0.8521896, z: 0.5232331, w: -0.00000003725039}
   m_LocalPosition: {x: 0, y: 0.63300145, z: 0}
   m_LocalScale: {x: 3, y: 3, z: 1}
   m_ConstrainProportionsScale: 0
@@ -115,7 +116,7 @@ SpriteRenderer:
   m_SortingOrder: 0
   m_MaskInteraction: 0
   m_Sprite: {fileID: 21300000, guid: bfb4787cd1bbb3548a3efa4ed2a069cb, type: 3}
-  m_Color: {r: 0.1745283, g: 1, b: 0.21998401, a: 1}
+  m_Color: {r: 1, g: 0.7728097, b: 0, a: 1}
   m_FlipX: 0
   m_FlipY: 0
   m_DrawMode: 0
@@ -124,6 +125,19 @@ SpriteRenderer:
   m_SpriteTileMode: 0
   m_WasSpriteAssigned: 1
   m_SpriteSortPoint: 0
+--- !u!114 &4979279624267990456
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5133643115102629728}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c36f3a61f3f0fb44c9e33494732ee193, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::LookAtCamera
+  _is180Rotation: 1
 --- !u!1 &6923541641748947943
 GameObject:
   m_ObjectHideFlags: 0
@@ -177,7 +191,7 @@ SphereCollider:
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 3
-  m_Radius: 0.5
+  m_Radius: 1
   m_Center: {x: 0, y: 0, z: 0}
 --- !u!114 &3244362319057413012
 MonoBehaviour:
@@ -273,7 +287,7 @@ SpriteRenderer:
   m_SortingOrder: 0
   m_MaskInteraction: 0
   m_Sprite: {fileID: -2413806693520163455, guid: a86470a33a6bf42c4b3595704624658b, type: 3}
-  m_Color: {r: 0.18039216, g: 0.8196079, b: 0.227451, a: 1}
+  m_Color: {r: 1, g: 0.7728097, b: 0, a: 1}
   m_FlipX: 0
   m_FlipY: 0
   m_DrawMode: 0

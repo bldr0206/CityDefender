@@ -69,7 +69,11 @@ public class BreakableTrigger : MonoBehaviour
         for (int i = _breakables.Count - 1; i >= 0; i--)
         {
             Transform breakable = _breakables[i];
-            if (breakable == null || !breakable.gameObject.activeInHierarchy)
+            if (breakable == null ||
+                !breakable.gameObject.activeInHierarchy ||
+                !breakable.TryGetComponent(out Breakable breakableComponent) ||
+                breakableComponent.IsBroken ||
+                !breakableComponent.AllowsAgentDamage)
             {
                 _breakables.RemoveAt(i);
                 continue;

@@ -1,14 +1,20 @@
+using System;
 using UnityEngine;
 using UnityEngine.Playables;
 using UnityEngine.Timeline;
 
-public class Hammer : MonoBehaviour
+public class Hammer : MonoBehaviour, INotificationReceiver
 {
     [SerializeField] private PlayableDirector _hammerAnimationDirector;
     [SerializeField] private TimelineAsset _hammerHitTimeline;
 
     private Renderer[] _renderers;
     private TimelineAsset _currentAnimation;
+    private bool _hitEmitted;
+
+    public bool IsPlaying => _hammerAnimationDirector.state == PlayState.Playing;
+
+    public event Action OnHit;
 
     private void Awake()
     {
@@ -40,7 +46,9 @@ public class Hammer : MonoBehaviour
         }
 
         _hammerAnimationDirector.time = 0f;
+        _hitEmitted = false;
         _hammerAnimationDirector.Play();
+        ConnectNotificationReceivers();
     }
 
     public void StopHitAnimation()
@@ -51,6 +59,7 @@ public class Hammer : MonoBehaviour
         }
 
         _currentAnimation = null;
+        _hitEmitted = false;
         Hide();
     }
 
@@ -62,6 +71,7 @@ public class Hammer : MonoBehaviour
         }
 
         _currentAnimation = null;
+        _hitEmitted = false;
         Hide();
     }
 
@@ -85,5 +95,25 @@ public class Hammer : MonoBehaviour
 
     public void Hit()
     {
+        if (_hitEmitted)
+        {
+            return;
+        }
+
+        _hitEmitted = true;
+        OnHit?.Invoke();
+    }
+
+    public void OnNotify(Playable origin, INotification notification, object context)
+    {
+        if (notification is SignalEmitter)
+            Hit();
+    }
+
+    private void ConnectNotificationReceivers()
+    {
+        PlayableGraph graph = _hammerAnimationDirector.playableGraph;
+        for (int i = 0; i < graph.GetOutputCount(); i++)
+            graph.GetOutput(i).AddNotificationReceiver(this);
     }
 }

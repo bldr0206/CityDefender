@@ -13,6 +13,8 @@ public class LevelSaveController : IInitializable, IDisposable
     DialogueScreen _dialogueScreen;
     QuestManager _questManager;
     TraderNPC _traderNPC;
+    GameObject _levelRoot;
+    Dictionary<string, Breakable> _breakableLookupBySaveId;
 
     [Inject]
     public void Construct(
@@ -50,6 +52,7 @@ public class LevelSaveController : IInitializable, IDisposable
     {
         if (levelRoot == null) return;
 
+        _levelRoot = levelRoot;
         _questManager = levelRoot.GetComponentInChildren<QuestManager>(true);
         _traderNPC = levelRoot.GetComponentInChildren<TraderNPC>(true);
     }
@@ -157,22 +160,25 @@ public class LevelSaveController : IInitializable, IDisposable
     {
         if (data == null) return;
 
+        _breakableLookupBySaveId = BuildBreakableLookup();
+
         ResetBlockingSequences();
         _levelValuesManager.SetMoney(data.money);
         RestoreLifts(data.lifts);
         _playerController.RestoreSaveData(data.playerTransform);
 
+        RestoreBreakables(data.breakables);
         RestoreCollectables(data.collectables);
         RestorePickablesAndInventory(data);
         _playerCollector.RestoreCurrentKey(data.currentKeyCollectableId);
         RestoreDoors(data.doors);
         int restoredAgentCount = RestoreAgents(data.agents);
+        Game.SetHiredAgentsCount(restoredAgentCount);
         if (_questManager != null)
             _questManager.RestoreSaveData(data.quest);
-
-        Game.SetHiredAgentsCount(restoredAgentCount);
         Actions.LoadCompleted(data.slotId);
         Game.ClearPendingLoadSlot();
+        _breakableLookupBySaveId = null;
     }
 
     SaveData CaptureSaveData(string slotId)
@@ -196,6 +202,7 @@ public class LevelSaveController : IInitializable, IDisposable
         CaptureCollectables(data);
         CaptureDoors(data);
         CaptureLifts(data);
+        CaptureBreakables(data);
         CaptureAgents(data);
         return data;
     }
@@ -208,7 +215,7 @@ public class LevelSaveController : IInitializable, IDisposable
 
     void CapturePickableItems(SaveData data)
     {
-        List<PickableItem> items = SaveableRegistry.GetAll<PickableItem>();
+        List<PickableItem> items = GetPickablesInLevelOrdered();
         for (int i = 0; i < items.Count; i++)
         {
             PickableItem item = items[i];
@@ -238,6 +245,13 @@ public class LevelSaveController : IInitializable, IDisposable
             data.lifts.Add(lifts[i].CaptureSaveData());
     }
 
+    void CaptureBreakables(SaveData data)
+    {
+        List<Breakable> breakables = SaveableRegistry.GetAll<Breakable>();
+        for (int i = 0; i < breakables.Count; i++)
+            data.breakables.Add(breakables[i].CaptureSaveData());
+    }
+
     void CaptureAgents(SaveData data)
     {
         List<Agent> agents = SaveableRegistry.GetAll<Agent>();
@@ -250,23 +264,50 @@ public class LevelSaveController : IInitializable, IDisposable
         Dictionary<string, Queue<PickableItem>> pools = CreatePickableRestoreQueues();
         _playerCollector.RestoreInventory(data.playerInventoryItemIds, pools);
 
-        if (data.pickableItems == null) return;
-
-        for (int i = 0; i < data.pickableItems.Count; i++)
+        if (data.pickableItems != null)
         {
-            PickableItemSaveData itemData = data.pickableItems[i];
-            if (itemData.isInInventory) continue;
-            if (!pools.TryGetValue(itemData.id, out Queue<PickableItem> q) || q.Count == 0) continue;
+            for (int i = 0; i < data.pickableItems.Count; i++)
+            {
+                PickableItemSaveData itemData = data.pickableItems[i];
+                if (itemData.isInInventory) continue;
+                if (!pools.TryGetValue(itemData.id, out Queue<PickableItem> q) || q.Count == 0)
+                {
+                    TryRestoreOrphanDroppedPickable(itemData);
+                    continue;
+                }
 
-            PickableItem item = q.Dequeue();
-            item.RestoreSaveData(itemData);
+                PickableItem item = q.Dequeue();
+                item.RestoreSaveData(itemData);
+            }
+
+            DiscardLeftoverPickablePools(pools);
         }
     }
 
-    static Dictionary<string, Queue<PickableItem>> CreatePickableRestoreQueues()
+    List<PickableItem> GetPickablesInLevelOrdered()
+    {
+        List<PickableItem> list;
+        if (_levelRoot != null)
+            list = new List<PickableItem>(_levelRoot.GetComponentsInChildren<PickableItem>(true));
+        else
+            list = SaveableRegistry.GetAll<PickableItem>();
+
+        list.Sort(ComparePickablesForSaveOrder);
+        return list;
+    }
+
+    static int ComparePickablesForSaveOrder(PickableItem a, PickableItem b)
+    {
+        if (ReferenceEquals(a, b)) return 0;
+        int c = string.CompareOrdinal(a.SaveId, b.SaveId);
+        if (c != 0) return c;
+        return a.GetInstanceID().CompareTo(b.GetInstanceID());
+    }
+
+    Dictionary<string, Queue<PickableItem>> CreatePickableRestoreQueues()
     {
         Dictionary<string, List<PickableItem>> map = new Dictionary<string, List<PickableItem>>();
-        List<PickableItem> all = SaveableRegistry.GetAll<PickableItem>();
+        List<PickableItem> all = GetPickablesInLevelOrdered();
         for (int i = 0; i < all.Count; i++)
         {
             PickableItem p = all[i];
@@ -290,6 +331,32 @@ public class LevelSaveController : IInitializable, IDisposable
         return queues;
     }
 
+    static void DiscardLeftoverPickablePools(Dictionary<string, Queue<PickableItem>> pools)
+    {
+        foreach (KeyValuePair<string, Queue<PickableItem>> kvp in pools)
+        {
+            Queue<PickableItem> q = kvp.Value;
+            while (q.Count > 0)
+                q.Dequeue().DiscardExcessAfterLoad();
+        }
+    }
+
+    void TryRestoreOrphanDroppedCollectable(CollectableSaveData data)
+    {
+        if (data == null || !data.spawnedLootFromBreak) return;
+        if (data.lootEntryIndex < 0 || string.IsNullOrEmpty(data.spawnedByBreakableId)) return;
+        if (!TryResolveBreakable(data.spawnedByBreakableId, out Breakable breakable)) return;
+        breakable.TryRestoreDroppedCollectable(data);
+    }
+
+    void TryRestoreOrphanDroppedPickable(PickableItemSaveData data)
+    {
+        if (data == null || !data.spawnedLootFromBreak) return;
+        if (data.lootEntryIndex < 0 || string.IsNullOrEmpty(data.spawnedByBreakableId)) return;
+        if (!TryResolveBreakable(data.spawnedByBreakableId, out Breakable breakable)) return;
+        breakable.TryRestoreDroppedPickable(data);
+    }
+
     void RestoreCollectables(List<CollectableSaveData> collectables)
     {
         if (collectables == null) return;
@@ -299,6 +366,8 @@ public class LevelSaveController : IInitializable, IDisposable
             CollectableSaveData collectableData = collectables[i];
             if (SaveableRegistry.TryGet(collectableData.id, out Collectable collectable))
                 collectable.RestoreSaveData(collectableData);
+            else
+                TryRestoreOrphanDroppedCollectable(collectableData);
         }
     }
 
@@ -324,6 +393,63 @@ public class LevelSaveController : IInitializable, IDisposable
             if (SaveableRegistry.TryGet(liftData.id, out Lift lift))
                 lift.RestoreSaveData(liftData);
         }
+    }
+
+    void RestoreBreakables(List<BreakableSaveData> breakables)
+    {
+        if (breakables == null) return;
+
+        Dictionary<string, Breakable> byId = _breakableLookupBySaveId;
+
+        for (int i = 0; i < breakables.Count; i++)
+        {
+            BreakableSaveData breakableData = breakables[i];
+            if (string.IsNullOrEmpty(breakableData?.id)) continue;
+
+            Breakable breakable = null;
+            if (byId == null || !byId.TryGetValue(breakableData.id, out breakable))
+                SaveableRegistry.TryGet(breakableData.id, out breakable);
+
+            if (breakable != null)
+                breakable.RestoreSaveData(breakableData);
+        }
+    }
+
+    Dictionary<string, Breakable> BuildBreakableLookup()
+    {
+        var map = new Dictionary<string, Breakable>();
+        if (_levelRoot == null) return map;
+
+        Breakable[] list = _levelRoot.GetComponentsInChildren<Breakable>(true);
+        for (int i = 0; i < list.Length; i++)
+        {
+            Breakable b = list[i];
+            if (b == null) continue;
+
+            string id = b.SaveId;
+            if (string.IsNullOrEmpty(id)) continue;
+
+            if (map.TryGetValue(id, out Breakable previous) && previous != b)
+                Debug.LogWarning($"Duplicate Breakable SaveId '{id}' on {_levelRoot.name}. Using last in hierarchy.");
+
+            map[id] = b;
+        }
+
+        return map;
+    }
+
+    bool TryResolveBreakable(string id, out Breakable breakable)
+    {
+        breakable = null;
+        if (string.IsNullOrEmpty(id)) return false;
+
+        if (SaveableRegistry.TryGet(id, out breakable))
+            return true;
+
+        if (_breakableLookupBySaveId != null && _breakableLookupBySaveId.TryGetValue(id, out breakable))
+            return true;
+
+        return false;
     }
 
     int RestoreAgents(List<AgentSaveData> agents)
