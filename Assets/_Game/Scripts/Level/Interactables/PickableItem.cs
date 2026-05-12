@@ -3,16 +3,18 @@ using UnityEngine;
 
 public enum PickableItemType
 {
-    Bottle = 0
+    Bottle = 0,
+    Key = 1
 }
 
 [RequireComponent(typeof(SaveId))]
 public class PickableItem : MonoBehaviour
 {
-    [SerializeField] private PickableItemType _type = PickableItemType.Bottle;
-    [SerializeField] private GameObject _uiRoot;
-    [SerializeField] private Transform _modelRoot;
-    [SerializeField] private string _questId;
+    [SerializeField] PickableItemType _type = PickableItemType.Bottle;
+    [SerializeField] int _doorKeyValue = 1;
+    [SerializeField] GameObject _uiRoot;
+    [SerializeField] Transform _modelRoot;
+    [SerializeField] string _questId;
 
     bool _isCollected;
     bool _isInteractionEnabled = true;
@@ -22,6 +24,10 @@ public class PickableItem : MonoBehaviour
 
     public string SaveId => GetSaveId().Id;
     public PickableItemType Type => _type;
+
+    /// <summary>Номер ключа для совпадения с Door.requiredValue (только если Type Key).</summary>
+    public int DoorKeyValue => _doorKeyValue;
+
     public string QuestId => _questId;
     public bool IsQuestBound => !string.IsNullOrEmpty(_questId);
     public bool IsCollected => _isCollected;
@@ -57,13 +63,14 @@ public class PickableItem : MonoBehaviour
 
     public void ShowUI()
     {
-        if (_isCollected || !_isInteractionEnabled) return;
+        if (_isCollected || !_isInteractionEnabled || _uiRoot == null) return;
 
         _uiRoot.SetActive(true);
     }
 
     public void HideUI()
     {
+        if (_uiRoot == null) return;
         _uiRoot.SetActive(false);
     }
 
@@ -109,7 +116,7 @@ public class PickableItem : MonoBehaviour
         HideUI();
     }
 
-    public PickableItemSaveData CaptureSaveData(bool isInInventory, int inventoryIndex)
+    public PickableItemSaveData CaptureSaveData(bool isInInventory, int inventoryIndex, bool isCarriedAsDoorKey)
     {
         return new PickableItemSaveData
         {
@@ -117,6 +124,7 @@ public class PickableItem : MonoBehaviour
             isCollected = _isCollected,
             isInInventory = isInInventory,
             inventoryIndex = inventoryIndex,
+            isCarriedAsDoorKey = isCarriedAsDoorKey,
             activeSelf = gameObject.activeSelf,
             transform = new SaveTransformData(transform),
             spawnedLootFromBreak = SpawnedLootFromBreak,
@@ -141,7 +149,12 @@ public class PickableItem : MonoBehaviour
         if (data.transform != null)
             data.transform.ApplyTo(transform);
 
-        bool isOnGround = data.activeSelf && !data.isInInventory && !data.isCollected;
+        bool isOnGround =
+            data.activeSelf
+            && !data.isInInventory
+            && !data.isCollected
+            && !data.isCarriedAsDoorKey;
+
         if (isOnGround && _modelRoot != null)
         {
             _modelRoot.localPosition = Vector3.zero;

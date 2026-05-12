@@ -2,8 +2,7 @@ using UnityEngine;
 
 public enum CollectableType
 {
-    Money = 0,
-    Key = 1
+    Money = 0
 }
 
 [RequireComponent(typeof(SaveId))]

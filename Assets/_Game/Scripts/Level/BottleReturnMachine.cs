@@ -86,6 +86,9 @@ public class BottleReturnMachine : MonoBehaviour
             return;
         }
 
+        if (bottle.IsQuestBound)
+            Actions.QuestCarryingPickablesChanged();
+
         _progressBar.fillAmount = 0f;
         _isReturningBottle = true;
 

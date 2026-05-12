@@ -9,6 +9,7 @@ public class QuestManager : MonoBehaviour
 {
     [SerializeField] private List<Quest> _quests;
     [SerializeField] private GameObject _questDestinationMarkerPrefab;
+    [SerializeField] private QuestWorldObjectivePointers _worldPointers;
 
     QuestPanel _questPanel;
     DialogueScreen _dialogueScreen;
@@ -23,13 +24,15 @@ public class QuestManager : MonoBehaviour
     int _currentCollectTarget;
     bool _hasRestoredSave;
     LevelSaveController _levelSaveController;
+    PlayerCollector _playerCollector;
 
     [Inject]
-    public void Construct(QuestPanel questPanel, DialogueScreen dialogueScreen, LevelSaveController levelSaveController)
+    public void Construct(QuestPanel questPanel, DialogueScreen dialogueScreen, LevelSaveController levelSaveController, PlayerCollector playerCollector)
     {
         _questPanel = questPanel;
         _dialogueScreen = dialogueScreen;
         _levelSaveController = levelSaveController;
+        _playerCollector = playerCollector;
     }
 
     void OnEnable()
@@ -37,11 +40,12 @@ public class QuestManager : MonoBehaviour
         Actions.OnQuestDestinationReached += CompleteReachPointQuest;
         Actions.OnQuestPickableRegistered += RegisterQuestPickable;
         Actions.OnQuestPickableUnregistered += UnregisterQuestPickable;
-        Actions.OnQuestItemTurnedIn += CompleteCollectItem;
+        Actions.OnQuestItemTurnedIn += CompleteDeliverItem;
         Actions.OnQuestBreakableRegistered += RegisterQuestBreakable;
         Actions.OnQuestBreakableUnregistered += UnregisterQuestBreakable;
         Actions.OnQuestBreakableBroken += CompleteBreakBreakablesQuestProgress;
         Actions.OnAgentHired += HandleAgentHired;
+        Actions.OnQuestCarryingPickablesChanged += HandleQuestCarryingPickablesChanged;
     }
 
     void OnDisable()
@@ -49,11 +53,12 @@ public class QuestManager : MonoBehaviour
         Actions.OnQuestDestinationReached -= CompleteReachPointQuest;
         Actions.OnQuestPickableRegistered -= RegisterQuestPickable;
         Actions.OnQuestPickableUnregistered -= UnregisterQuestPickable;
-        Actions.OnQuestItemTurnedIn -= CompleteCollectItem;
+        Actions.OnQuestItemTurnedIn -= CompleteDeliverItem;
         Actions.OnQuestBreakableRegistered -= RegisterQuestBreakable;
         Actions.OnQuestBreakableUnregistered -= UnregisterQuestBreakable;
         Actions.OnQuestBreakableBroken -= CompleteBreakBreakablesQuestProgress;
         Actions.OnAgentHired -= HandleAgentHired;
+        Actions.OnQuestCarryingPickablesChanged -= HandleQuestCarryingPickablesChanged;
     }
 
     void Start()
@@ -74,7 +79,7 @@ public class QuestManager : MonoBehaviour
         if (_currentQuest == null)
         {
             _questPanel.Hide();
-            Actions.QuestTargetChanged(null);
+            ClearQuestWorldPointers();
             SetQuestPickablesInteraction(null);
             SetQuestBreakablesDamageEnabled(null);
             return;
@@ -104,8 +109,8 @@ public class QuestManager : MonoBehaviour
                 RunReachPointQuest(quest);
                 break;
 
-            case QuestType.CollectItems:
-                RunCollectItemsQuest(quest);
+            case QuestType.DeliverItem:
+                RunDeliverItemQuest(quest);
                 break;
 
             case QuestType.OwnAgents:
@@ -126,7 +131,7 @@ public class QuestManager : MonoBehaviour
     void RunOwnAgentsQuest(Quest quest)
     {
         int target = GetOwnAgentsTarget(quest);
-        Actions.QuestTargetChanged(null);
+        RefreshOwnAgentsPointers(quest);
         SetQuestBreakablesDamageEnabled(null);
 
         UpdateOwnAgentsProgress(quest, target);
@@ -163,6 +168,7 @@ public class QuestManager : MonoBehaviour
     void CompleteCurrentQuest()
     {
         Quest completedQuest = _currentQuest;
+        ClearQuestWorldPointers();
         Destroy(_questDestinationMarker);
         _questDestinationMarker = null;
         if (!_completedQuestIds.Contains(completedQuest.id))
@@ -174,13 +180,12 @@ public class QuestManager : MonoBehaviour
         _currentCollectTarget = 0;
 
         _questPanel.SetProgress(0, 0);
-        Actions.QuestTargetChanged(null);
         SetQuestPickablesInteraction(null);
         SetQuestBreakablesDamageEnabled(null);
         PlaySequence(completedQuest.endSequence, RunNextQuest);
     }
 
-    void RunCollectItemsQuest(Quest quest)
+    void RunDeliverItemQuest(Quest quest)
     {
         _currentCollectAmount = 0;
         _currentCollectTarget = quest.requiredAmount > 0
@@ -190,7 +195,8 @@ public class QuestManager : MonoBehaviour
 
         SetQuestPickablesInteraction(quest.id);
         SetQuestBreakablesDamageEnabled(null);
-        UpdateCollectItemsProgress();
+        UpdateCounterQuestProgress();
+        RefreshDeliverItemPointers();
 
         if (_currentCollectTarget <= 0)
             CompleteCurrentQuest();
@@ -203,7 +209,8 @@ public class QuestManager : MonoBehaviour
         SetQuestPickablesInteraction(null);
         SetQuestBreakablesDamageEnabled(quest.id);
         SyncBreakBreakablesProgressFromWorld();
-        UpdateCollectItemsProgress();
+        UpdateCounterQuestProgress();
+        RefreshBreakablePointers();
 
         if (_currentCollectTarget <= 0)
             CompleteCurrentQuest();
@@ -211,6 +218,7 @@ public class QuestManager : MonoBehaviour
 
     void RunReachPointQuest(Quest quest)
     {
+        ClearQuestWorldPointers();
         if (_questDestinationMarker != null)
             Destroy(_questDestinationMarker);
 
@@ -218,15 +226,17 @@ public class QuestManager : MonoBehaviour
 
         _questDestinationMarker = Instantiate(_questDestinationMarkerPrefab, quest.targetPoint.position, quest.targetPoint.rotation);
         _questDestinationMarker.GetComponent<QuestDestinationMarker>().Init(quest.id);
-        Actions.QuestTargetChanged(_questDestinationMarker.transform);
+        if (_worldPointers != null)
+            _worldPointers.SetReachPoint(_questDestinationMarker.transform);
     }
 
-    void CompleteCollectItem(string questId)
+    void CompleteDeliverItem(string questId)
     {
-        if (!IsCurrentQuest(QuestType.CollectItems, questId)) return;
+        if (!IsCurrentQuest(QuestType.DeliverItem, questId)) return;
 
         _currentCollectAmount++;
-        UpdateCollectItemsProgress();
+        UpdateCounterQuestProgress();
+        RefreshDeliverItemPointers();
 
         if (_currentCollectAmount >= _currentCollectTarget)
             CompleteCurrentQuest();
@@ -237,13 +247,14 @@ public class QuestManager : MonoBehaviour
         if (!IsCurrentQuest(QuestType.BreakBreakables, questId)) return;
 
         SyncBreakBreakablesProgressFromWorld();
-        UpdateCollectItemsProgress();
+        UpdateCounterQuestProgress();
+        RefreshBreakablePointers();
 
         if (_currentCollectTarget > 0 && _currentCollectAmount >= _currentCollectTarget)
             CompleteCurrentQuest();
     }
 
-    void UpdateCollectItemsProgress()
+    void UpdateCounterQuestProgress()
     {
         _questPanel.SetProgress(_currentCollectAmount, _currentCollectTarget);
     }
@@ -263,19 +274,22 @@ public class QuestManager : MonoBehaviour
         ApplyQuestPickableInteraction(item);
 
         if (_currentQuest != null
-            && _currentQuest.type == QuestType.CollectItems
+            && _currentQuest.type == QuestType.DeliverItem
             && _activeCollectQuestId == item.QuestId
             && _currentQuest.requiredAmount <= 0
             && item.QuestId == _currentQuest.id)
         {
             _currentCollectTarget = CountQuestPickables(_currentQuest.id);
-            UpdateCollectItemsProgress();
+            UpdateCounterQuestProgress();
         }
+
+        RefreshDeliverItemPointers();
     }
 
     void UnregisterQuestPickable(PickableItem item)
     {
         _questPickables.Remove(item);
+        RefreshDeliverItemPointers();
     }
 
     int CountQuestPickables(string questId)
@@ -329,11 +343,14 @@ public class QuestManager : MonoBehaviour
         {
             SyncBreakBreakablesProgressFromWorld();
         }
+
+        RefreshBreakablePointers();
     }
 
     void UnregisterQuestBreakable(Breakable breakable)
     {
         _questBreakables.Remove(breakable);
+        RefreshBreakablePointers();
     }
 
     int CountQuestBreakables(string questId)
@@ -363,6 +380,80 @@ public class QuestManager : MonoBehaviour
     void ApplyQuestBreakableDamage(Breakable breakable)
     {
         breakable.SetQuestDamageEnabled(breakable.QuestId == _activeCollectQuestId);
+    }
+
+    void ClearQuestWorldPointers()
+    {
+        if (_worldPointers != null)
+            _worldPointers.Clear();
+    }
+
+    void RefreshDeliverItemPointers()
+    {
+        if (_worldPointers == null
+            || _currentQuest == null
+            || _currentQuest.type != QuestType.DeliverItem
+            || _activeCollectQuestId != _currentQuest.id)
+            return;
+
+        List<Transform> list = new List<Transform>();
+        for (int i = 0; i < _questPickables.Count; i++)
+        {
+            PickableItem item = _questPickables[i];
+            if (item != null && item.QuestId == _currentQuest.id && !item.IsCollected)
+                list.Add(item.transform);
+        }
+
+        if (_currentQuest.collectTurnInPoint != null
+            && (_currentQuest.collectAlwaysShowTurnInPointer
+                || (_playerCollector != null && _playerCollector.IsCarryingQuestPickable(_currentQuest.id))))
+            list.Add(_currentQuest.collectTurnInPoint);
+
+        if (list.Count == 0)
+            _worldPointers.Clear();
+        else
+            _worldPointers.SetOverheadMarkers(list);
+    }
+
+    void HandleQuestCarryingPickablesChanged()
+    {
+        RefreshDeliverItemPointers();
+    }
+
+    void RefreshBreakablePointers()
+    {
+        if (_worldPointers == null
+            || _currentQuest == null
+            || _currentQuest.type != QuestType.BreakBreakables
+            || _activeCollectQuestId != _currentQuest.id)
+            return;
+
+        List<Transform> list = new List<Transform>();
+        for (int i = 0; i < _questBreakables.Count; i++)
+        {
+            Breakable b = _questBreakables[i];
+            if (b != null && b.QuestId == _currentQuest.id && !b.IsBroken)
+                list.Add(b.transform);
+        }
+
+        if (list.Count == 0)
+            _worldPointers.Clear();
+        else
+            _worldPointers.SetOverheadMarkers(list);
+    }
+
+    void RefreshOwnAgentsPointers(Quest quest)
+    {
+        if (_worldPointers == null || quest == null)
+            return;
+
+        if (quest.targetPoint == null)
+        {
+            _worldPointers.Clear();
+            return;
+        }
+
+        _worldPointers.SetOverheadMarkers(new List<Transform> { quest.targetPoint });
     }
 
     public QuestSaveData CaptureSaveData()
@@ -395,8 +486,11 @@ public class QuestManager : MonoBehaviour
     {
         _hasRestoredSave = true;
         InitializeQuestList();
+        ClearQuestWorldPointers();
         if (_questDestinationMarker != null)
             Destroy(_questDestinationMarker);
+
+        _questDestinationMarker = null;
 
         _completedQuestIds.Clear();
         if (data != null && data.completedQuestIds != null)
@@ -408,7 +502,7 @@ public class QuestManager : MonoBehaviour
         _currentCollectTarget = 0;
         if (data != null
             && _currentQuest != null
-            && _currentQuest.type == QuestType.CollectItems)
+            && _currentQuest.type == QuestType.DeliverItem)
         {
             _currentCollectAmount = data.currentCollectAmount;
             _currentCollectTarget = data.currentCollectTarget;
@@ -438,7 +532,7 @@ public class QuestManager : MonoBehaviour
 
         _activeCollectQuestId = _currentQuest.id;
 
-        if (_currentQuest.type == QuestType.CollectItems)
+        if (_currentQuest.type == QuestType.DeliverItem)
         {
             if (_currentCollectTarget <= 0)
             {
@@ -457,14 +551,19 @@ public class QuestManager : MonoBehaviour
             SyncBreakBreakablesProgressFromWorld();
         }
 
-        UpdateCollectItemsProgress();
+        UpdateCounterQuestProgress();
+
+        if (_currentQuest.type == QuestType.DeliverItem)
+            RefreshDeliverItemPointers();
+        else if (_currentQuest.type == QuestType.BreakBreakables)
+            RefreshBreakablePointers();
+        else if (_currentQuest.type == QuestType.OwnAgents)
+            RefreshOwnAgentsPointers(_currentQuest);
 
         if (_currentQuest.type == QuestType.BreakBreakables
             && _currentCollectTarget > 0
             && _currentCollectAmount >= _currentCollectTarget)
             CompleteCurrentQuest();
-        else
-            Actions.QuestTargetChanged(null);
     }
 
     void SyncBreakBreakablesProgressFromWorld()
@@ -571,7 +670,15 @@ public class Quest
     public string id;
     public LocalizedString title;
     public QuestType type;
+    [Tooltip("Reach Point: зона квеста. Own Agents: трейдер / магазин (стрелка навигации). Другие типы могут не использовать.")]
     public Transform targetPoint;
+
+    [Tooltip("Deliver Item: точка сдачи (автомат бутылок, зона у двери с ключом и т.д.).")]
+    public Transform collectTurnInPoint;
+
+    [Tooltip("Deliver Item: показывать стрелку на точку сдачи сразу, до подбора предмета.")]
+    public bool collectAlwaysShowTurnInPointer;
+
     public int requiredAmount;
     public List<QuestSequenceStep> startSequence = new List<QuestSequenceStep>();
     public List<QuestSequenceStep> endSequence = new List<QuestSequenceStep>();
@@ -594,7 +701,7 @@ public enum QuestSequenceStepType
 public enum QuestType
 {
     ReachPoint,
-    CollectItems,
+    DeliverItem,
     OwnAgents,
     BreakBreakables,
 }

@@ -16,7 +16,24 @@ public class SaveData
     public bool isLevelFinished;
     public SaveTransformData playerTransform;
     public QuestSaveData quest = new QuestSaveData();
+    /// <summary>Pickable SaveId ключа «в руке» (новое поле).</summary>
+    public string currentKeyPickableId;
+    /// <summary>Старое имя JSON-поля: для JsonUtility сохранять зеркально с <see cref="currentKeyPickableId"/>; старые сейвы читаются через <see cref="ResolveHeldKeyPickableSaveId"/>.</summary>
     public string currentKeyCollectableId;
+
+    public static string ResolveHeldKeyPickableSaveId(SaveData data)
+    {
+        if (data == null) return null;
+        if (!string.IsNullOrEmpty(data.currentKeyPickableId)) return data.currentKeyPickableId;
+        return data.currentKeyCollectableId;
+    }
+
+    public static void SetHeldKeyPickableSaveId(SaveData data, string id)
+    {
+        if (data == null) return;
+        data.currentKeyPickableId = id;
+        data.currentKeyCollectableId = id;
+    }
     public List<string> playerInventoryItemIds = new List<string>();
     public List<PickableItemSaveData> pickableItems = new List<PickableItemSaveData>();
     public List<CollectableSaveData> collectables = new List<CollectableSaveData>();
@@ -64,7 +81,7 @@ public class SaveTransformData
 public class QuestSaveData
 {
     public string currentQuestId;
-    /// <summary>Прогресс только для CollectItems (при загрузке BreakBreakables пересчитывается из BreakableSaveData).</summary>
+    /// <summary>Прогресс счётчика для Deliver Item и Break Breakables.</summary>
     public int currentCollectAmount;
     public int currentCollectTarget;
     public List<string> completedQuestIds = new List<string>();
@@ -76,6 +93,7 @@ public class PickableItemSaveData
     public string id;
     public bool isCollected;
     public bool isInInventory;
+    public bool isCarriedAsDoorKey;
     public int inventoryIndex;
     public bool activeSelf;
     public SaveTransformData transform;

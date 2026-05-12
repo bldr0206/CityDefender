@@ -170,7 +170,6 @@ public class LevelSaveController : IInitializable, IDisposable
         RestoreBreakables(data.breakables);
         RestoreCollectables(data.collectables);
         RestorePickablesAndInventory(data);
-        _playerCollector.RestoreCurrentKey(data.currentKeyCollectableId);
         RestoreDoors(data.doors);
         int restoredAgentCount = RestoreAgents(data.agents);
         Game.SetHiredAgentsCount(restoredAgentCount);
@@ -194,9 +193,9 @@ public class LevelSaveController : IInitializable, IDisposable
             isLevelFinished = Game.IsLevelFinished,
             playerTransform = _playerController.CaptureSaveData(),
             quest = _questManager != null ? _questManager.CaptureSaveData() : new QuestSaveData(),
-            currentKeyCollectableId = _playerCollector.CaptureCurrentKeyId(),
             playerInventoryItemIds = _playerCollector.CaptureInventoryItemIds(),
         };
+        SaveData.SetHeldKeyPickableSaveId(data, _playerCollector.CaptureHeldKeyPickableSaveId());
 
         CapturePickableItems(data);
         CaptureCollectables(data);
@@ -215,12 +214,19 @@ public class LevelSaveController : IInitializable, IDisposable
 
     void CapturePickableItems(SaveData data)
     {
+        string heldKeyId = SaveData.ResolveHeldKeyPickableSaveId(data);
         List<PickableItem> items = GetPickablesInLevelOrdered();
         for (int i = 0; i < items.Count; i++)
         {
             PickableItem item = items[i];
             int inventoryIndex = _playerCollector.GetInventoryIndex(item);
-            data.pickableItems.Add(item.CaptureSaveData(inventoryIndex >= 0, inventoryIndex));
+            bool carriedKey =
+                !string.IsNullOrEmpty(heldKeyId)
+                && item.SaveId == heldKeyId
+                && item.Type == PickableItemType.Key;
+
+            data.pickableItems.Add(
+                item.CaptureSaveData(inventoryIndex >= 0, inventoryIndex, carriedKey));
         }
     }
 
@@ -262,6 +268,9 @@ public class LevelSaveController : IInitializable, IDisposable
     void RestorePickablesAndInventory(SaveData data)
     {
         Dictionary<string, Queue<PickableItem>> pools = CreatePickableRestoreQueues();
+        string heldKeyId = SaveData.ResolveHeldKeyPickableSaveId(data);
+
+        _playerCollector.ClearHeldDoorKeySlotOnly();
         _playerCollector.RestoreInventory(data.playerInventoryItemIds, pools);
 
         if (data.pickableItems != null)
@@ -270,6 +279,17 @@ public class LevelSaveController : IInitializable, IDisposable
             {
                 PickableItemSaveData itemData = data.pickableItems[i];
                 if (itemData.isInInventory) continue;
+
+                if (itemData.isCarriedAsDoorKey)
+                {
+                    if (
+                        pools.TryGetValue(itemData.id, out Queue<PickableItem> qHeld)
+                        && qHeld.Count > 0
+                        )
+                        _playerCollector.RestoreHeldKeyPickable(qHeld.Dequeue());
+                    continue;
+                }
+
                 if (!pools.TryGetValue(itemData.id, out Queue<PickableItem> q) || q.Count == 0)
                 {
                     TryRestoreOrphanDroppedPickable(itemData);
@@ -279,9 +299,28 @@ public class LevelSaveController : IInitializable, IDisposable
                 PickableItem item = q.Dequeue();
                 item.RestoreSaveData(itemData);
             }
-
-            DiscardLeftoverPickablePools(pools);
         }
+
+        if (
+            !_playerCollector.HoldsDoorKey
+            && !string.IsNullOrEmpty(heldKeyId)
+            )
+        {
+            if (
+                pools.TryGetValue(heldKeyId, out Queue<PickableItem> qKey)
+                && qKey.Count > 0
+                )
+                _playerCollector.RestoreHeldKeyPickable(qKey.Dequeue());
+            else if (
+                SaveableRegistry.TryGet(
+                    heldKeyId,
+                    out PickableItem keyPickable
+                    )
+                )
+                _playerCollector.RestoreHeldKeyPickable(keyPickable);
+        }
+
+        DiscardLeftoverPickablePools(pools);
     }
 
     List<PickableItem> GetPickablesInLevelOrdered()

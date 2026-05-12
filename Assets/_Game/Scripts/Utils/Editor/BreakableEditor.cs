@@ -1,8 +1,8 @@
 using UnityEditor;
 
-[CustomEditor(typeof(PickableItem))]
+[CustomEditor(typeof(Breakable))]
 [CanEditMultipleObjects]
-public class PickableItemEditor : Editor
+public class BreakableEditor : Editor
 {
     public override void OnInspectorGUI()
     {

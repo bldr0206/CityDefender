@@ -4,8 +4,9 @@ using UnityEngine;
 
 public class BreakableTrigger : MonoBehaviour
 {
-    [SerializeField]
-    private GameObject _breakableAimObject;
+    [SerializeField] private GameObject _breakableAimObject;
+    [SerializeField] private Transform _breakableAimObjectRoot;
+    [SerializeField] private float _aimRootScaleInDuration = 0.25f;
 
     [SerializeField] private GameObject _handPointerObject;
     [SerializeField] private float _handScaleDuration = 0.2f;
@@ -17,6 +18,8 @@ public class BreakableTrigger : MonoBehaviour
     private Vector3 _handStartScale;
     private Tween _handScaleTween;
     private Tween _handPulseTween;
+    private Tween _aimRootScaleTween;
+    private Transform _lastAimTarget;
     private bool _isHandVisible;
 
     public Transform Target => _target;
@@ -38,6 +41,7 @@ public class BreakableTrigger : MonoBehaviour
     {
         _handScaleTween?.Kill();
         _handPulseTween?.Kill();
+        _aimRootScaleTween?.Kill();
     }
 
     private void OnTriggerEnter(Collider other)
@@ -96,8 +100,33 @@ public class BreakableTrigger : MonoBehaviour
 
         if (hasTarget)
         {
+            if (_target != _lastAimTarget)
+            {
+                _lastAimTarget = _target;
+                PlayAimRootScaleIn();
+            }
+
             _breakableAimObject.transform.position = _target.position;
         }
+        else
+        {
+            _lastAimTarget = null;
+            _aimRootScaleTween?.Kill();
+            AimRootTransform.localScale = Vector3.one;
+        }
+    }
+
+    private Transform AimRootTransform =>
+        _breakableAimObjectRoot != null ? _breakableAimObjectRoot : _breakableAimObject.transform;
+
+    private void PlayAimRootScaleIn()
+    {
+        Transform root = AimRootTransform;
+        _aimRootScaleTween?.Kill();
+        root.localScale = Vector3.one * 3f;
+        _aimRootScaleTween = root
+            .DOScale(Vector3.one, _aimRootScaleInDuration)
+            .SetEase(Ease.OutCubic);
     }
 
     private void UpdateHandPointer(bool hasTarget)

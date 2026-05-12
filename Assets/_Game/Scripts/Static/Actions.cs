@@ -106,8 +106,15 @@ public static class Actions
     public static UnityAction<string> OnQuestItemTurnedIn;
     public static void QuestItemTurnedIn(string questId)
     {
-        Debug.Log($"<color={debugColor}>QuestItemTurnedIn</color> {questId}");
+        Debug.Log($"<color={debugColor}>QuestDeliverProgress</color> {questId}");
         OnQuestItemTurnedIn?.Invoke(questId);
+    }
+
+    public static UnityAction OnQuestCarryingPickablesChanged;
+    public static void QuestCarryingPickablesChanged()
+    {
+        Debug.Log($"<color={debugColor}>QuestCarryingPickablesChanged</color>");
+        OnQuestCarryingPickablesChanged?.Invoke();
     }
 
     public static UnityAction<Breakable> OnQuestBreakableRegistered;

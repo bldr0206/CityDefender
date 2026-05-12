@@ -8,6 +8,10 @@ public class QuestDrawer : PropertyDrawer
 
     public override void OnGUI(Rect position, SerializedProperty property, GUIContent label)
     {
+        float totalHeight = GetPropertyHeight(property, label);
+        Rect backgroundRect = new Rect(position.x, position.y, position.width, totalHeight);
+        EditorGUI.DrawRect(backgroundRect, BackgroundTintForQuestType(GetQuestType(property)));
+
         EditorGUI.BeginProperty(position, label, property);
 
         Rect row = new Rect(position.x, position.y, position.width, EditorGUIUtility.singleLineHeight);
@@ -32,8 +36,14 @@ public class QuestDrawer : PropertyDrawer
         height += GetPropertyHeight(property, "id");
         height += GetPropertyHeight(property, "title");
         height += GetPropertyHeight(property, "type");
-        if (GetQuestType(property) == QuestType.ReachPoint)
+        if (GetQuestType(property) == QuestType.ReachPoint || GetQuestType(property) == QuestType.OwnAgents)
             height += GetPropertyHeight(property, "targetPoint");
+
+        if (GetQuestType(property) == QuestType.DeliverItem)
+        {
+            height += GetPropertyHeight(property, "collectTurnInPoint");
+            height += GetPropertyHeight(property, "collectAlwaysShowTurnInPointer");
+        }
 
         height += GetPropertyHeight(property, "requiredAmount");
         height += GetPropertyHeight(property, "startSequence");
@@ -47,8 +57,14 @@ public class QuestDrawer : PropertyDrawer
         DrawProperty(ref row, property.FindPropertyRelative("id"));
         DrawTitle(ref row, property.FindPropertyRelative("title"));
         DrawProperty(ref row, property.FindPropertyRelative("type"));
-        if (GetQuestType(property) == QuestType.ReachPoint)
+        if (GetQuestType(property) == QuestType.ReachPoint || GetQuestType(property) == QuestType.OwnAgents)
             DrawProperty(ref row, property.FindPropertyRelative("targetPoint"));
+
+        if (GetQuestType(property) == QuestType.DeliverItem)
+        {
+            DrawProperty(ref row, property.FindPropertyRelative("collectTurnInPoint"));
+            DrawProperty(ref row, property.FindPropertyRelative("collectAlwaysShowTurnInPointer"));
+        }
 
         DrawProperty(ref row, property.FindPropertyRelative("requiredAmount"));
         DrawProperty(ref row, property.FindPropertyRelative("startSequence"));
@@ -58,6 +74,25 @@ public class QuestDrawer : PropertyDrawer
     static QuestType GetQuestType(SerializedProperty property)
     {
         return (QuestType)property.FindPropertyRelative("type").enumValueIndex;
+    }
+
+    /// <summary>Пастельная подложка под элемент квеста в списке (Dark/Light).</summary>
+    static Color BackgroundTintForQuestType(QuestType type)
+    {
+        float a = EditorGUIUtility.isProSkin ? 0.14f : 0.2f;
+        switch (type)
+        {
+            case QuestType.ReachPoint:
+                return new Color(0.4f, 0.62f, 0.95f, a);
+            case QuestType.DeliverItem:
+                return new Color(0.42f, 0.78f, 0.52f, a);
+            case QuestType.OwnAgents:
+                return new Color(0.92f, 0.68f, 0.35f, a);
+            case QuestType.BreakBreakables:
+                return new Color(0.88f, 0.48f, 0.5f, a);
+            default:
+                return new Color(0.55f, 0.55f, 0.58f, a * 0.65f);
+        }
     }
 
     static void DrawProperty(ref Rect row, SerializedProperty property)

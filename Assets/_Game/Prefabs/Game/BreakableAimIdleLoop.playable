@@ -173,7 +173,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4ec83c4c8bc41484ea3fefca7fb92cde, type: 3}
   m_Name: TweenTransformClip(Clone)
   m_EditorClassIdentifier: VfxRhinotales.Timeline::MultitoolTracks.TweenTransformClip
-  tweenPosition: 1
+  tweenPosition: 0
   tweenScale: 1
   tweenRotation: 0
   startTarget:
@@ -186,12 +186,12 @@ MonoBehaviour:
   endPositionOffset: {x: 0, y: 0, z: 0}
   startRotationOffsetEuler: {x: 0, y: 0, z: 0}
   endRotationOffsetEuler: {x: 0, y: 0, z: 0}
-  startPosition: {x: 0, y: 2.5, z: 0}
-  endPosition: {x: 0, y: 2, z: 0}
+  startPosition: {x: 0, y: 1, z: 0}
+  endPosition: {x: 0, y: 1, z: 0}
   startScale: {x: 1, y: 1, z: 1}
   endScale: {x: 1, y: 1, z: 1}
-  startScaleUniform: 1.1
-  endScaleUniform: 1
+  startScaleUniform: 2
+  endScaleUniform: 1.5
   startRotationEuler: {x: 0, y: 0, z: 0}
   endRotationEuler: {x: 0, y: 0, z: 0}
   positionSourceMode: 1
@@ -203,9 +203,8 @@ MonoBehaviour:
   scaleEasing: 6
   rotationEasing: 6
   space: 1
-  positionMode: 0
   rotationMode: 1
-  scaleMode: 1
+  scaleMode: 0
   scaleValueMode: 0
 --- !u!114 &11400000
 MonoBehaviour:
@@ -240,7 +239,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4ec83c4c8bc41484ea3fefca7fb92cde, type: 3}
   m_Name: TweenTransformClip
   m_EditorClassIdentifier: VfxRhinotales.Timeline::MultitoolTracks.TweenTransformClip
-  tweenPosition: 1
+  tweenPosition: 0
   tweenScale: 1
   tweenRotation: 0
   startTarget:
@@ -253,12 +252,12 @@ MonoBehaviour:
   endPositionOffset: {x: 0, y: 0, z: 0}
   startRotationOffsetEuler: {x: 0, y: 0, z: 0}
   endRotationOffsetEuler: {x: 0, y: 0, z: 0}
-  startPosition: {x: 0, y: 2, z: 0}
-  endPosition: {x: 0, y: 2.5, z: 0}
+  startPosition: {x: 0, y: 1, z: 0}
+  endPosition: {x: 0, y: 1, z: 0}
   startScale: {x: 1, y: 1, z: 1}
   endScale: {x: 1, y: 1, z: 1}
-  startScaleUniform: 1
-  endScaleUniform: 1.1
+  startScaleUniform: 1.5
+  endScaleUniform: 2
   startRotationEuler: {x: 0, y: 0, z: 0}
   endRotationEuler: {x: 0, y: 0, z: 0}
   positionSourceMode: 1
@@ -270,7 +269,6 @@ MonoBehaviour:
   scaleEasing: 6
   rotationEasing: 6
   space: 1
-  positionMode: 0
   rotationMode: 1
-  scaleMode: 1
+  scaleMode: 0
   scaleValueMode: 0
