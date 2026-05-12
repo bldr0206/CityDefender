@@ -19,22 +19,6 @@ MonoBehaviour:
     m_Key: quest.q1.find_job
     m_Metadata:
       m_Items: []
-  - m_Id: 152976883712
-    m_Key: ui.next_button
-    m_Metadata:
-      m_Items: []
-  - m_Id: 698970406912
-    m_Key: sink.rent_agent
-    m_Metadata:
-      m_Items: []
-  - m_Id: 741962022912
-    m_Key: sink.return_bottles
-    m_Metadata:
-      m_Items: []
-  - m_Id: 858156826624
-    m_Key: ui.level
-    m_Metadata:
-      m_Items: []
   - m_Id: 43564614680576
     m_Key: quest.q1.line1.npc
     m_Metadata:
@@ -55,16 +39,12 @@ MonoBehaviour:
     m_Key: quest.q1.line5.npc
     m_Metadata:
       m_Items: []
-  - m_Id: 56506546520064
-    m_Key: ui.take_button
+  - m_Id: 403554798010368
+    m_Key: quest.q1_start.line1.player
     m_Metadata:
       m_Items: []
-  - m_Id: 56771228073984
-    m_Key: ui.emtpy_bottle
-    m_Metadata:
-      m_Items: []
-  - m_Id: 63779922640896
-    m_Key: ui.tap_to_continue
+  - m_Id: 403760176300032
+    m_Key: quest.q1_start.line2.player
     m_Metadata:
       m_Items: []
   - m_Id: 378817430552576
@@ -81,14 +61,6 @@ MonoBehaviour:
       m_Items: []
   - m_Id: 380431813967872
     m_Key: quest.q2.find_money
-    m_Metadata:
-      m_Items: []
-  - m_Id: 403554798010368
-    m_Key: quest.q1_start.line1.player
-    m_Metadata:
-      m_Items: []
-  - m_Id: 403760176300032
-    m_Key: quest.q1_start.line2.player
     m_Metadata:
       m_Items: []
   - m_Id: 403995468365824
@@ -128,7 +100,35 @@ MonoBehaviour:
     m_Metadata:
       m_Items: []
   - m_Id: 2579951102623744
-    m_Key: quest.q5_break_obstacles
+    m_Key: quest.q6_open_door
+    m_Metadata:
+      m_Items: []
+  - m_Id: 698970406912
+    m_Key: sink.rent_agent
+    m_Metadata:
+      m_Items: []
+  - m_Id: 741962022912
+    m_Key: sink.return_bottles
+    m_Metadata:
+      m_Items: []
+  - m_Id: 152976883712
+    m_Key: ui.next_button
+    m_Metadata:
+      m_Items: []
+  - m_Id: 858156826624
+    m_Key: ui.level
+    m_Metadata:
+      m_Items: []
+  - m_Id: 56506546520064
+    m_Key: ui.take_button
+    m_Metadata:
+      m_Items: []
+  - m_Id: 56771228073984
+    m_Key: ui.emtpy_bottle
+    m_Metadata:
+      m_Items: []
+  - m_Id: 63779922640896
+    m_Key: ui.tap_to_continue
     m_Metadata:
       m_Items: []
   m_Metadata:

@@ -253,9 +253,14 @@ public class LevelSaveController : IInitializable, IDisposable
 
     void CaptureBreakables(SaveData data)
     {
-        List<Breakable> breakables = SaveableRegistry.GetAll<Breakable>();
-        for (int i = 0; i < breakables.Count; i++)
-            data.breakables.Add(breakables[i].CaptureSaveData());
+        foreach (Breakable b in BuildBreakableLookup().Values)
+            data.breakables.Add(b.CaptureSaveData());
+    }
+
+    /// <summary>Все Breakable под корнем уровня (включая неактивные в иерархии); дубликаты SaveId — последний в иерархии, как при RestoreBreakables.</summary>
+    public List<Breakable> GetBreakablesInLevel()
+    {
+        return new List<Breakable>(BuildBreakableLookup().Values);
     }
 
     void CaptureAgents(SaveData data)

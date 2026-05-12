@@ -572,7 +572,7 @@ public class QuestManager : MonoBehaviour
             return;
 
         string questId = _currentQuest.id;
-        List<Breakable> all = SaveableRegistry.GetAll<Breakable>();
+        List<Breakable> all = _levelSaveController.GetBreakablesInLevel();
         int total = 0;
         int broken = 0;
 

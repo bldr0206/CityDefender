@@ -3342,10 +3342,6 @@ PrefabInstance:
       propertyPath: _questId
       value: q5_break_obstacles
       objectReference: {fileID: 0}
-    - target: {fileID: 378095012953387191, guid: 27aa5d193b46fdb4f93ebc5193036a2e, type: 3}
-      propertyPath: _navMeshObstacle
-      value: 
-      objectReference: {fileID: 0}
     - target: {fileID: 755686085882513684, guid: 27aa5d193b46fdb4f93ebc5193036a2e, type: 3}
       propertyPath: _id
       value: d6a2e2e11fea4bdb85fa83ce390d1dbd
@@ -5700,10 +5696,6 @@ PrefabInstance:
     - target: {fileID: 378095012953387191, guid: 27aa5d193b46fdb4f93ebc5193036a2e, type: 3}
       propertyPath: _questId
       value: q5_break_obstacles
-      objectReference: {fileID: 0}
-    - target: {fileID: 378095012953387191, guid: 27aa5d193b46fdb4f93ebc5193036a2e, type: 3}
-      propertyPath: _navMeshObstacle
-      value: 
       objectReference: {fileID: 0}
     - target: {fileID: 755686085882513684, guid: 27aa5d193b46fdb4f93ebc5193036a2e, type: 3}
       propertyPath: _id
