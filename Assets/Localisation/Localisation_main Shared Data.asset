@@ -100,6 +100,10 @@ MonoBehaviour:
     m_Metadata:
       m_Items: []
   - m_Id: 2579951102623744
+    m_Key: quest.q5_break_obstacles
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2579951102623745
     m_Key: quest.q6_open_door
     m_Metadata:
       m_Items: []

@@ -56,7 +56,7 @@ public class QuestPanel : MonoBehaviour
     {
         if (_questText == null) return;
 
-        _questText.text = _progressTarget > 0
+        _questText.text = _progressTarget > 1
             ? $"{_questBaseText}\n{_progressCurrent} / {_progressTarget}"
             : _questBaseText;
     }
@@ -65,9 +65,13 @@ public class QuestPanel : MonoBehaviour
     {
         if (_progressFill == null) return;
 
-        _progressFill.fillAmount = _progressTarget > 0
-            ? Mathf.Clamp01((float)_progressCurrent / _progressTarget)
-            : 0f;
+        if (_progressTarget <= 1)
+        {
+            _progressFill.fillAmount = 0f;
+            return;
+        }
+
+        _progressFill.fillAmount = Mathf.Clamp01((float)_progressCurrent / _progressTarget);
     }
 
     public void Show()

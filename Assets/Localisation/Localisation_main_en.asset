@@ -141,6 +141,10 @@ MonoBehaviour:
     m_Localized: Break the boxes near the elevator
     m_Metadata:
       m_Items: []
+  - m_Id: 2579951102623745
+    m_Localized: Bring your CV to the recruiter
+    m_Metadata:
+      m_Items: []
   references:
     version: 2
     RefIds: []
