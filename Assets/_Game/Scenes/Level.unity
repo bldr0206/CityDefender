@@ -251,6 +251,17 @@ GameObject:
   m_CorrespondingSourceObject: {fileID: 6228963236950809224, guid: 1f8f6872f22f13d44b8dddc8da2f8133, type: 3}
   m_PrefabInstance: {fileID: 590962375}
   m_PrefabAsset: {fileID: 0}
+--- !u!114 &404422937 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 1464656239564462368, guid: 1f8f6872f22f13d44b8dddc8da2f8133, type: 3}
+  m_PrefabInstance: {fileID: 590962375}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8d215460cc9d28e49a0d4ed14414b838, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::PickableItem
 --- !u!1 &500524700 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 23316672433703310, guid: 2b3c77faf4d040245b7e8ef217790957, type: 3}
@@ -264,13 +275,61 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 0}
     m_Modifications:
+    - target: {fileID: 1464656239564462368, guid: 1f8f6872f22f13d44b8dddc8da2f8133, type: 3}
+      propertyPath: _questId
+      value: q6_open_door
+      objectReference: {fileID: 0}
+    - target: {fileID: 2885576025541144490, guid: 1f8f6872f22f13d44b8dddc8da2f8133, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4691976440947797314, guid: 1f8f6872f22f13d44b8dddc8da2f8133, type: 3}
+      propertyPath: m_Mesh
+      value: 
+      objectReference: {fileID: 552887423116881197, guid: 2edaffacfaa37a649bd99ea9555bf001, type: 3}
     - target: {fileID: 5814068838930507555, guid: 1f8f6872f22f13d44b8dddc8da2f8133, type: 3}
       propertyPath: m_Enabled
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 5886011798076418712, guid: 1f8f6872f22f13d44b8dddc8da2f8133, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value: 
+      objectReference: {fileID: 2100000, guid: 4ad47b25b21f7d444ab517078c44d913, type: 2}
+    - target: {fileID: 5886011798076418712, guid: 1f8f6872f22f13d44b8dddc8da2f8133, type: 3}
+      propertyPath: 'm_Materials.Array.data[1]'
+      value: 
+      objectReference: {fileID: 2100000, guid: de2bed570dafda44eafcbfe41f5b0f45, type: 2}
     - target: {fileID: 6228963236950809224, guid: 1f8f6872f22f13d44b8dddc8da2f8133, type: 3}
       propertyPath: m_Name
       value: Level
+      objectReference: {fileID: 0}
+    - target: {fileID: 6450145390187356556, guid: 1f8f6872f22f13d44b8dddc8da2f8133, type: 3}
+      propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_Target
+      value: 
+      objectReference: {fileID: 404422937}
+    - target: {fileID: 6450145390187356556, guid: 1f8f6872f22f13d44b8dddc8da2f8133, type: 3}
+      propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_TargetAssemblyTypeName
+      value: PickableItem, Assembly-CSharp
+      objectReference: {fileID: 0}
+    - target: {fileID: 6856137086666130311, guid: 1f8f6872f22f13d44b8dddc8da2f8133, type: 3}
+      propertyPath: m_NavMeshData
+      value: 
+      objectReference: {fileID: 23800000, guid: bc29b988f80f04b4ca7002eda9b6859f, type: 2}
+    - target: {fileID: 6937594470223313448, guid: 1f8f6872f22f13d44b8dddc8da2f8133, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 0.7873203
+      objectReference: {fileID: 0}
+    - target: {fileID: 6937594470223313448, guid: 1f8f6872f22f13d44b8dddc8da2f8133, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0.48340532
+      objectReference: {fileID: 0}
+    - target: {fileID: 6937594470223313448, guid: 1f8f6872f22f13d44b8dddc8da2f8133, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0.3261185
+      objectReference: {fileID: 0}
+    - target: {fileID: 6937594470223313448, guid: 1f8f6872f22f13d44b8dddc8da2f8133, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: -0.20023194
       objectReference: {fileID: 0}
     - target: {fileID: 8804404596997463867, guid: 1f8f6872f22f13d44b8dddc8da2f8133, type: 3}
       propertyPath: m_LocalPosition.x

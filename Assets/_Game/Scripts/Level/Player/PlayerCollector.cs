@@ -177,13 +177,11 @@ public class PlayerCollector : MonoBehaviour
     {
         if (key.Type != PickableItemType.Key) return;
 
-        if (IsInventoryFull)
+        if (_heldDoorKey != null)
         {
-            Debug.Log("You can't carry a key while your inventory is full!");
+            Debug.Log("You can only carry one key at a time!");
             return;
         }
-
-        if (_heldDoorKey != null) return;
 
         key.Collect();
         _heldDoorKey = key;

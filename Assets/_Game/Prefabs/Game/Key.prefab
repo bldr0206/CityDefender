@@ -154,7 +154,7 @@ MonoBehaviour:
     m_TableReference:
       m_TableCollectionName: GUID:8859809404f9047418316076b40b54f3
     m_TableEntryReference:
-      m_KeyId: 56771228073984
+      m_KeyId: 3511719821475840
       m_Key: 
     m_FallbackState: 0
     m_WaitForCompletion: 0
@@ -291,8 +291,8 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 0}
-        m_TargetAssemblyTypeName: Bottle, Assembly-CSharp
+      - m_Target: {fileID: 8223743826967523699}
+        m_TargetAssemblyTypeName: PickableItem, Assembly-CSharp
         m_MethodName: TakeButtonClicked
         m_Mode: 1
         m_Arguments:
@@ -333,7 +333,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!224 &447073588754158203
 RectTransform:
   m_ObjectHideFlags: 0
@@ -342,7 +342,7 @@ RectTransform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1485819252624854452}
   m_LocalRotation: {x: 0.48340532, y: 0.3261185, z: -0.20023194, w: 0.7873203}
-  m_LocalPosition: {x: 0, y: 0, z: -7.890207}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 0.01, y: 0.01, z: 0.01}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -351,7 +351,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: -6.2911987, y: -1.9999847}
+  m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 380, y: 248}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!223 &1106993065111073185
@@ -658,7 +658,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 1, y: 1}
-  m_AnchoredPosition: {x: 0, y: 0}
+  m_AnchoredPosition: {x: -0.000030517578, y: 249.99991}
   m_SizeDelta: {x: 0, y: 0}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &1696597888788074189
@@ -711,6 +711,7 @@ GameObject:
   - component: {fileID: 2666525475535184055}
   - component: {fileID: 8223743826967523699}
   - component: {fileID: 5241840927765517488}
+  - component: {fileID: 7260905781310040341}
   m_Layer: 6
   m_Name: Key
   m_TagString: Interactable
@@ -786,6 +787,26 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::SaveId
   _id: 4e6077e816784fff93c224ecb1e46cf0
+--- !u!114 &7260905781310040341
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5303317210419577597}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1e3fdca004f2d45fe8abbed571a8abd5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Unity.AI.Navigation::Unity.AI.Navigation.NavMeshModifier
+  m_SerializedVersion: 0
+  m_OverrideArea: 0
+  m_Area: 0
+  m_OverrideGenerateLinks: 0
+  m_GenerateLinks: 0
+  m_IgnoreFromBuild: 1
+  m_ApplyToChildren: 1
+  m_AffectedAgents: ffffffff
 --- !u!1 &8412471690673831210
 GameObject:
   m_ObjectHideFlags: 0
@@ -799,7 +820,7 @@ GameObject:
   - component: {fileID: 4025174548854014667}
   m_Layer: 6
   m_Name: Model
-  m_TagString: Money
+  m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -812,7 +833,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 8412471690673831210}
   serializedVersion: 2
-  m_LocalRotation: {x: -0.00000093877304, y: 0.0000008791684, z: -0.7071056, w: 0.707108}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: -0.0024517, y: 0.229, z: 0.24558}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0

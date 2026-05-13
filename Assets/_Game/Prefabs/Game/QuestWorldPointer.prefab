@@ -43,6 +43,7 @@ GameObject:
   m_Component:
   - component: {fileID: 8996133638742060118}
   - component: {fileID: 7925049766025976818}
+  - component: {fileID: 8868620944055412576}
   m_Layer: 0
   m_Name: Root
   m_TagString: Untagged
@@ -79,6 +80,25 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::LookAtCamera
   _is180Rotation: 1
+--- !u!320 &8868620944055412576
+PlayableDirector:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4040343019379032510}
+  m_Enabled: 1
+  serializedVersion: 3
+  m_PlayableAsset: {fileID: 11400000, guid: 111bc2a1776a0ee4b8357b44f2de7af1, type: 2}
+  m_InitialState: 1
+  m_WrapMode: 1
+  m_DirectorUpdateMode: 1
+  m_InitialTime: 0
+  m_SceneBindings:
+  - key: {fileID: -5913083607799563484, guid: 111bc2a1776a0ee4b8357b44f2de7af1, type: 2}
+    value: {fileID: 404603963328828239}
+  m_ExposedReferences:
+    m_References: []
 --- !u!1 &5133643115102629728
 GameObject:
   m_ObjectHideFlags: 0
@@ -197,7 +217,7 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: 0.70710677, y: -0, z: -0, w: 0.7071068}
   m_LocalPosition: {x: 0, y: 0.01, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_LocalScale: {x: 2, y: 2, z: 2}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 4634287201977731317}
@@ -252,7 +272,7 @@ SpriteRenderer:
   m_SortingOrder: 0
   m_MaskInteraction: 0
   m_Sprite: {fileID: -2413806693520163455, guid: a86470a33a6bf42c4b3595704624658b, type: 3}
-  m_Color: {r: 1, g: 0.7728097, b: 0, a: 1}
+  m_Color: {r: 1, g: 0.7728097, b: 0, a: 0.2509804}
   m_FlipX: 0
   m_FlipY: 0
   m_DrawMode: 0

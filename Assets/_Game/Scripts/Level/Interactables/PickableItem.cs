@@ -77,7 +77,6 @@ public class PickableItem : MonoBehaviour
     public void TakeButtonClicked()
     {
         if (_isCollected || !_isInteractionEnabled) return;
-
         TakeClicked?.Invoke(this);
     }
 

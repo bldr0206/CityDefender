@@ -135,6 +135,10 @@ MonoBehaviour:
     m_Key: ui.tap_to_continue
     m_Metadata:
       m_Items: []
+  - m_Id: 3511719821475840
+    m_Key: ui.pickable_cv
+    m_Metadata:
+      m_Items: []
   m_Metadata:
     m_Items: []
   m_KeyGenerator:
