@@ -9,6 +9,7 @@
   <Project Path="Zenject-IntegrationTests.csproj" />
   <Project Path="Febucci.TextAnimator.Runtime.csproj" />
   <Project Path="Febucci.TextAnimator.Editor.csproj" />
+  <Project Path="Assembly-CSharp-Editor.csproj" />
   <Project Path="VfxRhinotales.Timeline.csproj" />
   <Project Path="Zenject-TestFramework.csproj" />
   <Project Path="Assembly-CSharp-firstpass.csproj" />
@@ -17,7 +18,6 @@
   <Project Path="Febucci.Attributes.Editor.csproj" />
   <Project Path="Zenject-PoolMonitor-Editor.csproj" />
   <Project Path="VfxRhinotales.Timeline.Editor.csproj" />
-  <Project Path="Assembly-CSharp-Editor.csproj" />
   <Project Path="Febucci.Attributes.Runtime.csproj" />
   <Project Path="Febucci.TextAnimator.Demo.Runtime.csproj" />
 </Solution>

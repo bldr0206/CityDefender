@@ -1,3 +1,5 @@
+using System.Collections.Generic;
+using DG.Tweening;
 using UnityEngine;
 using UnityEngine.AI;
 using Zenject;
@@ -6,6 +8,13 @@ using Zenject;
 [RequireComponent(typeof(SaveId))]
 public class Agent : MonoBehaviour
 {
+    enum CliffJumpPhase
+    {
+        None,
+        WalkToEdge,
+        Jumping,
+    }
+
     [SerializeField] private float followStartDistance = 4f;
     [SerializeField] private float followStopDistance = 3f;
     [SerializeField] private float minDistanceFromPlayer = 1.5f;
@@ -34,7 +43,19 @@ public class Agent : MonoBehaviour
     private Breakable _breakableTarget;
     private bool _isLiftPassenger;
 
+    CliffJumpPhase _cliffJumpPhase;
+    Vector3 _cliffJumpEdgePosition;
+    Vector3 _cliffJumpLandingPosition;
+    Quaternion _cliffJumpLandingRotation;
+    float _cliffJumpSpeed;
+    float _cliffJumpPower;
+    int _cliffJumpNumJumps;
+    float _nextCliffEdgeRepathTime;
+    Tween _cliffJumpTween;
+
     public bool IsLiftPassenger => _isLiftPassenger;
+
+    public bool IsInCliffJump => _cliffJumpPhase != CliffJumpPhase.None;
 
     [Inject]
     public void Construct(PlayerController player, BreakableTrigger breakableTrigger)
@@ -60,6 +81,13 @@ public class Agent : MonoBehaviour
     private void OnDisable()
     {
         _hammer.OnHit -= HitBreakable;
+        CancelCliffJumpDueToDisable();
+    }
+
+    void OnDestroy()
+    {
+        _cliffJumpTween?.Kill();
+        _cliffJumpTween = null;
     }
 
     private void Update()
@@ -67,6 +95,12 @@ public class Agent : MonoBehaviour
         if (_isLiftPassenger)
         {
             _agentAnimator.PlayIdleAnimation();
+            return;
+        }
+
+        if (_cliffJumpPhase != CliffJumpPhase.None)
+        {
+            UpdateCliffJump();
             return;
         }
 
@@ -164,6 +198,8 @@ public class Agent : MonoBehaviour
     {
         if (data == null || data.transform == null) return;
 
+        CancelCliffJumpForExternalInterrupt();
+
         if (_agent != null)
             _agent.enabled = false;
 
@@ -178,6 +214,7 @@ public class Agent : MonoBehaviour
     public void EnterLift(Transform seatPoint)
     {
         _isLiftPassenger = true;
+        CancelCliffJumpForExternalInterrupt();
         _hammer.StopHitAnimation();
         StopBreakableAttack();
         StopFollowing();
@@ -203,6 +240,183 @@ public class Agent : MonoBehaviour
 
         _isLiftPassenger = false;
         StartFollowingPlayer();
+    }
+
+    public void BeginCliffJump(
+        Vector3 edgeWorldHint,
+        Vector3 landingWorldPosition,
+        Quaternion landingRotation,
+        float jumpSpeed,
+        float jumpPower,
+        int numJumps)
+    {
+        if (_cliffJumpPhase != CliffJumpPhase.None || _isLiftPassenger)
+            return;
+
+        if (!_agent.isOnNavMesh)
+        {
+            Debug.LogWarning($"{nameof(Agent)}: Cliff jump не начат — агент не на NavMesh.", this);
+            return;
+        }
+
+        if (!NavMesh.SamplePosition(edgeWorldHint, out NavMeshHit edgeHit, navMeshSampleRadius, NavMesh.AllAreas))
+        {
+            Debug.LogWarning($"{nameof(Agent)}: Cliff jump не начат — Edge не удалось найти на NavMesh.", this);
+            return;
+        }
+
+        Vector3 sampledEdge = edgeHit.position;
+
+        if (!HasCompletePath(sampledEdge))
+        {
+            Debug.LogWarning($"{nameof(Agent)}: Cliff jump не начат — до Edge нет полного NavMesh-пути.", this);
+            return;
+        }
+
+        _hammer.StopHitAnimation();
+        StopBreakableAttack();
+        StopFollowing();
+
+        _cliffJumpLandingPosition = landingWorldPosition;
+        _cliffJumpLandingRotation = landingRotation;
+        _cliffJumpSpeed = Mathf.Max(0.01f, jumpSpeed);
+        _cliffJumpPower = Mathf.Max(0f, jumpPower);
+        _cliffJumpNumJumps = Mathf.Max(1, numJumps);
+
+        _cliffJumpEdgePosition = sampledEdge;
+        _agent.SetDestination(_cliffJumpEdgePosition);
+        _nextCliffEdgeRepathTime = Time.time + repathInterval;
+        _cliffJumpPhase = CliffJumpPhase.WalkToEdge;
+    }
+
+    void UpdateCliffJump()
+    {
+        if (_cliffJumpPhase == CliffJumpPhase.Jumping)
+        {
+            _agentAnimator.PlayIdleAnimation();
+            return;
+        }
+
+        if (!_agent.isOnNavMesh)
+        {
+            Debug.LogWarning($"{nameof(Agent)}: Cliff jump прерван — агент сошёл с NavMesh во время подхода.", this);
+            StopCliffJumpWalkState();
+            return;
+        }
+
+        if (Time.time >= _nextCliffEdgeRepathTime)
+        {
+            _nextCliffEdgeRepathTime = Time.time + repathInterval;
+            bool needRepath =
+                !_agent.hasPath ||
+                _agent.pathStatus != NavMeshPathStatus.PathComplete;
+            if (needRepath)
+                _agent.SetDestination(_cliffJumpEdgePosition);
+        }
+
+        if (_agent.velocity.sqrMagnitude > 0.01f)
+            _agentAnimator.PlayRunAnimation();
+        else
+            _agentAnimator.PlayIdleAnimation();
+
+        if (HasReachedDestination())
+            StartCliffJumpTween();
+    }
+
+    void StartCliffJumpTween()
+    {
+        _cliffJumpPhase = CliffJumpPhase.Jumping;
+
+        _agent.ResetPath();
+        _agent.enabled = false;
+
+        Vector3 faceDir = _cliffJumpLandingPosition - transform.position;
+        faceDir.y = 0f;
+        if (faceDir.sqrMagnitude > 0.0001f)
+            transform.rotation = Quaternion.LookRotation(faceDir);
+
+        Vector3 jumpStart = transform.position;
+        float jumpDistance = Vector3.Distance(jumpStart, _cliffJumpLandingPosition);
+        float jumpDuration = Mathf.Max(0.05f, jumpDistance / _cliffJumpSpeed);
+        Vector3[] path = BuildCliffJumpWaypoints(jumpStart, _cliffJumpLandingPosition, _cliffJumpPower, _cliffJumpNumJumps);
+
+        _cliffJumpTween?.Kill();
+        _cliffJumpTween = transform
+            .DOPath(path, jumpDuration, PathType.CatmullRom, PathMode.Full3D, 12, null)
+            .SetEase(Ease.InSine)
+            .SetLink(gameObject)
+            .OnComplete(FinishCliffJumpTween);
+    }
+
+    /// <summary>
+    /// Прогресс по пути 0..1 от физического времени: быстрый отрыв, дольше у середины (зависание в воздухе), ускорение к приземлению.
+    /// Формула u(t) = t + sin(2πt)/(2π), t ∈ [0,1] — монотонна, du/dt = 1 + cos(2πt).
+    /// </summary>
+
+
+    /// <summary>
+    /// Абсолютные мировые точки пути: вершины «горбов» на хорде + промежуточные впадины на хорде (при numJumps &gt; 1).
+    /// </summary>
+    static Vector3[] BuildCliffJumpWaypoints(Vector3 start, Vector3 end, float jumpPower, int numJumps)
+    {
+        numJumps = Mathf.Max(1, numJumps);
+        var list = new List<Vector3>(numJumps * 2 + 2);
+        for (int j = 0; j < numJumps; j++)
+        {
+            float t0 = j / (float)numJumps;
+            float t1 = (j + 1) / (float)numJumps;
+            float tPeak = (t0 + t1) * 0.5f;
+            Vector3 peak = Vector3.Lerp(start, end, tPeak);
+            peak.y += jumpPower;
+            list.Add(peak);
+            if (j < numJumps - 1)
+                list.Add(Vector3.Lerp(start, end, t1));
+        }
+
+        list.Add(end);
+        return list.ToArray();
+    }
+
+    void FinishCliffJumpTween()
+    {
+        _cliffJumpTween = null;
+        transform.rotation = _cliffJumpLandingRotation;
+
+        if (!_agent.enabled)
+            _agent.enabled = true;
+
+        if (NavMesh.SamplePosition(_cliffJumpLandingPosition, out NavMeshHit hit, navMeshSampleRadius, NavMesh.AllAreas))
+            _agent.Warp(hit.position);
+        else
+            _agent.Warp(_cliffJumpLandingPosition);
+
+        _cliffJumpPhase = CliffJumpPhase.None;
+        StartFollowingPlayer();
+    }
+
+    void StopCliffJumpWalkState()
+    {
+        _agent.ResetPath();
+        _cliffJumpPhase = CliffJumpPhase.None;
+        _agentAnimator.PlayIdleAnimation();
+    }
+
+    void CancelCliffJumpForExternalInterrupt()
+    {
+        _cliffJumpTween?.Kill();
+        _cliffJumpTween = null;
+        if (_cliffJumpPhase == CliffJumpPhase.Jumping && _agent != null && !_agent.enabled)
+            _agent.enabled = true;
+        _cliffJumpPhase = CliffJumpPhase.None;
+    }
+
+    void CancelCliffJumpDueToDisable()
+    {
+        _cliffJumpTween?.Kill();
+        _cliffJumpTween = null;
+        if (_cliffJumpPhase == CliffJumpPhase.Jumping && _agent != null && !_agent.enabled)
+            _agent.enabled = true;
+        _cliffJumpPhase = CliffJumpPhase.None;
     }
 
     private float GetFlatDistanceToPlayer()

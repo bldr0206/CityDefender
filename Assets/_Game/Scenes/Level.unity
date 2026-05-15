@@ -314,7 +314,7 @@ PrefabInstance:
     - target: {fileID: 6856137086666130311, guid: 1f8f6872f22f13d44b8dddc8da2f8133, type: 3}
       propertyPath: m_NavMeshData
       value: 
-      objectReference: {fileID: 23800000, guid: bc29b988f80f04b4ca7002eda9b6859f, type: 2}
+      objectReference: {fileID: 23800000, guid: b25acbcaffaf4974989cded6c2c1db9d, type: 2}
     - target: {fileID: 6937594470223313448, guid: 1f8f6872f22f13d44b8dddc8da2f8133, type: 3}
       propertyPath: m_LocalRotation.w
       value: 0.7873203
