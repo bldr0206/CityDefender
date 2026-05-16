@@ -3,6 +3,7 @@ using UnityEngine;
 
 /// <summary>
 /// Зона перед обрывом: когда игрок (Rigidbody, тег Player) пересекает триггер, нанятые агенты идут к Edge по NavMesh, затем движение по дуге к Landing.
+/// Если агент уже идёт к обрыву или в прыжке, следующий обрыв ставится в очередь и выполняется после приземления.
 ///
 /// Настройка в Unity:
 /// 1. Пустой объект (например CliffJumpZone) у траектории игрока перед обрывом.
@@ -104,7 +105,7 @@ public class AgentCliffJumpZone : MonoBehaviour
             Agent agent = agents[i];
             if (agent == null || !agent.isActiveAndEnabled)
                 continue;
-            if (agent.IsInLiftBoardingOrRide || agent.IsInCliffJump)
+            if (agent.IsInLiftBoardingOrRide)
                 continue;
 
             agent.BeginCliffJump(

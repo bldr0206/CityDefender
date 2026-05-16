@@ -139,6 +139,14 @@ MonoBehaviour:
     m_Key: ui.pickable_cv
     m_Metadata:
       m_Items: []
+  - m_Id: 4726664143732736
+    m_Key: ui.elevator
+    m_Metadata:
+      m_Items: []
+  - m_Id: 4736360518942720
+    m_Key: ui.move_elevator
+    m_Metadata:
+      m_Items: []
   m_Metadata:
     m_Items: []
   m_KeyGenerator:

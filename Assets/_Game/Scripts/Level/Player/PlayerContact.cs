@@ -34,17 +34,14 @@ public class PlayerContact : MonoBehaviour
 
     void HandleLift(Collider other)
     {
-        // Тег Lift может висеть на кабине или полу; автозапуск лифта с контакта не делается — триггер кабины на <see cref="Lift"/> / <see cref="LiftCabinDetector"/> и кнопки MoveUp/MoveDown.
+        // Тег Lift — объём кабины; поездка не от него, а от кнопки <see cref="Lift.MoveToOppositeFloor"/> или зон <see cref="LiftTrigger"/>.
     }
 
     void HandleLiftTrigger(Collider other)
     {
         LiftTrigger liftTrigger = other.GetComponent<LiftTrigger>();
         if (liftTrigger != null)
-        {
-            Debug.Log("Player activated a lift trigger!");
             liftTrigger.CallTheLift();
-        }
     }
 
     void HandleContactEnter(Collider other)

@@ -149,6 +149,14 @@ MonoBehaviour:
     m_Localized: CV
     m_Metadata:
       m_Items: []
+  - m_Id: 4726664143732736
+    m_Localized: Elevator
+    m_Metadata:
+      m_Items: []
+  - m_Id: 4736360518942720
+    m_Localized: Move
+    m_Metadata:
+      m_Items: []
   references:
     version: 2
     RefIds: []

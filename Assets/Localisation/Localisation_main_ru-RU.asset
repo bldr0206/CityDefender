@@ -176,6 +176,14 @@ MonoBehaviour:
     m_Localized: CV
     m_Metadata:
       m_Items: []
+  - m_Id: 4726664143732736
+    m_Localized: "\u041B\u0438\u0444\u0442"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 4736360518942720
+    m_Localized: "\u0415\u0445\u0430\u0442\u044C"
+    m_Metadata:
+      m_Items: []
   references:
     version: 2
     RefIds: []

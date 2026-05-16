@@ -3,7 +3,7 @@ using UnityEngine;
 using DG.Tweening;
 
 /// <summary>
-/// Лифт: движение платформы только по кнопке/триггеру (<see cref="MoveUp"/> / <see cref="MoveDown"/>), без автозапуска от игрока.
+/// Лифт: движение по вызову <see cref="MoveToOppositeFloor"/> / <see cref="MoveUp"/> / <see cref="MoveDown"/> (кнопка в кабине, зоны <see cref="LiftTrigger"/> у дверей).
 ///
 /// Настройка в Unity (префабы в репозитории не трогаем — только чеклист для дизайнера):
 /// - <b>Platform Rigidbody</b> — RB кабины (kinematic для DOMove).
@@ -14,11 +14,17 @@ using DG.Tweening;
 /// - <b>Move duration</b>, <b>Seat board / Exit tween</b> — длительности.
 /// - <b>Вход в кабину</b> — триггер-коллайдер Is Trigger на том же GameObject, что и этот компонент, либо на дочернем через <see cref="LiftCabinDetector"/>.
 ///   Учитывается только коллайдер игрока с тегом <b>Contact</b> (как у <see cref="PlayerContact"/>), обычно без своего Rigidbody. Слои Physics: триггер кабины и этот коллайдер пересекаются.
-/// - Кнопки: <see cref="LiftTrigger"/> или UI, вызывающие MoveUp/Down.
+/// - После остановки на этаже, если игрок в кабине без пассажиров — посадка агентов с этажа (<see cref="TryBeginBoardingForAgents"/>). Если с игроком едут агенты — они выходят только после того, как игрок покинет кабину (можно уехать обратно).
+/// - <b>Вызов с этажа</b> — коллайдеры с тегом <b>LiftTrigger</b> + <see cref="LiftTrigger"/> (низ/верх, <c>isUpTrigger</c>): игрок с тегом <b>Contact</b> через <see cref="PlayerContact"/>; только подъезд с другого этажа (<see cref="MoveDown"/> / <see cref="MoveUp"/>).
+/// - <b>В кабине</b> — кнопка UI на <see cref="MoveToOppositeFloor"/> (на противоположный этаж). При необходимости отдельно <see cref="MoveUp"/> / <see cref="MoveDown"/>.
+/// - Опционально <b>Cabin UI root</b> — как у <see cref="TraderNPC"/>: включается при входе Contact в кабину, выключается при выходе из объёма триггера.
 /// </summary>
 [RequireComponent(typeof(SaveId))]
 public class Lift : MonoBehaviour
 {
+    [SerializeField, Tooltip("Кнопки/подсказки в кабине; включается при входе игрока (Contact), выключается при выходе из триггера.")]
+    private GameObject _cabinUiRoot;
+
     [SerializeField] private Rigidbody platformRigidbody;
     [SerializeField] private Transform bottomPoint;
     [SerializeField] private Transform topPoint;
@@ -38,10 +44,14 @@ public class Lift : MonoBehaviour
     Tween _moveTween;
     bool _isMoving;
     bool _isAtTop;
+    bool _playerInCabin;
     SaveId _saveId;
 
     /// <summary> True после начала MoveTo («ехать») в текущей сессии внутри кабины; сброс при новом входе игрока. </summary>
     bool _rideStartedThisCabinSession;
+
+    /// <summary> Прибытие с игроком и пассажирами: высадка пассажиров отложена до выхода игрока из кабины. </summary>
+    bool _pendingPassengerExitOnPlayerLeave;
 
     public string SaveId => GetSaveId().Id;
 
@@ -64,6 +74,11 @@ public class Lift : MonoBehaviour
         _isAtTop = ComputeIsAtTopFromPlatformPosition();
     }
 
+    void Start()
+    {
+        HideCabinUi();
+    }
+
     public void MoveUp()
     {
         if (_isMoving) return;
@@ -78,6 +93,15 @@ public class Lift : MonoBehaviour
         if (!_isAtTop) return;
 
         MoveTo(bottomPoint, bottomExitPoints, false);
+    }
+
+    /// <summary> Одна кнопка «ехать»: с нижнего — наверх, с верхнего — вниз. </summary>
+    public void MoveToOppositeFloor()
+    {
+        if (!_isAtTop)
+            MoveUp();
+        else
+            MoveDown();
     }
 
     void OnTriggerEnter(Collider other)
@@ -102,20 +126,49 @@ public class Lift : MonoBehaviour
     /// <summary> Игрок вошёл в объём триггера кабины. </summary>
     public void NotifyPlayerEnteredCabin()
     {
+        _playerInCabin = true;
         _rideStartedThisCabinSession = false;
         TryBeginBoardingForAgents();
+        ShowCabinUi();
     }
 
     /// <summary>
-    /// Игрок вышел из кабины. Если он не начинал поездку в этой «сессии», отмена подхода и высадка пассажиров на текущем этаже.
+    /// Игрок вышел из кабины. Отложенная высадка пассажиров (если ждали выхода игрока) выполняется здесь.
+    /// Если он не начинал поездку в этой «сессии», отмена подхода и высадка пассажиров на текущем этаже.
     /// При выходе во время или после того как нажали «ехать» (до остановки платформы) — не абортим: пассажиры следуют логике поездки/прибытия.
     /// </summary>
     public void NotifyPlayerLeftCabin()
     {
+        _playerInCabin = false;
+        HideCabinUi();
+
+        if (_pendingPassengerExitOnPlayerLeave)
+        {
+            _pendingPassengerExitOnPlayerLeave = false;
+            ExitPassengersTweenedAtCurrentFloor();
+            TryBeginBoardingForAgents();
+        }
+
         if (_rideStartedThisCabinSession)
             return;
 
         AbortCabinSessionWithoutRide();
+    }
+
+    void ShowCabinUi()
+    {
+        if (_cabinUiRoot == null)
+            return;
+
+        _cabinUiRoot.SetActive(true);
+    }
+
+    void HideCabinUi()
+    {
+        if (_cabinUiRoot == null)
+            return;
+
+        _cabinUiRoot.SetActive(false);
     }
 
     void TryBeginBoardingForAgents()
@@ -196,6 +249,8 @@ public class Lift : MonoBehaviour
 
     void AbortCabinSessionWithoutRide()
     {
+        _pendingPassengerExitOnPlayerLeave = false;
+
         var boardedCopy = new List<Agent>(_passengers);
         _passengers.Clear();
 
@@ -236,6 +291,7 @@ public class Lift : MonoBehaviour
     {
         _rideStartedThisCabinSession = true;
         NotifyLiftDeparting();
+        HideCabinUi();
 
         _isMoving = true;
         _moveTween?.Kill();
@@ -246,7 +302,19 @@ public class Lift : MonoBehaviour
             {
                 _isMoving = false;
                 _isAtTop = isAtTop;
-                ExitPassengersTweened(exitPoints, targetPoint);
+
+                bool deferPassengerExit = _playerInCabin && _passengers.Count > 0;
+                if (deferPassengerExit)
+                    _pendingPassengerExitOnPlayerLeave = true;
+                else
+                    ExitPassengersTweened(exitPoints, targetPoint);
+
+                if (_playerInCabin)
+                {
+                    if (!deferPassengerExit)
+                        TryBeginBoardingForAgents();
+                    ShowCabinUi();
+                }
             });
     }
 
@@ -287,6 +355,13 @@ public class Lift : MonoBehaviour
         _passengers.Clear();
     }
 
+    void ExitPassengersTweenedAtCurrentFloor()
+    {
+        Transform fallback = _isAtTop ? topPoint : bottomPoint;
+        Transform[] exitPoints = _isAtTop ? topExitPoints : bottomExitPoints;
+        ExitPassengersTweened(exitPoints, fallback);
+    }
+
     public bool IsMoving() => _isMoving;
 
     public bool IsAtTop() => _isAtTop;
@@ -308,6 +383,8 @@ public class Lift : MonoBehaviour
         _moveTween = null;
         _isMoving = false;
         _passengers.Clear();
+        _playerInCabin = false;
+        _pendingPassengerExitOnPlayerLeave = false;
 
         Transform targetPoint = data.isAtTop ? topPoint : bottomPoint;
         platformRigidbody.position = targetPoint.position;
