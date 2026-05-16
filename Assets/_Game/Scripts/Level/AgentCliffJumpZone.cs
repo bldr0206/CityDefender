@@ -104,7 +104,7 @@ public class AgentCliffJumpZone : MonoBehaviour
             Agent agent = agents[i];
             if (agent == null || !agent.isActiveAndEnabled)
                 continue;
-            if (agent.IsLiftPassenger || agent.IsInCliffJump)
+            if (agent.IsInLiftBoardingOrRide || agent.IsInCliffJump)
                 continue;
 
             agent.BeginCliffJump(

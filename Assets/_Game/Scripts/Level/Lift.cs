@@ -2,22 +2,46 @@ using System.Collections.Generic;
 using UnityEngine;
 using DG.Tweening;
 
+/// <summary>
+/// Лифт: движение платформы только по кнопке/триггеру (<see cref="MoveUp"/> / <see cref="MoveDown"/>), без автозапуска от игрока.
+///
+/// Настройка в Unity (префабы в репозитории не трогаем — только чеклист для дизайнера):
+/// - <b>Platform Rigidbody</b> — RB кабины (kinematic для DOMove).
+/// - <b>Bottom / Top point</b> — мировые цели платформы.
+/// - <b>Passenger seat points</b> — дочерние Transforms в кабине (слоты).
+/// - <b>Boarding approach (bottom / top)</b> — точки на NavMesh у дверей; можно оставить пустыми и тогда берётся первый элемент <b>Bottom exit</b> / <b>Top exit</b>.
+/// - <b>Top / Bottom exit points</b> — куда твиниться при высадке (после поездки и при выходе игрока из кабины без поездки).
+/// - <b>Move duration</b>, <b>Seat board / Exit tween</b> — длительности.
+/// - <b>Вход в кабину</b> — триггер-коллайдер Is Trigger на том же GameObject, что и этот компонент, либо на дочернем через <see cref="LiftCabinDetector"/>.
+///   Учитывается только коллайдер игрока с тегом <b>Contact</b> (как у <see cref="PlayerContact"/>), обычно без своего Rigidbody. Слои Physics: триггер кабины и этот коллайдер пересекаются.
+/// - Кнопки: <see cref="LiftTrigger"/> или UI, вызывающие MoveUp/Down.
+/// </summary>
 [RequireComponent(typeof(SaveId))]
 public class Lift : MonoBehaviour
 {
     [SerializeField] private Rigidbody platformRigidbody;
     [SerializeField] private Transform bottomPoint;
     [SerializeField] private Transform topPoint;
+    [SerializeField, Tooltip("Точка подхода на нижнем этаже. Если пусто — Bottom Exit Points[0].")]
+    private Transform boardingApproachBottom;
+    [SerializeField, Tooltip("Точка подхода на верхнем этаже. Если пусто — Top Exit Points[0].")]
+    private Transform boardingApproachTop;
     [SerializeField] private Transform[] passengerSeatPoints;
     [SerializeField] private Transform[] topExitPoints;
     [SerializeField] private Transform[] bottomExitPoints;
     [SerializeField] private float moveDuration = 2f;
+
+    [SerializeField] private float seatBoardTweenDuration = 0.45f;
+    [SerializeField] private float exitTweenDuration = 0.4f;
 
     readonly List<Agent> _passengers = new();
     Tween _moveTween;
     bool _isMoving;
     bool _isAtTop;
     SaveId _saveId;
+
+    /// <summary> True после начала MoveTo («ехать») в текущей сессии внутри кабины; сброс при новом входе игрока. </summary>
+    bool _rideStartedThisCabinSession;
 
     public string SaveId => GetSaveId().Id;
 
@@ -56,9 +80,163 @@ public class Lift : MonoBehaviour
         MoveTo(bottomPoint, bottomExitPoints, false);
     }
 
+    void OnTriggerEnter(Collider other)
+    {
+        if (!IsPlayerCabinPresenceCollider(other))
+            return;
+
+        NotifyPlayerEnteredCabin();
+    }
+
+    void OnTriggerExit(Collider other)
+    {
+        if (!IsPlayerCabinPresenceCollider(other))
+            return;
+
+        NotifyPlayerLeftCabin();
+    }
+
+    static bool IsPlayerCabinPresenceCollider(Collider other) =>
+        other != null && other.CompareTag("Contact");
+
+    /// <summary> Игрок вошёл в объём триггера кабины. </summary>
+    public void NotifyPlayerEnteredCabin()
+    {
+        _rideStartedThisCabinSession = false;
+        TryBeginBoardingForAgents();
+    }
+
+    /// <summary>
+    /// Игрок вышел из кабины. Если он не начинал поездку в этой «сессии», отмена подхода и высадка пассажиров на текущем этаже.
+    /// При выходе во время или после того как нажали «ехать» (до остановки платформы) — не абортим: пассажиры следуют логике поездки/прибытия.
+    /// </summary>
+    public void NotifyPlayerLeftCabin()
+    {
+        if (_rideStartedThisCabinSession)
+            return;
+
+        AbortCabinSessionWithoutRide();
+    }
+
+    void TryBeginBoardingForAgents()
+    {
+        if (passengerSeatPoints == null || passengerSeatPoints.Length == 0)
+            return;
+        if (!TryGetBoardingApproachWorld(out Vector3 approachWorld))
+            return;
+
+        List<Agent> agents = SaveableRegistry.GetAll<Agent>();
+        int seatIndex = 0;
+        for (int i = 0; i < agents.Count && seatIndex < passengerSeatPoints.Length; i++)
+        {
+            Agent agent = agents[i];
+            if (agent == null || !agent.isActiveAndEnabled)
+                continue;
+            if (agent.IsLiftPassenger)
+                continue;
+            if (agent.IsInCliffJump)
+                continue;
+            if (agent.IsBoardingThisLift(this))
+                continue;
+
+            agent.BeginLiftBoarding(
+                this,
+                approachWorld,
+                passengerSeatPoints[seatIndex],
+                seatBoardTweenDuration);
+            seatIndex++;
+        }
+    }
+
+    /// <summary>
+    /// Подход: отдельные точки для этажа внизу и наверху; если не заданы — первый bottom/top exit.
+    /// </summary>
+    bool TryGetBoardingApproachWorld(out Vector3 position)
+    {
+        if (_isAtTop)
+        {
+            if (boardingApproachTop != null)
+            {
+                position = boardingApproachTop.position;
+                return true;
+            }
+
+            if (topExitPoints != null && topExitPoints.Length > 0 && topExitPoints[0] != null)
+            {
+                position = topExitPoints[0].position;
+                return true;
+            }
+        }
+        else
+        {
+            if (boardingApproachBottom != null)
+            {
+                position = boardingApproachBottom.position;
+                return true;
+            }
+
+            if (bottomExitPoints != null && bottomExitPoints.Length > 0 && bottomExitPoints[0] != null)
+            {
+                position = bottomExitPoints[0].position;
+                return true;
+            }
+        }
+
+        position = default;
+        return false;
+    }
+
+    /// <summary> Точка выхода для текущего положения платформы (верхний / нижний этаж). </summary>
+    Transform GetExitPointForCurrentFloor(int passengerSlotIndex)
+    {
+        Transform fallback = _isAtTop ? topPoint : bottomPoint;
+        Transform[] exitPointsForCurrentFloor = _isAtTop ? topExitPoints : bottomExitPoints;
+        return GetPoint(exitPointsForCurrentFloor, passengerSlotIndex, fallback);
+    }
+
+    void AbortCabinSessionWithoutRide()
+    {
+        var boardedCopy = new List<Agent>(_passengers);
+        _passengers.Clear();
+
+        float exitDur = Mathf.Max(0.05f, exitTweenDuration);
+        for (int i = 0; i < boardedCopy.Count; i++)
+        {
+            Agent agent = boardedCopy[i];
+            if (agent == null)
+                continue;
+
+            Transform exitPt = GetExitPointForCurrentFloor(i);
+            agent.ForceExitLiftWithoutRide(this, exitPt, exitDur);
+        }
+
+        CancelPendingBoardingForThisLift();
+
+        List<Agent> agents = SaveableRegistry.GetAll<Agent>();
+        for (int i = 0; i < agents.Count; i++)
+        {
+            Agent agent = agents[i];
+            if (agent != null && agent.IsRidingOnLift(this))
+                agent.ForceExitLiftWithoutRide(this, GetExitPointForCurrentFloor(0), exitDur);
+        }
+    }
+
+    void CancelPendingBoardingForThisLift()
+    {
+        List<Agent> agents = SaveableRegistry.GetAll<Agent>();
+        for (int i = 0; i < agents.Count; i++)
+        {
+            Agent agent = agents[i];
+            if (agent != null)
+                agent.CancelLiftBoardingIfPendingFor(this);
+        }
+    }
+
     void MoveTo(Transform targetPoint, Transform[] exitPoints, bool isAtTop)
     {
-        BoardPassengers();
+        _rideStartedThisCabinSession = true;
+        NotifyLiftDeparting();
+
         _isMoving = true;
         _moveTween?.Kill();
         _moveTween = platformRigidbody.DOMove(targetPoint.position, moveDuration)
@@ -68,8 +246,45 @@ public class Lift : MonoBehaviour
             {
                 _isMoving = false;
                 _isAtTop = isAtTop;
-                ExitPassengers(exitPoints, targetPoint);
+                ExitPassengersTweened(exitPoints, targetPoint);
             });
+    }
+
+    /// <summary> В начале движения платформы: отменить подход; mid-tween — перейти в local-твин к сиденью. </summary>
+    void NotifyLiftDeparting()
+    {
+        List<Agent> agents = SaveableRegistry.GetAll<Agent>();
+        for (int i = 0; i < agents.Count; i++)
+        {
+            Agent agent = agents[i];
+            if (agent != null)
+                agent.NotifyLiftDeparting(this);
+        }
+    }
+
+    public void RegisterPassenger(Agent agent)
+    {
+        if (agent == null || _passengers.Contains(agent))
+            return;
+        _passengers.Add(agent);
+    }
+
+    void ExitPassengersTweened(Transform[] exitPoints, Transform fallbackPoint)
+    {
+        for (int i = _passengers.Count - 1; i >= 0; i--)
+        {
+            Agent agent = _passengers[i];
+            if (agent == null)
+            {
+                _passengers.RemoveAt(i);
+                continue;
+            }
+
+            Transform exitPoint = GetPoint(exitPoints, i, fallbackPoint);
+            agent.BeginLiftExit(this, exitPoint, exitTweenDuration);
+        }
+
+        _passengers.Clear();
     }
 
     public bool IsMoving() => _isMoving;
@@ -108,33 +323,6 @@ public class Lift : MonoBehaviour
         float toTop = Vector3.SqrMagnitude(platformRigidbody.position - topPoint.position);
         float toBottom = Vector3.SqrMagnitude(platformRigidbody.position - bottomPoint.position);
         return toTop < toBottom;
-    }
-
-    void BoardPassengers()
-    {
-        _passengers.Clear();
-        if (passengerSeatPoints == null || passengerSeatPoints.Length == 0) return;
-
-        List<Agent> agents = SaveableRegistry.GetAll<Agent>();
-        for (int i = 0; i < agents.Count && _passengers.Count < passengerSeatPoints.Length; i++)
-        {
-            Agent agent = agents[i];
-            if (agent.IsLiftPassenger) continue;
-
-            agent.EnterLift(passengerSeatPoints[_passengers.Count]);
-            _passengers.Add(agent);
-        }
-    }
-
-    void ExitPassengers(Transform[] exitPoints, Transform fallbackPoint)
-    {
-        for (int i = 0; i < _passengers.Count; i++)
-        {
-            Transform exitPoint = GetPoint(exitPoints, i, fallbackPoint);
-            _passengers[i].ExitLift(exitPoint);
-        }
-
-        _passengers.Clear();
     }
 
     Transform GetPoint(Transform[] points, int index, Transform fallbackPoint)

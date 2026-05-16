@@ -34,13 +34,7 @@ public class PlayerContact : MonoBehaviour
 
     void HandleLift(Collider other)
     {
-        Lift lift = other.GetComponent<Lift>();
-        if (lift != null && !lift.IsMoving())
-        {
-            Debug.Log("Player entered the lift area!");
-            if (lift.IsAtTop()) lift.MoveDown();
-            else lift.MoveUp();
-        }
+        // Тег Lift может висеть на кабине или полу; автозапуск лифта с контакта не делается — триггер кабины на <see cref="Lift"/> / <see cref="LiftCabinDetector"/> и кнопки MoveUp/MoveDown.
     }
 
     void HandleLiftTrigger(Collider other)

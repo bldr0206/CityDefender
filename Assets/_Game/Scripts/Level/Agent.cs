@@ -15,6 +15,16 @@ public class Agent : MonoBehaviour
         Jumping,
     }
 
+    enum LiftBoardingPhase
+    {
+        None,
+        WalkToApproach,
+        TweenToSeatWorld,
+        TweenToSeatLocal,
+        Riding,
+        TweenExit,
+    }
+
     [SerializeField] private float followStartDistance = 4f;
     [SerializeField] private float followStopDistance = 3f;
     [SerializeField] private float minDistanceFromPlayer = 1.5f;
@@ -41,7 +51,6 @@ public class Agent : MonoBehaviour
     private bool _hasBreakableTarget;
     private Transform _lastBreakableTarget;
     private Breakable _breakableTarget;
-    private bool _isLiftPassenger;
 
     CliffJumpPhase _cliffJumpPhase;
     Vector3 _cliffJumpEdgePosition;
@@ -53,7 +62,19 @@ public class Agent : MonoBehaviour
     float _nextCliffEdgeRepathTime;
     Tween _cliffJumpTween;
 
-    public bool IsLiftPassenger => _isLiftPassenger;
+    LiftBoardingPhase _liftBoardingPhase;
+    Lift _liftBoardingLift;
+    Transform _liftSeatPoint;
+    Vector3 _liftApproachPosition;
+    float _nextLiftApproachRepathTime;
+    float _seatBoardTweenDuration;
+    Tween _liftTween;
+
+    /// <summary> Уже сидит в кабине и едет с платформой. </summary>
+    public bool IsLiftPassenger => _liftBoardingPhase == LiftBoardingPhase.Riding;
+
+    /// <summary> Подход, твины посадки/высадки или едет в кабине. </summary>
+    public bool IsInLiftBoardingOrRide => _liftBoardingPhase != LiftBoardingPhase.None;
 
     public bool IsInCliffJump => _cliffJumpPhase != CliffJumpPhase.None;
 
@@ -81,6 +102,10 @@ public class Agent : MonoBehaviour
     private void OnDisable()
     {
         _hammer.OnHit -= HitBreakable;
+        _liftTween?.Kill();
+        _liftTween = null;
+        if (_liftBoardingPhase != LiftBoardingPhase.None && _liftBoardingPhase != LiftBoardingPhase.Riding)
+            CancelLiftBoardingInternal();
         CancelCliffJumpDueToDisable();
     }
 
@@ -88,13 +113,21 @@ public class Agent : MonoBehaviour
     {
         _cliffJumpTween?.Kill();
         _cliffJumpTween = null;
+        _liftTween?.Kill();
+        _liftTween = null;
     }
 
     private void Update()
     {
-        if (_isLiftPassenger)
+        if (_liftBoardingPhase == LiftBoardingPhase.Riding)
         {
             _agentAnimator.PlayIdleAnimation();
+            return;
+        }
+
+        if (_liftBoardingPhase != LiftBoardingPhase.None)
+        {
+            UpdateLiftBoarding();
             return;
         }
 
@@ -199,6 +232,7 @@ public class Agent : MonoBehaviour
         if (data == null || data.transform == null) return;
 
         CancelCliffJumpForExternalInterrupt();
+        CancelLiftBoardingInternal();
 
         if (_agent != null)
             _agent.enabled = false;
@@ -211,35 +245,311 @@ public class Agent : MonoBehaviour
         StartFollowingPlayer();
     }
 
-    public void EnterLift(Transform seatPoint)
+    public bool IsBoardingThisLift(Lift lift)
     {
-        _isLiftPassenger = true;
+        return _liftBoardingLift == lift && _liftBoardingPhase != LiftBoardingPhase.None;
+    }
+
+    public void BeginLiftBoarding(
+        Lift lift,
+        Vector3 approachWorldHint,
+        Transform seatPoint,
+        float seatBoardDuration)
+    {
+        if (lift == null || seatPoint == null)
+            return;
+
+        if (IsInLiftBoardingOrRide && _liftBoardingLift == lift)
+            return;
+
+        if (IsInLiftBoardingOrRide)
+            CancelLiftBoardingInternal();
+
         CancelCliffJumpForExternalInterrupt();
         _hammer.StopHitAnimation();
         StopBreakableAttack();
         StopFollowing();
 
+        if (!NavMesh.SamplePosition(approachWorldHint, out NavMeshHit approachHit, navMeshSampleRadius, NavMesh.AllAreas))
+        {
+            Debug.LogWarning($"{nameof(Agent)}: подход к лифту — точка не на NavMesh.", this);
+            return;
+        }
+
+        Vector3 sampled = approachHit.position;
+
+        if (!HasCompletePath(sampled))
+        {
+            Debug.LogWarning($"{nameof(Agent)}: подход к лифту — нет полного NavMesh-пути.", this);
+            return;
+        }
+
+        _liftBoardingLift = lift;
+        _liftSeatPoint = seatPoint;
+        _seatBoardTweenDuration = Mathf.Max(0.05f, seatBoardDuration);
+        _liftApproachPosition = sampled;
+        _nextLiftApproachRepathTime = Time.time + repathInterval;
+        _agent.SetDestination(_liftApproachPosition);
+        _liftBoardingPhase = LiftBoardingPhase.WalkToApproach;
+    }
+
+    public void NotifyLiftDeparting(Lift lift)
+    {
+        if (_liftBoardingLift != lift)
+            return;
+
+        switch (_liftBoardingPhase)
+        {
+            case LiftBoardingPhase.WalkToApproach:
+                CancelLiftBoardingInternal();
+                break;
+            case LiftBoardingPhase.TweenToSeatWorld:
+                OnLiftDepartedDuringSeatTween();
+                break;
+        }
+    }
+
+    void OnLiftDepartedDuringSeatTween()
+    {
+        _liftTween?.Kill();
+        _liftTween = null;
+
+        if (_liftSeatPoint == null)
+        {
+            CancelLiftBoardingInternal();
+            return;
+        }
+
+        _liftBoardingPhase = LiftBoardingPhase.TweenToSeatLocal;
+        transform.SetParent(_liftSeatPoint, true);
+
+        Quaternion targetLocalRot = Quaternion.identity;
+        _liftTween = DOTween.Sequence()
+            .Append(transform.DOLocalMove(Vector3.zero, _seatBoardTweenDuration).SetEase(Ease.InOutQuad))
+            .Join(transform.DOLocalRotateQuaternion(targetLocalRot, _seatBoardTweenDuration))
+            .SetLink(gameObject)
+            .OnComplete(FinishLiftSeatLocalTween);
+    }
+
+    void FinishLiftSeatLocalTween()
+    {
+        _liftTween = null;
+        transform.localPosition = Vector3.zero;
+        transform.localRotation = Quaternion.identity;
+        CompleteLiftSeated();
+    }
+
+    public void CancelLiftBoardingIfPendingFor(Lift lift)
+    {
+        if (_liftBoardingLift != lift)
+            return;
+        if (_liftBoardingPhase == LiftBoardingPhase.Riding || _liftBoardingPhase == LiftBoardingPhase.TweenExit)
+            return;
+
+        CancelLiftBoardingInternal();
+    }
+
+    public bool IsRidingOnLift(Lift lift) =>
+        lift != null &&
+        _liftBoardingLift == lift &&
+        _liftBoardingPhase == LiftBoardingPhase.Riding;
+
+    /// <summary>
+    /// Игрок вышел из кабины без поездки: отменить незаконченную посадку или высадить сидящего на указанную точку этажа.
+    /// </summary>
+    public void ForceExitLiftWithoutRide(Lift lift, Transform exitPoint, float duration)
+    {
+        if (_liftBoardingLift != lift)
+            return;
+
+        switch (_liftBoardingPhase)
+        {
+            case LiftBoardingPhase.Riding:
+                BeginLiftExit(lift, exitPoint, duration);
+                break;
+            case LiftBoardingPhase.TweenExit:
+            case LiftBoardingPhase.None:
+                break;
+            default:
+                CancelLiftBoardingInternal();
+                break;
+        }
+    }
+
+    public void CancelLiftBoarding()
+    {
+        CancelLiftBoardingInternal();
+    }
+
+    void CancelLiftBoardingInternal()
+    {
+        _liftTween?.Kill();
+        _liftTween = null;
+
+        if (_liftBoardingPhase != LiftBoardingPhase.None)
+        {
+            transform.SetParent(null, true);
+
+            if (!_agent.enabled)
+                _agent.enabled = true;
+
+            if (_agent.isOnNavMesh)
+                _agent.ResetPath();
+
+            _hasDestination = false;
+
+            _liftBoardingLift = null;
+            _liftSeatPoint = null;
+            _liftBoardingPhase = LiftBoardingPhase.None;
+
+            if (_agent.isOnNavMesh)
+                StartFollowingPlayer();
+            else
+                _agentAnimator.PlayIdleAnimation();
+        }
+    }
+
+    void CompleteLiftSeated()
+    {
+        _liftBoardingPhase = LiftBoardingPhase.Riding;
+        if (_liftBoardingLift != null)
+            _liftBoardingLift.RegisterPassenger(this);
+
         if (_agent.enabled)
             _agent.enabled = false;
 
-        transform.SetPositionAndRotation(seatPoint.position, seatPoint.rotation);
-        transform.SetParent(seatPoint, true);
         _agentAnimator.PlayIdleAnimation();
     }
 
-    public void ExitLift(Transform exitPoint)
+    public void BeginLiftExit(Lift lift, Transform exitPoint, float duration)
     {
+        if (exitPoint == null)
+        {
+            CancelLiftBoardingInternal();
+            return;
+        }
+
+        _liftTween?.Kill();
+        _liftBoardingPhase = LiftBoardingPhase.TweenExit;
+        _liftBoardingLift = lift;
+
         transform.SetParent(null, true);
-        transform.SetPositionAndRotation(exitPoint.position, exitPoint.rotation);
+
+        if (_agent.enabled)
+            _agent.enabled = false;
+
+        float d = Mathf.Max(0.05f, duration);
+        _liftTween = DOTween.Sequence()
+            .Append(transform.DOMove(exitPoint.position, d).SetEase(Ease.InOutQuad))
+            .Join(transform.DORotateQuaternion(exitPoint.rotation, d))
+            .SetLink(gameObject)
+            .OnComplete(FinishLiftExitTween);
+    }
+
+    void FinishLiftExitTween()
+    {
+        _liftTween = null;
+        _liftBoardingPhase = LiftBoardingPhase.None;
+        _liftBoardingLift = null;
+        _liftSeatPoint = null;
 
         if (!_agent.enabled)
             _agent.enabled = true;
 
-        if (NavMesh.SamplePosition(exitPoint.position, out NavMeshHit hit, navMeshSampleRadius, NavMesh.AllAreas))
+        if (NavMesh.SamplePosition(transform.position, out NavMeshHit hit, navMeshSampleRadius, NavMesh.AllAreas))
             _agent.Warp(hit.position);
+        else
+            _agent.Warp(transform.position);
 
-        _isLiftPassenger = false;
         StartFollowingPlayer();
+    }
+
+    void UpdateLiftBoarding()
+    {
+        switch (_liftBoardingPhase)
+        {
+            case LiftBoardingPhase.WalkToApproach:
+                UpdateWalkToLiftApproach();
+                break;
+            case LiftBoardingPhase.TweenToSeatWorld:
+            case LiftBoardingPhase.TweenToSeatLocal:
+            case LiftBoardingPhase.TweenExit:
+                _agentAnimator.PlayIdleAnimation();
+                break;
+        }
+    }
+
+    void UpdateWalkToLiftApproach()
+    {
+        if (!_agent.isOnNavMesh)
+        {
+            CancelLiftBoardingInternal();
+            return;
+        }
+
+        if (Time.time >= _nextLiftApproachRepathTime)
+        {
+            _nextLiftApproachRepathTime = Time.time + repathInterval;
+            bool needRepath =
+                !_agent.hasPath ||
+                _agent.pathStatus != NavMeshPathStatus.PathComplete;
+            if (needRepath)
+                _agent.SetDestination(_liftApproachPosition);
+        }
+
+        if (_agent.velocity.sqrMagnitude > 0.01f)
+            _agentAnimator.PlayRunAnimation();
+        else
+            _agentAnimator.PlayIdleAnimation();
+
+        if (HasReachedDestination())
+            StartLiftSeatWorldTween();
+    }
+
+    void StartLiftSeatWorldTween()
+    {
+        if (_liftSeatPoint == null)
+        {
+            CancelLiftBoardingInternal();
+            return;
+        }
+
+        _liftBoardingPhase = LiftBoardingPhase.TweenToSeatWorld;
+        _agent.ResetPath();
+
+        if (_agent.enabled)
+            _agent.enabled = false;
+
+        Vector3 faceDir = _liftSeatPoint.position - transform.position;
+        faceDir.y = 0f;
+        if (faceDir.sqrMagnitude > 0.0001f)
+            transform.rotation = Quaternion.LookRotation(faceDir);
+
+        Vector3 seatWorld = _liftSeatPoint.position;
+        Quaternion seatWorldRot = _liftSeatPoint.rotation;
+
+        _liftTween?.Kill();
+        _liftTween = DOTween.Sequence()
+            .Append(transform.DOMove(seatWorld, _seatBoardTweenDuration).SetEase(Ease.InOutQuad))
+            .Join(transform.DORotateQuaternion(seatWorldRot, _seatBoardTweenDuration))
+            .SetLink(gameObject)
+            .OnComplete(FinishLiftSeatWorldTween);
+    }
+
+    void FinishLiftSeatWorldTween()
+    {
+        _liftTween = null;
+
+        if (_liftSeatPoint == null)
+        {
+            CancelLiftBoardingInternal();
+            return;
+        }
+
+        transform.SetParent(_liftSeatPoint, true);
+        transform.localPosition = Vector3.zero;
+        transform.localRotation = Quaternion.identity;
+        CompleteLiftSeated();
     }
 
     public void BeginCliffJump(
@@ -250,7 +560,7 @@ public class Agent : MonoBehaviour
         float jumpPower,
         int numJumps)
     {
-        if (_cliffJumpPhase != CliffJumpPhase.None || _isLiftPassenger)
+        if (_cliffJumpPhase != CliffJumpPhase.None || IsInLiftBoardingOrRide)
             return;
 
         if (!_agent.isOnNavMesh)
