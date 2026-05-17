@@ -1,5 +1,6 @@
 using UnityEngine;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using Zenject;
 using UnityEngine.Localization;
@@ -7,8 +8,7 @@ using UnityEngine.Localization;
 
 public class QuestManager : MonoBehaviour
 {
-    [SerializeField] private List<Quest> _quests;
-    [SerializeField] private GameObject _questDestinationMarkerPrefab;
+    [SerializeField] private QuestLevelConfig _questConfig;
     [SerializeField] private QuestWorldObjectivePointers _worldPointers;
 
     QuestPanel _questPanel;
@@ -64,7 +64,17 @@ public class QuestManager : MonoBehaviour
     void Start()
     {
         InitializeQuestList();
-        if (_hasRestoredSave) return;
+        // ApplyLoadedData из LevelSceneLogic должен успеть выполниться до первого RunNextQuest:
+        // Instantiate префаба уровня во время LoadLevel может вызвать этот Start синхронно,
+        // до возврата в LevelSceneLogic.Start — иначе SaveAutoCheckpoint перезапишет autosave на диске.
+        StartCoroutine(BootstrapQuestNextFrameIfNeeded());
+    }
+
+    IEnumerator BootstrapQuestNextFrameIfNeeded()
+    {
+        yield return null;
+        if (_hasRestoredSave)
+            yield break;
 
         SetQuestPickablesInteraction(null);
         SetQuestBreakablesDamageEnabled(null);
@@ -86,11 +96,19 @@ public class QuestManager : MonoBehaviour
         }
 
         _activeCollectQuestId = null;
+        _questPanel.Hide();
+        _levelSaveController.SaveAutoCheckpoint();
+        PlaySequence(_currentQuest.startSequence, BeginQuestAfterStartSequence);
+    }
+
+    void BeginQuestAfterStartSequence()
+    {
+        if (_currentQuest == null) return;
+
         _questPanel.Show();
         _questPanel.SetProgress(0, 0);
         _questPanel.UpdateQuestText(_currentQuest.title);
-
-        PlaySequence(_currentQuest.startSequence, RunCurrentQuest);
+        RunCurrentQuest();
     }
 
     void RunCurrentQuest()
@@ -179,7 +197,7 @@ public class QuestManager : MonoBehaviour
         _currentCollectAmount = 0;
         _currentCollectTarget = 0;
 
-        _questPanel.SetProgress(0, 0);
+        _questPanel.Hide();
         SetQuestPickablesInteraction(null);
         SetQuestBreakablesDamageEnabled(null);
         PlaySequence(completedQuest.endSequence, RunNextQuest);
@@ -224,7 +242,14 @@ public class QuestManager : MonoBehaviour
 
         SetQuestBreakablesDamageEnabled(null);
 
-        _questDestinationMarker = Instantiate(_questDestinationMarkerPrefab, quest.targetPoint.position, quest.targetPoint.rotation);
+        GameObject markerPrefab = _questConfig != null ? _questConfig.QuestDestinationMarkerPrefab : null;
+        if (markerPrefab == null || quest.targetPoint == null)
+        {
+            Debug.LogError("QuestLevelConfig, префаб маркера цели или targetPoint не задан.", this);
+            return;
+        }
+
+        _questDestinationMarker = Instantiate(markerPrefab, quest.targetPoint.position, quest.targetPoint.rotation);
         _questDestinationMarker.GetComponent<QuestDestinationMarker>().Init(quest.id);
         if (_worldPointers != null)
             _worldPointers.SetReachPoint(_questDestinationMarker.transform);
@@ -482,7 +507,7 @@ public class QuestManager : MonoBehaviour
         return string.IsNullOrWhiteSpace(questName) ? "Level" : questName;
     }
 
-    public void RestoreSaveData(QuestSaveData data)
+    public void RestoreSaveData(QuestSaveData data, bool resumeFromAutoCheckpoint = false)
     {
         _hasRestoredSave = true;
         InitializeQuestList();
@@ -513,6 +538,28 @@ public class QuestManager : MonoBehaviour
             RunNextQuest();
             return;
         }
+
+        if (resumeFromAutoCheckpoint)
+        {
+            _questPanel.Hide();
+            PlaySequence(_currentQuest.startSequence, AfterCheckpointRestoreIntroSequence);
+            return;
+        }
+
+        ApplyRestoredQuestGameplayAfterRestore();
+    }
+
+    void AfterCheckpointRestoreIntroSequence()
+    {
+        ApplyRestoredQuestGameplayAfterRestore();
+        if (_currentQuest != null)
+            _levelSaveController.SaveAutoCheckpoint();
+    }
+
+    void ApplyRestoredQuestGameplayAfterRestore()
+    {
+        if (_currentQuest == null)
+            return;
 
         _questPanel.Show();
         _questPanel.UpdateQuestText(_currentQuest.title);
@@ -597,7 +644,10 @@ public class QuestManager : MonoBehaviour
     {
         if (_allQuests.Count > 0) return;
 
-        _allQuests.AddRange(_quests);
+        if (_questConfig == null || _questConfig.Quests == null || _questConfig.Quests.Count == 0)
+            return;
+
+        _allQuests.AddRange(_questConfig.Quests);
     }
 
     Quest GetNextQuest()
@@ -626,7 +676,8 @@ public class QuestManager : MonoBehaviour
 
     void PlaySequence(List<QuestSequenceStep> sequence, Action onFinished, int index = 0)
     {
-        if (index >= sequence.Count)
+        int count = sequence != null ? sequence.Count : 0;
+        if (index >= count)
         {
             onFinished?.Invoke();
             return;
@@ -659,7 +710,33 @@ public class QuestManager : MonoBehaviour
 
                 _dialogueScreen.Play(step.dialogueData, onFinished);
                 break;
+
+            case QuestSequenceStepType.Pause:
+                _questPanel.Hide();
+                Actions.QuestSequencePauseStarted();
+                float pauseSec = Mathf.Max(0f, step.pauseDuration);
+                if (pauseSec <= 0f)
+                {
+                    Actions.QuestSequencePauseEnded();
+                    onFinished?.Invoke();
+                }
+                else
+                    StartCoroutine(PauseStepRoutine(pauseSec, onFinished));
+                break;
         }
+    }
+
+    IEnumerator PauseStepRoutine(float seconds, Action onFinished)
+    {
+        yield return new WaitForSeconds(seconds);
+        Actions.QuestSequencePauseEnded();
+        onFinished?.Invoke();
+    }
+
+    void OnValidate()
+    {
+        if (_questConfig == null)
+            Debug.LogWarning("QuestLevelConfig не назначен — квесты не будут доступны.", this);
     }
 }
 
@@ -690,12 +767,15 @@ public class QuestSequenceStep
     public QuestSequenceStepType type;
     public QuestCutscene cutscenePrefab;
     public DialogueData dialogueData;
+    [Tooltip("Только для типа Pause: пауза в секундах. Панель квеста скрыта; Time.timeScale не меняется.")]
+    public float pauseDuration = 0.5f;
 }
 
 public enum QuestSequenceStepType
 {
     Cutscene,
     Dialogue,
+    Pause,
 }
 
 public enum QuestType

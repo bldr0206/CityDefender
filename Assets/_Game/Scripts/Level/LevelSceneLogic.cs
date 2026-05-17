@@ -85,7 +85,7 @@ public class LevelSceneLogic : MonoBehaviour
             else
                 UseTestLevelPrefab();
 
-            _saveController.ApplyLoadedData(pendingSave);
+            _saveController.ApplyLoadedData(pendingSave, resumeFromAutoCheckpoint: false);
             RestoreLevelFinished(pendingSave.isLevelFinished);
             return;
         }
@@ -98,7 +98,7 @@ public class LevelSceneLogic : MonoBehaviour
             else
                 UseTestLevelPrefab();
 
-            _saveController.ApplyLoadedData(autoSave);
+            _saveController.ApplyLoadedData(autoSave, resumeFromAutoCheckpoint: true);
             RestoreLevelFinished(autoSave.isLevelFinished);
             return;
         }

@@ -11,6 +11,7 @@ GameObject:
   - component: {fileID: 2700823378308478134}
   - component: {fileID: 7247205236306903808}
   - component: {fileID: 3725254768119288516}
+  - component: {fileID: 6159052601462791073}
   m_Layer: 6
   m_Name: Money
   m_TagString: Collectable
@@ -69,7 +70,21 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Collectable
   type: 0
-  value: 10
+  value: 5
+  _canCollect: 1
+--- !u!114 &6159052601462791073
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 579683345989312842}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d5882659d25db8d429ba46f054047f0f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::SaveId
+  _id: 2524611ef4054951865277d0e1bc142b
 --- !u!1 &3831791869722222237
 GameObject:
   m_ObjectHideFlags: 0

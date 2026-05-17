@@ -33,6 +33,8 @@ public class LevelSceneUIController : MonoBehaviour
         Actions.OnCutsceneEnded += ShowLevelHud;
         Actions.OnDialogueStarted += HideLevelHud;
         Actions.OnDialogueEnded += ShowLevelHud;
+        Actions.OnQuestSequencePauseStarted += HideLevelHud;
+        Actions.OnQuestSequencePauseEnded += ShowLevelHud;
     }
 
     void OnDisable()
@@ -41,6 +43,8 @@ public class LevelSceneUIController : MonoBehaviour
         Actions.OnCutsceneEnded -= ShowLevelHud;
         Actions.OnDialogueStarted -= HideLevelHud;
         Actions.OnDialogueEnded -= ShowLevelHud;
+        Actions.OnQuestSequencePauseStarted -= HideLevelHud;
+        Actions.OnQuestSequencePauseEnded -= ShowLevelHud;
     }
 
     void HideLevelHud()

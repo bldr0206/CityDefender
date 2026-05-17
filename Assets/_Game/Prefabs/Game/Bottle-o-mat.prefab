@@ -222,7 +222,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: '::'
   _progressBar: {fileID: 2268393471577627277}
   _timeToFillProgress: 1
-  _moneyPerBottle: 25
+  _moneyPerBottle: 40
   _bottleReturnPoint: {fileID: 5290420101206344722}
 --- !u!1 &3972633130407485837
 GameObject:

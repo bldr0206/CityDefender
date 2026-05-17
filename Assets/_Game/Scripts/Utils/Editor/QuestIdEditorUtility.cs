@@ -41,6 +41,7 @@ public static class QuestIdEditorUtility
         HashSet<string> ids = new HashSet<string>();
         AddQuestIdsFromOpenObjects(ids);
         AddQuestIdsFromPrefabs(ids);
+        AddQuestIdsFromQuestConfigs(ids);
 
         List<string> result = new List<string>(ids);
         result.Sort();
@@ -52,7 +53,7 @@ public static class QuestIdEditorUtility
         QuestManager[] managers = Resources.FindObjectsOfTypeAll<QuestManager>();
 
         for (int i = 0; i < managers.Length; i++)
-            AddQuestIds(ids, managers[i]);
+            AddQuestIdsFromQuestManager(ids, managers[i]);
     }
 
     static void AddQuestIdsFromPrefabs(HashSet<string> ids)
@@ -67,18 +68,49 @@ public static class QuestIdEditorUtility
 
             QuestManager[] managers = prefab.GetComponentsInChildren<QuestManager>(true);
             for (int j = 0; j < managers.Length; j++)
-                AddQuestIds(ids, managers[j]);
+                AddQuestIdsFromQuestManager(ids, managers[j]);
         }
     }
 
-    static void AddQuestIds(HashSet<string> ids, QuestManager manager)
+    static void AddQuestIdsFromQuestConfigs(HashSet<string> ids)
     {
-        SerializedProperty quests = new SerializedObject(manager).FindProperty("_quests");
-        if (quests == null) return;
+        string[] cfgGuids = AssetDatabase.FindAssets("t:" + nameof(QuestLevelConfig));
+
+        for (int i = 0; i < cfgGuids.Length; i++)
+        {
+            string path = AssetDatabase.GUIDToAssetPath(cfgGuids[i]);
+            QuestLevelConfig cfg = AssetDatabase.LoadAssetAtPath<QuestLevelConfig>(path);
+            if (cfg != null)
+                AddQuestIdsFromQuestList(ids, new SerializedObject(cfg).FindProperty("_quests"));
+        }
+    }
+
+    static void AddQuestIdsFromQuestManager(HashSet<string> ids, QuestManager manager)
+    {
+        if (manager == null) return;
+
+        SerializedObject mgrSo = new SerializedObject(manager);
+        SerializedProperty legacyQuests = mgrSo.FindProperty("_quests");
+
+        AddQuestIdsFromQuestList(ids, legacyQuests);
+
+        SerializedProperty cfgProp = mgrSo.FindProperty("_questConfig");
+
+        QuestLevelConfig cfg = cfgProp?.objectReferenceValue as QuestLevelConfig;
+        if (cfg == null)
+            return;
+
+        AddQuestIdsFromQuestList(ids, new SerializedObject(cfg).FindProperty("_quests"));
+    }
+
+    static void AddQuestIdsFromQuestList(HashSet<string> ids, SerializedProperty quests)
+    {
+        if (quests == null || !quests.isArray) return;
 
         for (int i = 0; i < quests.arraySize; i++)
         {
             SerializedProperty id = quests.GetArrayElementAtIndex(i).FindPropertyRelative("id");
+
             if (id != null && !string.IsNullOrEmpty(id.stringValue))
                 ids.Add(id.stringValue);
         }

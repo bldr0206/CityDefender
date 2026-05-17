@@ -157,6 +157,10 @@ MonoBehaviour:
         - globalObjectIdString: GlobalObjectId_V1-2-b641acb63c0a5f24d958d31caeb94359-267781713883076150-2162562559010365
         - globalObjectIdString: GlobalObjectId_V1-2-b641acb63c0a5f24d958d31caeb94359-869542147256014055-590962375
         - globalObjectIdString: GlobalObjectId_V1-2-b641acb63c0a5f24d958d31caeb94359-7243060273249473665-590962375
+        - globalObjectIdString: GlobalObjectId_V1-2-b641acb63c0a5f24d958d31caeb94359-6333212321406361147-590962375
+        - globalObjectIdString: GlobalObjectId_V1-2-b641acb63c0a5f24d958d31caeb94359-1855359433783477298-590962375
+        - globalObjectIdString: GlobalObjectId_V1-2-b641acb63c0a5f24d958d31caeb94359-1167007400076416875-590962375
+        - globalObjectIdString: GlobalObjectId_V1-2-b641acb63c0a5f24d958d31caeb94359-7295458352830880443-590962375
         values:
         - colorIndex: 5
           iconNameOrGuid: 
@@ -214,12 +218,28 @@ MonoBehaviour:
           iconNameOrGuid: Canvas Icon
           isIconRecursive: 0
           isColorRecursive: 0
-        - colorIndex: 8
-          iconNameOrGuid: 
+        - colorIndex: 1
+          iconNameOrGuid: Folder Icon
           isIconRecursive: 0
           isColorRecursive: 0
         - colorIndex: 0
           iconNameOrGuid: AvatarMask On Icon
+          isIconRecursive: 0
+          isColorRecursive: 0
+        - colorIndex: 0
+          iconNameOrGuid: Transform Icon
+          isIconRecursive: 0
+          isColorRecursive: 0
+        - colorIndex: 0
+          iconNameOrGuid: Transform Icon
+          isIconRecursive: 0
+          isColorRecursive: 0
+        - colorIndex: 0
+          iconNameOrGuid: Transform Icon
+          isIconRecursive: 0
+          isColorRecursive: 0
+        - colorIndex: 0
+          iconNameOrGuid: Transform Icon
           isIconRecursive: 0
           isColorRecursive: 0
     - goDatas_byGlobalId:

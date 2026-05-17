@@ -44,6 +44,8 @@ public class PlayerController : MonoBehaviour
         Actions.OnGameResumed += HandleGameResumed;
         Actions.OnCutsceneStarted += HandleCutsceneStarted;
         Actions.OnCutsceneEnded += HandleCutsceneEnded;
+        Actions.OnQuestSequencePauseStarted += HandleQuestSequencePauseStarted;
+        Actions.OnQuestSequencePauseEnded += HandleQuestSequencePauseEnded;
 
         _rigidbody = GetComponent<Rigidbody>();
         _rigidbody.interpolation = RigidbodyInterpolation.Interpolate;
@@ -58,6 +60,8 @@ public class PlayerController : MonoBehaviour
         Actions.OnGameResumed -= HandleGameResumed;
         Actions.OnCutsceneStarted -= HandleCutsceneStarted;
         Actions.OnCutsceneEnded -= HandleCutsceneEnded;
+        Actions.OnQuestSequencePauseStarted -= HandleQuestSequencePauseStarted;
+        Actions.OnQuestSequencePauseEnded -= HandleQuestSequencePauseEnded;
     }
     private void Update()
     {
@@ -204,6 +208,16 @@ public class PlayerController : MonoBehaviour
         _cutsceneBlockingMovement = false;
         _ignoreInputUntilReleased = true;
         StopMotionImmediately();
+    }
+
+    private void HandleQuestSequencePauseStarted()
+    {
+        HandleCutsceneStarted();
+    }
+
+    private void HandleQuestSequencePauseEnded()
+    {
+        HandleCutsceneEnded();
     }
 
     private void StopMotionImmediately()

@@ -1,0 +1,174 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ef4c2a891b6346f8938d52e71c0eab22, type: 3}
+  m_Name: QuestLevel_Main
+  m_EditorClassIdentifier: Assembly-CSharp::QuestLevelConfig
+  _quests:
+  - id: q1
+    title:
+      m_TableReference:
+        m_TableCollectionName: GUID:8859809404f9047418316076b40b54f3
+      m_TableEntryReference:
+        m_KeyId: 18138398720
+        m_Key: 
+      m_FallbackState: 0
+      m_WaitForCompletion: 0
+      m_LocalVariables: []
+    type: 0
+    targetPoint: {fileID: 1470130104787201282, guid: 1f8f6872f22f13d44b8dddc8da2f8133, type: 3}
+    collectTurnInPoint: {fileID: 0}
+    collectAlwaysShowTurnInPointer: 0
+    requiredAmount: 0
+    startSequence:
+    - type: 0
+      cutscenePrefab: {fileID: 2526790331303384443, guid: 8d121f3ead0a4c14b958730c226fad05, type: 3}
+      dialogueData: {fileID: 0}
+      pauseDuration: 0.5
+    - type: 1
+      cutscenePrefab: {fileID: 2526790331303384443, guid: 8d121f3ead0a4c14b958730c226fad05, type: 3}
+      dialogueData: {fileID: 11400000, guid: 10b1c0732918b1d43a661d89eee29260, type: 2}
+      pauseDuration: 0.5
+    endSequence:
+    - type: 1
+      cutscenePrefab: {fileID: 0}
+      dialogueData: {fileID: 11400000, guid: 97b09ec08d43598448e7c8fc54297a01, type: 2}
+      pauseDuration: 0.5
+    - type: 0
+      cutscenePrefab: {fileID: 8307263744053223609, guid: 7b88dcbdd86452d4eb9219781576fd9b, type: 3}
+      dialogueData: {fileID: 0}
+      pauseDuration: 0.5
+  - id: q2
+    title:
+      m_TableReference:
+        m_TableCollectionName: GUID:8859809404f9047418316076b40b54f3
+      m_TableEntryReference:
+        m_KeyId: 380431813967872
+        m_Key: 
+      m_FallbackState: 0
+      m_WaitForCompletion: 0
+      m_LocalVariables: []
+    type: 0
+    targetPoint: {fileID: 1622882190972281032, guid: 1f8f6872f22f13d44b8dddc8da2f8133, type: 3}
+    collectTurnInPoint: {fileID: 0}
+    collectAlwaysShowTurnInPointer: 0
+    requiredAmount: 0
+    startSequence:
+    - type: 1
+      cutscenePrefab: {fileID: 0}
+      dialogueData: {fileID: 11400000, guid: 28d11bf06971e7849a183f81dc43b858, type: 2}
+      pauseDuration: 0.5
+    endSequence: []
+  - id: q3_bottles
+    title:
+      m_TableReference:
+        m_TableCollectionName: GUID:8859809404f9047418316076b40b54f3
+      m_TableEntryReference:
+        m_KeyId: 427547118665728
+        m_Key: 
+      m_FallbackState: 0
+      m_WaitForCompletion: 0
+      m_LocalVariables: []
+    type: 1
+    targetPoint: {fileID: 1622882190972281032, guid: 1f8f6872f22f13d44b8dddc8da2f8133, type: 3}
+    collectTurnInPoint: {fileID: 6041881486558536053, guid: 1f8f6872f22f13d44b8dddc8da2f8133, type: 3}
+    collectAlwaysShowTurnInPointer: 0
+    requiredAmount: 3
+    startSequence:
+    - type: 1
+      cutscenePrefab: {fileID: 0}
+      dialogueData: {fileID: 11400000, guid: 39536691d0d87ae4492e62c7ef56139b, type: 2}
+      pauseDuration: 0.5
+    - type: 0
+      cutscenePrefab: {fileID: -2836641514105218848, guid: 439afd0ebe185974d8e83cc47e2dbb12, type: 3}
+      dialogueData: {fileID: 11400000, guid: 39536691d0d87ae4492e62c7ef56139b, type: 2}
+      pauseDuration: 0.5
+    endSequence: []
+  - id: q4_buy_agent
+    title:
+      m_TableReference:
+        m_TableCollectionName: GUID:8859809404f9047418316076b40b54f3
+      m_TableEntryReference:
+        m_KeyId: 2569656732909568
+        m_Key: 
+      m_FallbackState: 0
+      m_WaitForCompletion: 0
+      m_LocalVariables: []
+    type: 2
+    targetPoint: {fileID: 1296984222432531460, guid: 1f8f6872f22f13d44b8dddc8da2f8133, type: 3}
+    collectTurnInPoint: {fileID: 0}
+    collectAlwaysShowTurnInPointer: 0
+    requiredAmount: 1
+    startSequence:
+    - type: 2
+      cutscenePrefab: {fileID: -2836641514105218848, guid: f84db79cf6cf80a4590d974ee3c723be, type: 3}
+      dialogueData: {fileID: 11400000, guid: 39536691d0d87ae4492e62c7ef56139b, type: 2}
+      pauseDuration: 1
+    - type: 1
+      cutscenePrefab: {fileID: 0}
+      dialogueData: {fileID: 11400000, guid: 01e6658846af0594f87aa46124ccbdb7, type: 2}
+      pauseDuration: 0.5
+    - type: 0
+      cutscenePrefab: {fileID: -2836641514105218848, guid: f84db79cf6cf80a4590d974ee3c723be, type: 3}
+      dialogueData: {fileID: 11400000, guid: 39536691d0d87ae4492e62c7ef56139b, type: 2}
+      pauseDuration: 0.5
+    endSequence: []
+  - id: q5_break_obstacles
+    title:
+      m_TableReference:
+        m_TableCollectionName: GUID:8859809404f9047418316076b40b54f3
+      m_TableEntryReference:
+        m_KeyId: 2579951102623744
+        m_Key: 
+      m_FallbackState: 0
+      m_WaitForCompletion: 0
+      m_LocalVariables: []
+    type: 3
+    targetPoint: {fileID: 1622882190972281032, guid: 1f8f6872f22f13d44b8dddc8da2f8133, type: 3}
+    collectTurnInPoint: {fileID: 0}
+    collectAlwaysShowTurnInPointer: 0
+    requiredAmount: 2
+    startSequence:
+    - type: 2
+      cutscenePrefab: {fileID: 0}
+      dialogueData: {fileID: 11400000, guid: 0c877d115d507744cb9bd5e18e155d6f, type: 2}
+      pauseDuration: 1
+    - type: 1
+      cutscenePrefab: {fileID: 0}
+      dialogueData: {fileID: 11400000, guid: 0c877d115d507744cb9bd5e18e155d6f, type: 2}
+      pauseDuration: 0
+    endSequence: []
+  - id: q6_open_door
+    title:
+      m_TableReference:
+        m_TableCollectionName: GUID:8859809404f9047418316076b40b54f3
+      m_TableEntryReference:
+        m_KeyId: 2579951102623745
+        m_Key:   
+      m_FallbackState: 0
+      m_WaitForCompletion: 0
+      m_LocalVariables: []
+    type: 1
+    targetPoint: {fileID: 1622882190972281032, guid: 1f8f6872f22f13d44b8dddc8da2f8133, type: 3}
+    collectTurnInPoint: {fileID: 0}
+    collectAlwaysShowTurnInPointer: 0
+    requiredAmount: 1
+    startSequence:
+    - type: 2
+      cutscenePrefab: {fileID: 0}
+      dialogueData: {fileID: 11400000, guid: 8c077f0e4e7b20c44bd8c957fe37015b, type: 2}
+      pauseDuration: 1
+    - type: 1
+      cutscenePrefab: {fileID: 0}
+      dialogueData: {fileID: 11400000, guid: 8c077f0e4e7b20c44bd8c957fe37015b, type: 2}
+      pauseDuration: 0
+    endSequence: []
+  _questDestinationMarkerPrefab: {fileID: 6923541641748947943, guid: 7308cc342e36b2845a9e570e38fef5e6, type: 3}

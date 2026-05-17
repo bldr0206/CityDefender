@@ -147,6 +147,22 @@ MonoBehaviour:
     m_Key: ui.move_elevator
     m_Metadata:
       m_Items: []
+  - m_Id: 5144267643322368
+    m_Key: q5_break_obstacles_start_1
+    m_Metadata:
+      m_Items: []
+  - m_Id: 5144523193876480
+    m_Key: q5_break_obstacles_start_2
+    m_Metadata:
+      m_Items: []
+  - m_Id: 5144617506996224
+    m_Key: q5_break_obstacles_start_3
+    m_Metadata:
+      m_Items: []
+  - m_Id: 5147222392078336
+    m_Key: q6_open_door_start_1
+    m_Metadata:
+      m_Items: []
   m_Metadata:
     m_Items: []
   m_KeyGenerator:

@@ -61,6 +61,20 @@ public static class Actions
         OnDialogueEnded?.Invoke();
     }
 
+    public static UnityAction OnQuestSequencePauseStarted;
+    public static void QuestSequencePauseStarted()
+    {
+        Debug.Log($"<color={debugColor}>QuestSequencePauseStarted</color>");
+        OnQuestSequencePauseStarted?.Invoke();
+    }
+
+    public static UnityAction OnQuestSequencePauseEnded;
+    public static void QuestSequencePauseEnded()
+    {
+        Debug.Log($"<color={debugColor}>QuestSequencePauseEnded</color>");
+        OnQuestSequencePauseEnded?.Invoke();
+    }
+
     public static UnityAction<int> OnPlayerMoneyChanged;
     public static void PlayerMoneyChanged(int currentMoney)
     {

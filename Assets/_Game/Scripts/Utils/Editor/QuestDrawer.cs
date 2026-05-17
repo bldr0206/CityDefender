@@ -1,3 +1,5 @@
+using System;
+using System.IO;
 using UnityEditor;
 using UnityEngine;
 
@@ -131,6 +133,9 @@ public class QuestDrawer : PropertyDrawer
 public class QuestSequenceStepDrawer : PropertyDrawer
 {
     const float Spacing = 2f;
+    const float DialogueActionButtonWidth = 56f;
+    const string DialoguesFolder = "Assets/_Game/Content/Dialogues";
+    const string DefaultDialogueTextTableCollection = "Localisation_main";
 
     public override void OnGUI(Rect position, SerializedProperty property, GUIContent label)
     {
@@ -142,7 +147,11 @@ public class QuestSequenceStepDrawer : PropertyDrawer
         EditorGUI.PropertyField(row, type);
 
         row.y += EditorGUIUtility.singleLineHeight + Spacing;
-        EditorGUI.PropertyField(row, GetStepProperty(property, type));
+        SerializedProperty stepProp = GetStepProperty(property, type);
+        if ((QuestSequenceStepType)type.enumValueIndex == QuestSequenceStepType.Dialogue)
+            DrawDialogueDataRow(row, property, stepProp);
+        else
+            EditorGUI.PropertyField(row, stepProp, true);
 
         EditorGUI.EndProperty();
     }
@@ -152,10 +161,146 @@ public class QuestSequenceStepDrawer : PropertyDrawer
         return EditorGUIUtility.singleLineHeight * 2f + Spacing;
     }
 
+    static void DrawDialogueDataRow(Rect row, SerializedProperty stepProperty, SerializedProperty dialogueProp)
+    {
+        bool assigned = dialogueProp.objectReferenceValue != null;
+        bool canCreate = false;
+        string baseName = null;
+        bool isStart = false;
+        if (!assigned)
+            canCreate = TryGetDialogueAssetBaseName(stepProperty, out baseName, out isStart);
+
+        Rect main = row;
+        if (assigned || canCreate)
+            main.width -= DialogueActionButtonWidth + Spacing;
+
+        EditorGUI.PropertyField(main, dialogueProp, true);
+
+        if (!assigned && !canCreate)
+            return;
+
+        Rect btn = new Rect(main.xMax + Spacing, row.y, DialogueActionButtonWidth, EditorGUIUtility.singleLineHeight);
+        if (assigned)
+        {
+            if (GUI.Button(btn, "Edit"))
+            {
+                var d = (DialogueData)dialogueProp.objectReferenceValue;
+                Selection.activeObject = d;
+                EditorGUIUtility.PingObject(d);
+            }
+        }
+        else if (GUI.Button(btn, "Create"))
+            CreateAndAssignDialogue(stepProperty, dialogueProp, baseName, isStart);
+    }
+
+    static void CreateAndAssignDialogue(SerializedProperty stepProperty, SerializedProperty dialogueProp, string baseName, bool isStart)
+    {
+        EnsureFolderExists(DialoguesFolder);
+        string suffix = isStart ? "_start" : "_end";
+        string assetPath = AssetDatabase.GenerateUniqueAssetPath($"{DialoguesFolder}/{baseName}{suffix}.asset");
+        var instance = ScriptableObject.CreateInstance<DialogueData>();
+        var dialogueSo = new SerializedObject(instance);
+        SerializedProperty textTable = dialogueSo.FindProperty("textTable");
+        if (textTable != null)
+        {
+            SerializedProperty collectionName = textTable.FindPropertyRelative("m_TableCollectionName");
+            if (collectionName != null)
+                collectionName.stringValue = DefaultDialogueTextTableCollection;
+        }
+
+        dialogueSo.ApplyModifiedPropertiesWithoutUndo();
+
+        foreach (UnityEngine.Object t in stepProperty.serializedObject.targetObjects)
+            Undo.RecordObject(t, "Create Dialogue Data");
+
+        AssetDatabase.CreateAsset(instance, assetPath);
+        Undo.RegisterCreatedObjectUndo(instance, "Create Dialogue Data");
+        dialogueProp.objectReferenceValue = instance;
+        stepProperty.serializedObject.ApplyModifiedProperties();
+        AssetDatabase.SaveAssets();
+        Selection.activeObject = instance;
+        EditorGUIUtility.PingObject(instance);
+    }
+
+    static bool TryGetDialogueAssetBaseName(SerializedProperty stepProperty, out string baseName, out bool isStart)
+    {
+        baseName = null;
+        isStart = false;
+        string questPath = TrimQuestPathFromSequenceStep(stepProperty.propertyPath, out isStart);
+        if (questPath == null)
+            return false;
+
+        SerializedProperty questRoot = stepProperty.serializedObject.FindProperty(questPath);
+        if (questRoot == null)
+            return false;
+
+        SerializedProperty idProp = questRoot.FindPropertyRelative("id");
+        if (idProp == null)
+            return false;
+
+        string id = idProp.stringValue;
+        baseName = string.IsNullOrWhiteSpace(id) ? "dialogue" : SanitizeFileName(id);
+        return true;
+    }
+
+    static string TrimQuestPathFromSequenceStep(string path, out bool isStartSequence)
+    {
+        const string startTail = ".startSequence.Array.data[";
+        const string endTail = ".endSequence.Array.data[";
+        isStartSequence = false;
+
+        int i = path.LastIndexOf(startTail, StringComparison.Ordinal);
+        if (i >= 0 && TryEndsWithArrayIndexCloser(path, i + startTail.Length))
+        {
+            isStartSequence = true;
+            return path.Substring(0, i);
+        }
+
+        i = path.LastIndexOf(endTail, StringComparison.Ordinal);
+        if (i >= 0 && TryEndsWithArrayIndexCloser(path, i + endTail.Length))
+        {
+            isStartSequence = false;
+            return path.Substring(0, i);
+        }
+
+        return null;
+    }
+
+    static bool TryEndsWithArrayIndexCloser(string path, int indexAfterBracket)
+    {
+        int close = path.IndexOf(']', indexAfterBracket);
+        return close >= 0 && close == path.Length - 1;
+    }
+
+    static string SanitizeFileName(string s)
+    {
+        foreach (char c in Path.GetInvalidFileNameChars())
+            s = s.Replace(c, '_');
+        s = s.Trim();
+        return string.IsNullOrEmpty(s) ? "dialogue" : s;
+    }
+
+    static void EnsureFolderExists(string folderPath)
+    {
+        if (AssetDatabase.IsValidFolder(folderPath)) return;
+        string parent = Path.GetDirectoryName(folderPath)?.Replace('\\', '/') ?? "Assets";
+        string name = Path.GetFileName(folderPath);
+        EnsureFolderExists(parent);
+        AssetDatabase.CreateFolder(parent, name);
+    }
+
     static SerializedProperty GetStepProperty(SerializedProperty property, SerializedProperty type)
     {
-        return (QuestSequenceStepType)type.enumValueIndex == QuestSequenceStepType.Cutscene
-            ? property.FindPropertyRelative("cutscenePrefab")
-            : property.FindPropertyRelative("dialogueData");
+        switch ((QuestSequenceStepType)type.enumValueIndex)
+        {
+            case QuestSequenceStepType.Cutscene:
+                return property.FindPropertyRelative("cutscenePrefab");
+            case QuestSequenceStepType.Dialogue:
+                return property.FindPropertyRelative("dialogueData");
+            case QuestSequenceStepType.Pause:
+                return property.FindPropertyRelative("pauseDuration");
+            default:
+                return property.FindPropertyRelative("dialogueData");
+        }
     }
 }

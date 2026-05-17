@@ -156,7 +156,7 @@ public class LevelSaveController : IInitializable, IDisposable
         return $"{questName}_{DateTime.Now:yyyy-MM-dd_HH-mm}";
     }
 
-    public void ApplyLoadedData(SaveData data)
+    public void ApplyLoadedData(SaveData data, bool resumeFromAutoCheckpoint = false)
     {
         if (data == null) return;
 
@@ -174,7 +174,7 @@ public class LevelSaveController : IInitializable, IDisposable
         int restoredAgentCount = RestoreAgents(data.agents);
         Game.SetHiredAgentsCount(restoredAgentCount);
         if (_questManager != null)
-            _questManager.RestoreSaveData(data.quest);
+            _questManager.RestoreSaveData(data.quest, resumeFromAutoCheckpoint);
         Actions.LoadCompleted(data.slotId);
         Game.ClearPendingLoadSlot();
         _breakableLookupBySaveId = null;
