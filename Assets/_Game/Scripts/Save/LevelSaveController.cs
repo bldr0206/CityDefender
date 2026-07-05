@@ -267,7 +267,10 @@ public class LevelSaveController : IInitializable, IDisposable
     {
         List<Agent> agents = SaveableRegistry.GetAll<Agent>();
         for (int i = 0; i < agents.Count; i++)
+        {
+            if (agents[i].IsForSale) continue;
             data.agents.Add(agents[i].CaptureSaveData());
+        }
     }
 
     void RestorePickablesAndInventory(SaveData data)
@@ -502,7 +505,10 @@ public class LevelSaveController : IInitializable, IDisposable
 
         List<Agent> currentAgents = SaveableRegistry.GetAll<Agent>();
         for (int i = 0; i < currentAgents.Count; i++)
+        {
+            if (currentAgents[i].IsForSale) continue;
             UnityEngine.Object.Destroy(currentAgents[i].gameObject);
+        }
 
         int restoredCount = 0;
         for (int i = 0; i < agents.Count; i++)

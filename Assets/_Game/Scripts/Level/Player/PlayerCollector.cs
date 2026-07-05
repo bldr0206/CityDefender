@@ -59,19 +59,19 @@ public class PlayerCollector : MonoBehaviour
             if (!pb.Intersects(lc.bounds))
                 continue;
 
-            if (lc.CompareTag("Collectable"))
+            if (lc.CompareTag(GameTags.Collectable))
                 TryCollect(lc);
-            if (lc.CompareTag("Interactable"))
+            if (lc.CompareTag(GameTags.Interactable))
                 SubscribePickableFromCollider(lc);
         }
     }
 
     void OnTriggerEnter(Collider other)
     {
-        if (other.CompareTag("Collectable"))
+        if (other.CompareTag(GameTags.Collectable))
             TryCollect(other);
 
-        if (other.CompareTag("Door"))
+        if (other.CompareTag(GameTags.Door))
         {
             Door door = other.GetComponent<Door>();
             if (
@@ -92,7 +92,7 @@ public class PlayerCollector : MonoBehaviour
                 Debug.Log("You need the correct key to open this door!");
         }
 
-        if (other.CompareTag("Interactable"))
+        if (other.CompareTag(GameTags.Interactable))
             SubscribePickableFromCollider(other);
     }
 
@@ -108,7 +108,7 @@ public class PlayerCollector : MonoBehaviour
 
     void OnTriggerExit(Collider other)
     {
-        if (other.CompareTag("Interactable"))
+        if (other.CompareTag(GameTags.Interactable))
         {
             PickableItem item = other.GetComponent<PickableItem>() ?? other.GetComponentInParent<PickableItem>();
             if (item != null)

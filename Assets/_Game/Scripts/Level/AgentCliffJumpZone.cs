@@ -134,6 +134,6 @@ public class AgentCliffJumpZone : MonoBehaviour
 
     static bool IsPlayer(Collider other)
     {
-        return other.attachedRigidbody != null && other.attachedRigidbody.CompareTag("Player");
+        return other.attachedRigidbody != null && other.attachedRigidbody.CompareTag(GameTags.Player);
     }
 }

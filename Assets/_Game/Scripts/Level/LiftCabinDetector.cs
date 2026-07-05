@@ -33,5 +33,5 @@ public sealed class LiftCabinDetector : MonoBehaviour
     }
 
     static bool IsPlayerCabinPresenceCollider(Collider other) =>
-        other != null && other.CompareTag("Contact");
+        other != null && other.CompareTag(GameTags.Contact);
 }

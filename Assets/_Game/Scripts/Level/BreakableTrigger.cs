@@ -46,7 +46,7 @@ public class BreakableTrigger : MonoBehaviour
 
     private void OnTriggerEnter(Collider other)
     {
-        if (other.CompareTag("Breakable") && !_breakables.Contains(other.transform))
+        if (other.CompareTag(GameTags.Breakable) && !_breakables.Contains(other.transform))
         {
             _breakables.Add(other.transform);
         }
@@ -54,7 +54,7 @@ public class BreakableTrigger : MonoBehaviour
 
     private void OnTriggerExit(Collider other)
     {
-        if (other.CompareTag("Breakable"))
+        if (other.CompareTag(GameTags.Breakable))
         {
             _breakables.Remove(other.transform);
         }

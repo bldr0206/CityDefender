@@ -121,7 +121,7 @@ public class Lift : MonoBehaviour
     }
 
     static bool IsPlayerCabinPresenceCollider(Collider other) =>
-        other != null && other.CompareTag("Contact");
+        other != null && other.CompareTag(GameTags.Contact);
 
     /// <summary> Игрок вошёл в объём триггера кабины. </summary>
     public void NotifyPlayerEnteredCabin()

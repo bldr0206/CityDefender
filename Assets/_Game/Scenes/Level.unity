@@ -639,7 +639,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: bac112ccb2c353d46803b5ef02aaf2ac, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::BattleInputInstaller
+  m_EditorClassIdentifier: Assembly-CSharp::LevelInputInstaller
   moveJoystick: {fileID: 1547376197}
 --- !u!114 &1616762825
 MonoBehaviour:

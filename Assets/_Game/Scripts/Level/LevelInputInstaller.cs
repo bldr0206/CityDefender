@@ -1,6 +1,6 @@
 using UnityEngine;
 using Zenject;
-public class BattleInputInstaller : MonoInstaller
+public class LevelInputInstaller : MonoInstaller
 {
     [SerializeField] private Joystick moveJoystick;
     public override void InstallBindings()

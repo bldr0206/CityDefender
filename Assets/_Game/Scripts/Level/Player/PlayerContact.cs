@@ -8,19 +8,19 @@ public class PlayerContact : MonoBehaviour
     {
         switch (other.tag)
         {
-            case "Finish":
+            case GameTags.Finish:
                 HandleFinish();
                 break;
-            case "Lift":
+            case GameTags.Lift:
                 HandleLift(other);
                 break;
-            case "LiftTrigger":
+            case GameTags.LiftTrigger:
                 HandleLiftTrigger(other);
                 break;
-            case "Contact":
+            case GameTags.Contact:
                 HandleContactEnter(other);
                 break;
-            case "QuestDestinationMarker":
+            case GameTags.QuestDestinationMarker:
                 HandleQuestDestinationMarker(other);
                 break;
         }
@@ -64,7 +64,7 @@ public class PlayerContact : MonoBehaviour
 
     void OnTriggerExit(Collider other)
     {
-        if (other.CompareTag("Contact"))
+        if (other.CompareTag(GameTags.Contact))
         {
             BottleReturnMachine bottleReturnMachine = other.GetComponent<BottleReturnMachine>();
             if (bottleReturnMachine != null)

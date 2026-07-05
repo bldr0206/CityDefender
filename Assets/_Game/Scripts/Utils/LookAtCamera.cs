@@ -8,15 +8,6 @@ public class LookAtCamera : MonoBehaviour
         LookAt(Camera.main.transform);
     }
 
-    private void OnDrawGizmos()
-    {
-        Camera mainCamera = Camera.main;
-        if (mainCamera == null)
-            return;
-
-        LookAt(mainCamera.transform);
-    }
-
     private void LookAt(Transform cameraTransform)
     {
         transform.rotation = Quaternion.LookRotation(cameraTransform.forward, Vector3.up);
