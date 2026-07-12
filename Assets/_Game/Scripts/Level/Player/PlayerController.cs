@@ -30,6 +30,13 @@ public class PlayerController : MonoBehaviour
     private const float InputDeadZoneSqr = 0.0004f; // (~0.02)^2
     private const float WallNormalMaxY = 0.5f;
 
+    // Скорость перемещения. Дебажный слайдер в меню паузы пишет сюда дискретные значения 1–10.
+    public float MoveSpeed
+    {
+        get => speed;
+        set => speed = value;
+    }
+
     [Inject]
     public void Construct(Joystick moveJoystick, BreakableTrigger breakableTrigger)
     {
