@@ -30,7 +30,7 @@ public class QuestManager : MonoBehaviour
     QuestSequencePlayer _sequencePlayer;
     QuestReachPointHandler _reachPoint;
     QuestDeliverItemHandler _deliverItem;
-    QuestOwnAgentsHandler _ownAgents;
+    QuestOwnBotsHandler _ownBots;
     QuestBreakBreakablesHandler _breakBreakables;
 
     // ---- контекст, доступный обработчикам ----
@@ -65,10 +65,10 @@ public class QuestManager : MonoBehaviour
     void Awake()
     {
         _markers = new QuestObjectiveMarkers(_worldPointers);
-        _sequencePlayer = new QuestSequencePlayer(this);
+        _sequencePlayer = new QuestSequencePlayer(this, _dialogueScreen, _questPanel);
         _reachPoint = new QuestReachPointHandler(this);
         _deliverItem = new QuestDeliverItemHandler(this);
-        _ownAgents = new QuestOwnAgentsHandler(this);
+        _ownBots = new QuestOwnBotsHandler(this);
         _breakBreakables = new QuestBreakBreakablesHandler(this);
     }
 
@@ -76,7 +76,7 @@ public class QuestManager : MonoBehaviour
     {
         _reachPoint.Enable();
         _deliverItem.Enable();
-        _ownAgents.Enable();
+        _ownBots.Enable();
         _breakBreakables.Enable();
     }
 
@@ -84,7 +84,7 @@ public class QuestManager : MonoBehaviour
     {
         _reachPoint.Disable();
         _deliverItem.Disable();
-        _ownAgents.Disable();
+        _ownBots.Disable();
         _breakBreakables.Disable();
     }
 
@@ -156,8 +156,8 @@ public class QuestManager : MonoBehaviour
             case QuestType.DeliverItem:
                 _deliverItem.Run(quest);
                 break;
-            case QuestType.OwnAgents:
-                _ownAgents.Run(quest);
+            case QuestType.OwnBots:
+                _ownBots.Run(quest);
                 break;
             case QuestType.BreakBreakables:
                 _breakBreakables.Run(quest);
@@ -271,9 +271,9 @@ public class QuestManager : MonoBehaviour
             return;
         }
 
-        if (_currentQuest.type == QuestType.OwnAgents)
+        if (_currentQuest.type == QuestType.OwnBots)
         {
-            _ownAgents.Run(_currentQuest);
+            _ownBots.Run(_currentQuest);
             return;
         }
 

@@ -8,18 +8,18 @@ public class TraderNPC : MonoBehaviour
     [SerializeField] private GameObject _uiRoot;
     [SerializeField] private Button _buyButton;
     [SerializeField] private TMP_Text _buyButtonText;
-    [SerializeField] private GameObject _agentPrefab;
+    [SerializeField] private GameObject _botPrefab;
     [SerializeField] private Transform _spawnPoint;
     [SerializeField] private int _price = 10;
-    [Tooltip("Сколько агентов торговец продаёт за уровень. На уровне 1 — один.")]
-    [SerializeField] private int _maxAgentsForSale = 1;
+    [Tooltip("Сколько ботов торговец продаёт за уровень. На уровне 1 — один.")]
+    [SerializeField] private int _maxBotsForSale = 1;
 
     private LevelValuesManager _levelValuesManager;
     private DiContainer _container;
     private bool _isPlayerInRange;
-    private Agent _saleAgent;
+    private Bot _saleBot;
 
-    private bool IsSoldOut => Game.HiredAgentsCount >= _maxAgentsForSale;
+    private bool IsSoldOut => Game.HiredBotsCount >= _maxBotsForSale;
 
     [Inject]
     public void Construct(LevelValuesManager levelValuesManager, DiContainer container)
@@ -31,7 +31,7 @@ public class TraderNPC : MonoBehaviour
     private void OnEnable()
     {
         Actions.OnPlayerMoneyChanged += HandlePlayerMoneyChanged;
-        Actions.OnLevelStarted += RefreshSaleAgent;
+        Actions.OnLevelStarted += RefreshSaleBot;
         Actions.OnLoadCompleted += HandleLoadCompleted;
     }
 
@@ -43,7 +43,7 @@ public class TraderNPC : MonoBehaviour
     private void OnDisable()
     {
         Actions.OnPlayerMoneyChanged -= HandlePlayerMoneyChanged;
-        Actions.OnLevelStarted -= RefreshSaleAgent;
+        Actions.OnLevelStarted -= RefreshSaleBot;
         Actions.OnLoadCompleted -= HandleLoadCompleted;
     }
 
@@ -63,56 +63,56 @@ public class TraderNPC : MonoBehaviour
         HideUI();
     }
 
-    public void BuyAgent()
+    public void BuyBot()
     {
-        if (!_isPlayerInRange || IsSoldOut || _saleAgent == null) return;
+        if (!_isPlayerInRange || IsSoldOut || _saleBot == null) return;
         if (!_levelValuesManager.TrySpendMoney(_price)) return;
 
-        Agent bought = _saleAgent;
-        _saleAgent = null;
-        Game.RegisterHiredAgent();
-        Actions.AgentHired();
+        Bot bought = _saleBot;
+        _saleBot = null;
+        Game.RegisterHiredBot();
+        Actions.BotHired();
         bought.SellToPlayer();
 
-        RestockSaleAgent();
+        RestockSaleBot();
         RefreshUI();
     }
 
-    public Agent SpawnAgent(Vector3 position, Quaternion rotation)
+    public Bot SpawnBot(Vector3 position, Quaternion rotation)
     {
-        if (_agentPrefab == null) return null;
+        if (_botPrefab == null) return null;
 
-        return _container.InstantiatePrefabForComponent<Agent>(_agentPrefab, position, rotation, null);
+        return _container.InstantiatePrefabForComponent<Bot>(_botPrefab, position, rotation, null);
     }
 
-    private void HandleLoadCompleted(string _) => RefreshSaleAgent();
+    private void HandleLoadCompleted(string _) => RefreshSaleBot();
 
-    /// <summary> Приводит витрину в соответствие с текущим стоком: показать агента, пока есть что продавать. </summary>
-    private void RefreshSaleAgent()
+    /// <summary> Приводит витрину в соответствие с текущим стоком: показать бота, пока есть что продавать. </summary>
+    private void RefreshSaleBot()
     {
         if (IsSoldOut)
-            DespawnSaleAgent();
+            DespawnSaleBot();
         else
-            RestockSaleAgent();
+            RestockSaleBot();
     }
 
-    /// <summary> Ставит на витрину следующего агента, если торговцу ещё есть что продавать. </summary>
-    private void RestockSaleAgent()
+    /// <summary> Ставит на витрину следующего бота, если торговцу ещё есть что продавать. </summary>
+    private void RestockSaleBot()
     {
-        if (IsSoldOut || _saleAgent != null || _agentPrefab == null || _spawnPoint == null)
+        if (IsSoldOut || _saleBot != null || _botPrefab == null || _spawnPoint == null)
             return;
 
-        _saleAgent = SpawnAgent(_spawnPoint.position, _spawnPoint.rotation);
-        if (_saleAgent != null)
-            _saleAgent.PutUpForSale();
+        _saleBot = SpawnBot(_spawnPoint.position, _spawnPoint.rotation);
+        if (_saleBot != null)
+            _saleBot.PutUpForSale();
     }
 
-    private void DespawnSaleAgent()
+    private void DespawnSaleBot()
     {
-        if (_saleAgent == null) return;
+        if (_saleBot == null) return;
 
-        Destroy(_saleAgent.gameObject);
-        _saleAgent = null;
+        Destroy(_saleBot.gameObject);
+        _saleBot = null;
     }
 
     private void RefreshUI()

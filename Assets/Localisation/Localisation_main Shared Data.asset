@@ -96,7 +96,7 @@ MonoBehaviour:
     m_Metadata:
       m_Items: []
   - m_Id: 2569656732909568
-    m_Key: quest.q4_buy_agent
+    m_Key: quest.q4_buy_bot
     m_Metadata:
       m_Items: []
   - m_Id: 2579951102623744
@@ -108,7 +108,7 @@ MonoBehaviour:
     m_Metadata:
       m_Items: []
   - m_Id: 698970406912
-    m_Key: sink.rent_agent
+    m_Key: sink.rent_bot
     m_Metadata:
       m_Items: []
   - m_Id: 741962022912
@@ -161,6 +161,54 @@ MonoBehaviour:
       m_Items: []
   - m_Id: 5147222392078336
     m_Key: q6_open_door_start_1
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7000000000000001
+    m_Key: ui.bots.title
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7000000000000002
+    m_Key: ui.bots.empty
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7000000000000003
+    m_Key: ui.bots.close
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7000000000000004
+    m_Key: ui.bots.bot_name
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7000000000000005
+    m_Key: ui.bots.level_short
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7000000000000006
+    m_Key: ui.bots.stat.max_health
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7000000000000007
+    m_Key: ui.bots.stat.mining
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7000000000000008
+    m_Key: ui.bots.stat.attack_speed
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7000000000000009
+    m_Key: ui.bots.stat.mining_speed
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7000000000000010
+    m_Key: ui.bots.stat.energy
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7000000000000011
+    m_Key: ui.bots.stat.health_regen
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7000000000000012
+    m_Key: ui.bots.spec.laborer
     m_Metadata:
       m_Items: []
   m_Metadata:

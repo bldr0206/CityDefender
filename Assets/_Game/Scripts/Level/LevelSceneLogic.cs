@@ -129,7 +129,7 @@ public class LevelSceneLogic : MonoBehaviour
     {
         _isLevelFinished = false;
         Game.SetLevelFinished(false);
-        Game.ResetHiredAgents();
+        Game.ResetHiredBots();
         _uiController.LevelStarted();
         Actions.LevelStarted();
     }

@@ -6,28 +6,28 @@ using UnityEngine;
 public static class Game
 {
     public static bool IsPaused { get; private set; }
-    public static bool HasHiredAgents => _hiredAgentsCount > 0;
-    public static int HiredAgentsCount => _hiredAgentsCount;
+    public static bool HasHiredBots => _hiredBotsCount > 0;
+    public static int HiredBotsCount => _hiredBotsCount;
     public static int CurrentLevelIndex { get; private set; }
     public static bool IsLevelFinished { get; private set; }
     public static string PendingLoadSlotId { get; private set; }
     public static string PendingLoadFilePath { get; private set; }
 
-    private static int _hiredAgentsCount;
+    private static int _hiredBotsCount;
 
     public static void SetCurrentLevelIndex(int levelIndex)
     {
         CurrentLevelIndex = levelIndex;
     }
 
-    public static void RegisterHiredAgent()
+    public static void RegisterHiredBot()
     {
-        _hiredAgentsCount++;
+        _hiredBotsCount++;
     }
 
-    public static void SetHiredAgentsCount(int count)
+    public static void SetHiredBotsCount(int count)
     {
-        _hiredAgentsCount = Mathf.Max(0, count);
+        _hiredBotsCount = Mathf.Max(0, count);
     }
 
     public static void SetLevelFinished(bool isFinished)
@@ -35,9 +35,9 @@ public static class Game
         IsLevelFinished = isFinished;
     }
 
-    public static void ResetHiredAgents()
+    public static void ResetHiredBots()
     {
-        _hiredAgentsCount = 0;
+        _hiredBotsCount = 0;
     }
 
     public static void SetPendingLoadSlot(string slotId)

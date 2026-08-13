@@ -25,7 +25,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6d1abb72e95a4ff98988546b10c0e05c, type: 3}
   m_Name: CinemachinePriorityClip(Clone)
   m_EditorClassIdentifier: Assembly-CSharp::CinemachinePriorityClip
-  Priority: 3
+  Priority: 1
 --- !u!114 &-3390374750610848262
 MonoBehaviour:
   m_ObjectHideFlags: 1
@@ -245,7 +245,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6d1abb72e95a4ff98988546b10c0e05c, type: 3}
   m_Name: CinemachinePriorityClip(Clone)
   m_EditorClassIdentifier: Assembly-CSharp::CinemachinePriorityClip
-  Priority: 2
+  Priority: 3
 --- !u!114 &3870443061042708797
 MonoBehaviour:
   m_ObjectHideFlags: 1

@@ -73,7 +73,7 @@ MonoBehaviour:
   _uiRoot: {fileID: 8971268470241203719}
   _buyButton: {fileID: 994077045143085416}
   _buyButtonText: {fileID: 6474674606481919414}
-  _agentPrefab: {fileID: 3469174108092843082, guid: c2fe23a16998dcb4aa41b26d6e6f78af, type: 3}
+  _botPrefab: {fileID: 3469174108092843082, guid: c2fe23a16998dcb4aa41b26d6e6f78af, type: 3}
   _spawnPoint: {fileID: 2176685114665230218}
   _price: 120
 --- !u!114 &7307273684646285509
@@ -412,7 +412,7 @@ MonoBehaviour:
       m_Calls:
       - m_Target: {fileID: 974644574479166132}
         m_TargetAssemblyTypeName: TraderNPC, Assembly-CSharp
-        m_MethodName: BuyAgent
+        m_MethodName: BuyBot
         m_Mode: 1
         m_Arguments:
           m_ObjectArgument: {fileID: 0}

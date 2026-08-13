@@ -171,8 +171,9 @@ public class LevelSaveController : IInitializable, IDisposable
         RestoreCollectables(data.collectables);
         RestorePickablesAndInventory(data);
         RestoreDoors(data.doors);
-        int restoredAgentCount = RestoreAgents(data.agents);
-        Game.SetHiredAgentsCount(restoredAgentCount);
+        RestoreSequenceTriggers(data.sequenceTriggers);
+        int restoredBotCount = RestoreBots(data.bots);
+        Game.SetHiredBotsCount(restoredBotCount);
         if (_questManager != null)
             _questManager.RestoreSaveData(data.quest, resumeFromAutoCheckpoint);
         Actions.LoadCompleted(data.slotId);
@@ -189,7 +190,7 @@ public class LevelSaveController : IInitializable, IDisposable
             sceneName = SceneManager.GetActiveScene().name,
             levelIndex = Game.CurrentLevelIndex,
             money = _levelValuesManager.GetMoney(),
-            hiredAgentsCount = Game.HiredAgentsCount,
+            hiredBotsCount = Game.HiredBotsCount,
             isLevelFinished = Game.IsLevelFinished,
             playerTransform = _playerController.CaptureSaveData(),
             quest = _questManager != null ? _questManager.CaptureSaveData() : new QuestSaveData(),
@@ -202,14 +203,15 @@ public class LevelSaveController : IInitializable, IDisposable
         CaptureDoors(data);
         CaptureLifts(data);
         CaptureBreakables(data);
-        CaptureAgents(data);
+        CaptureBots(data);
+        CaptureSequenceTriggers(data);
         return data;
     }
 
     void ResetBlockingSequences()
     {
         _dialogueScreen.Cancel();
-        QuestCutscene.CancelAllActive();
+        ShotCutscene.CancelActive();
     }
 
     void CapturePickableItems(SaveData data)
@@ -244,6 +246,13 @@ public class LevelSaveController : IInitializable, IDisposable
             data.doors.Add(doors[i].CaptureSaveData());
     }
 
+    void CaptureSequenceTriggers(SaveData data)
+    {
+        List<SequenceTrigger> triggers = SaveableRegistry.GetAll<SequenceTrigger>();
+        for (int i = 0; i < triggers.Count; i++)
+            data.sequenceTriggers.Add(triggers[i].CaptureSaveData());
+    }
+
     void CaptureLifts(SaveData data)
     {
         List<Lift> lifts = SaveableRegistry.GetAll<Lift>();
@@ -263,13 +272,13 @@ public class LevelSaveController : IInitializable, IDisposable
         return new List<Breakable>(BuildBreakableLookup().Values);
     }
 
-    void CaptureAgents(SaveData data)
+    void CaptureBots(SaveData data)
     {
-        List<Agent> agents = SaveableRegistry.GetAll<Agent>();
-        for (int i = 0; i < agents.Count; i++)
+        List<Bot> bots = SaveableRegistry.GetAll<Bot>();
+        for (int i = 0; i < bots.Count; i++)
         {
-            if (agents[i].IsForSale) continue;
-            data.agents.Add(agents[i].CaptureSaveData());
+            if (bots[i].IsForSale) continue;
+            data.bots.Add(bots[i].CaptureSaveData());
         }
     }
 
@@ -430,6 +439,18 @@ public class LevelSaveController : IInitializable, IDisposable
         }
     }
 
+    void RestoreSequenceTriggers(List<SequenceTriggerSaveData> triggers)
+    {
+        if (triggers == null) return;
+
+        for (int i = 0; i < triggers.Count; i++)
+        {
+            SequenceTriggerSaveData triggerData = triggers[i];
+            if (SaveableRegistry.TryGet(triggerData.id, out SequenceTrigger trigger))
+                trigger.RestoreSaveData(triggerData);
+        }
+    }
+
     void RestoreLifts(List<LiftSaveData> lifts)
     {
         if (lifts == null) return;
@@ -499,25 +520,25 @@ public class LevelSaveController : IInitializable, IDisposable
         return false;
     }
 
-    int RestoreAgents(List<AgentSaveData> agents)
+    int RestoreBots(List<BotSaveData> bots)
     {
-        if (_traderNPC == null || agents == null) return 0;
+        if (_traderNPC == null || bots == null) return 0;
 
-        List<Agent> currentAgents = SaveableRegistry.GetAll<Agent>();
-        for (int i = 0; i < currentAgents.Count; i++)
+        List<Bot> currentBots = SaveableRegistry.GetAll<Bot>();
+        for (int i = 0; i < currentBots.Count; i++)
         {
-            if (currentAgents[i].IsForSale) continue;
-            UnityEngine.Object.Destroy(currentAgents[i].gameObject);
+            if (currentBots[i].IsForSale) continue;
+            UnityEngine.Object.Destroy(currentBots[i].gameObject);
         }
 
         int restoredCount = 0;
-        for (int i = 0; i < agents.Count; i++)
+        for (int i = 0; i < bots.Count; i++)
         {
-            AgentSaveData agentData = agents[i];
-            Agent agent = _traderNPC.SpawnAgent(agentData.transform.position, agentData.transform.rotation);
-            if (agent != null)
+            BotSaveData botData = bots[i];
+            Bot bot = _traderNPC.SpawnBot(botData.transform.position, botData.transform.rotation);
+            if (bot != null)
             {
-                agent.RestoreSaveData(agentData);
+                bot.RestoreSaveData(botData);
                 restoredCount++;
             }
         }

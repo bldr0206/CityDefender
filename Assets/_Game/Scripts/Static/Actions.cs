@@ -156,11 +156,17 @@ public static class Actions
         OnQuestBreakableBroken?.Invoke(questId);
     }
 
-    public static UnityAction OnAgentHired;
-    public static void AgentHired()
+    public static UnityAction OnBotHired;
+    public static void BotHired()
     {
-        Debug.Log($"<color={debugColor}>AgentHired</color>");
-        OnAgentHired?.Invoke();
+        Debug.Log($"<color={debugColor}>BotHired</color>");
+        OnBotHired?.Invoke();
+    }
+
+    public static UnityAction OnBotHammerHit;
+    public static void BotHammerHit()
+    {
+        OnBotHammerHit?.Invoke();
     }
 
     // UI

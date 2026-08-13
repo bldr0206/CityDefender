@@ -23,15 +23,15 @@ public class SmoothButton : Button
     public override void OnPointerDown(PointerEventData eventData)
     {
         base.OnPointerDown(eventData);
-        // Анимация нажатия - уменьшение
-        transform.DOScale(_originalScale * pressScale, animationDuration);
+        // Анимация нажатия - уменьшение; SetUpdate(true) — кнопки работают и на паузе (timeScale = 0)
+        transform.DOScale(_originalScale * pressScale, animationDuration).SetUpdate(true);
     }
 
     public override void OnPointerUp(PointerEventData eventData)
     {
         base.OnPointerUp(eventData);
         // Восстановление размера
-        transform.DOScale(_originalScale, animationDuration);
+        transform.DOScale(_originalScale, animationDuration).SetUpdate(true);
     }
 
     public override void OnPointerEnter(PointerEventData eventData)
@@ -44,6 +44,6 @@ public class SmoothButton : Button
     {
         base.OnPointerExit(eventData);
         // Сброс к оригинальному размеру если выходим во время анимации
-        transform.DOScale(_originalScale, animationDuration);
+        transform.DOScale(_originalScale, animationDuration).SetUpdate(true);
     }
 }

@@ -4,16 +4,20 @@ using System.Collections.Generic;
 using UnityEngine;
 
 /// <summary>
-/// Проигрыватель квестовых последовательностей: шаги катсцена/диалог/пауза по порядку,
-/// затем колбэк завершения. Корутины и Instantiate идут через хост-<see cref="QuestManager"/>.
+/// Проигрыватель последовательностей: шаги катсцена/диалог/пауза по порядку, затем колбэк завершения.
+/// Корутины запускаются на хост-<see cref="MonoBehaviour"/>; квестовая панель опциональна (нет у не-квестовых хостов).
 /// </summary>
 public sealed class QuestSequencePlayer
 {
-    readonly QuestManager _ctx;
+    readonly MonoBehaviour _coroutineHost;
+    readonly DialogueScreen _dialogueScreen;
+    readonly QuestPanel _panel;
 
-    public QuestSequencePlayer(QuestManager ctx)
+    public QuestSequencePlayer(MonoBehaviour coroutineHost, DialogueScreen dialogueScreen, QuestPanel panel = null)
     {
-        _ctx = ctx;
+        _coroutineHost = coroutineHost;
+        _dialogueScreen = dialogueScreen;
+        _panel = panel;
     }
 
     public void Play(List<QuestSequenceStep> sequence, Action onFinished, int index = 0)
@@ -34,13 +38,13 @@ public sealed class QuestSequencePlayer
         switch (step.type)
         {
             case QuestSequenceStepType.Cutscene:
-                if (step.cutscenePrefab == null)
+                if (step.cutsceneShots == null || step.cutsceneShots.Count == 0)
                 {
                     onFinished?.Invoke();
                     return;
                 }
 
-                UnityEngine.Object.Instantiate(step.cutscenePrefab).Play(onFinished);
+                ShotCutscene.Play(step.cutsceneShots, onFinished);
                 break;
 
             case QuestSequenceStepType.Dialogue:
@@ -50,11 +54,11 @@ public sealed class QuestSequencePlayer
                     return;
                 }
 
-                _ctx.DialogueScreen.Play(step.dialogueData, onFinished);
+                _dialogueScreen.Play(step.dialogueData, onFinished);
                 break;
 
             case QuestSequenceStepType.Pause:
-                _ctx.Panel.Hide();
+                _panel?.Hide();
                 Actions.QuestSequencePauseStarted();
                 float pauseSec = Mathf.Max(0f, step.pauseDuration);
                 if (pauseSec <= 0f)
@@ -63,7 +67,7 @@ public sealed class QuestSequencePlayer
                     onFinished?.Invoke();
                 }
                 else
-                    _ctx.StartCoroutine(PauseStepRoutine(pauseSec, onFinished));
+                    _coroutineHost.StartCoroutine(PauseStepRoutine(pauseSec, onFinished));
                 break;
         }
     }

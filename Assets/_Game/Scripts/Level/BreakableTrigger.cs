@@ -63,7 +63,7 @@ public class BreakableTrigger : MonoBehaviour
     private void UpdateTarget()
     {
         _target = null;
-        if (!Game.HasHiredAgents)
+        if (!Game.HasHiredBots)
         {
             return;
         }
@@ -77,7 +77,7 @@ public class BreakableTrigger : MonoBehaviour
                 !breakable.gameObject.activeInHierarchy ||
                 !breakable.TryGetComponent(out Breakable breakableComponent) ||
                 breakableComponent.IsBroken ||
-                !breakableComponent.AllowsAgentDamage)
+                !breakableComponent.AllowsBotDamage)
             {
                 _breakables.RemoveAt(i);
                 continue;

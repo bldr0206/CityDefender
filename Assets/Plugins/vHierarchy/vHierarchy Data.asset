@@ -214,7 +214,7 @@ MonoBehaviour:
           iconNameOrGuid: Folder Icon
           isIconRecursive: 0
           isColorRecursive: 0
-        - colorIndex: 0
+        - colorIndex: 9
           iconNameOrGuid: Canvas Icon
           isIconRecursive: 0
           isColorRecursive: 0

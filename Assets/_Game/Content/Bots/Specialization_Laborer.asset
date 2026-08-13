@@ -1,0 +1,49 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a7c3e1f09b2d4c68a1e5f3d7c9b0a246, type: 3}
+  m_Name: Specialization_Laborer
+  m_EditorClassIdentifier:
+  _id: laborer
+  _displayName:
+    m_TableReference:
+      m_TableCollectionName: GUID:8859809404f9047418316076b40b54f3
+    m_TableEntryReference:
+      m_KeyId: 7000000000000012
+      m_Key:
+    m_FallbackState: 0
+    m_WaitForCompletion: 0
+    m_LocalVariables: []
+  _stats:
+  - type: 0
+    baseValue: 100
+    valuePerLevel: 10
+    maxLevel: 10
+  - type: 1
+    baseValue: 25
+    valuePerLevel: 5
+    maxLevel: 10
+  - type: 2
+    baseValue: 1
+    valuePerLevel: 0.1
+    maxLevel: 10
+  - type: 3
+    baseValue: 1
+    valuePerLevel: 0.1
+    maxLevel: 10
+  - type: 4
+    baseValue: 100
+    valuePerLevel: 10
+    maxLevel: 10
+  - type: 5
+    baseValue: 1
+    valuePerLevel: 0.5
+    maxLevel: 10

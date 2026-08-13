@@ -43,7 +43,7 @@ public class Breakable : MonoBehaviour
     public string SaveId => GetSaveId().Id;
     public string QuestId => _questId;
     public bool IsQuestBound => !string.IsNullOrEmpty(_questId);
-    public bool AllowsAgentDamage => !IsQuestBound || _questDamageEnabled;
+    public bool AllowsBotDamage => !IsQuestBound || _questDamageEnabled;
 
     public void SetQuestDamageEnabled(bool enabled)
     {

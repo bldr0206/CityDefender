@@ -48,7 +48,8 @@ public class AnimateOnEnable : MonoBehaviour
     {
         activeTween?.Kill();
         CacheBaseTransform();
-        activeTween = CreateTween();
+        // SetUpdate(true) — анимация появления играет и на паузе (timeScale = 0)
+        activeTween = CreateTween().SetUpdate(true);
     }
 
     private Tween CreateTween()

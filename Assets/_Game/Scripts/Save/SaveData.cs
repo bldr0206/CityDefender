@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using CityDef.Gameplay.Logic;
 using UnityEngine;
 
 [Serializable]
@@ -12,7 +13,7 @@ public class SaveData
     public string sceneName;
     public int levelIndex;
     public int money;
-    public int hiredAgentsCount;
+    public int hiredBotsCount;
     public bool isLevelFinished;
     public SaveTransformData playerTransform;
     public QuestSaveData quest = new QuestSaveData();
@@ -40,7 +41,8 @@ public class SaveData
     public List<DoorSaveData> doors = new List<DoorSaveData>();
     public List<LiftSaveData> lifts = new List<LiftSaveData>();
     public List<BreakableSaveData> breakables = new List<BreakableSaveData>();
-    public List<AgentSaveData> agents = new List<AgentSaveData>();
+    public List<BotSaveData> bots = new List<BotSaveData>();
+    public List<SequenceTriggerSaveData> sequenceTriggers = new List<SequenceTriggerSaveData>();
 }
 
 [Serializable]
@@ -137,7 +139,16 @@ public class BreakableSaveData
 }
 
 [Serializable]
-public class AgentSaveData
+public class BotSaveData
 {
     public SaveTransformData transform;
+    public string specializationId;
+    public List<BotStatLevelSaveData> statLevels = new List<BotStatLevelSaveData>();
+}
+
+[Serializable]
+public class SequenceTriggerSaveData
+{
+    public string id;
+    public bool consumed;
 }

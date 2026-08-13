@@ -109,6 +109,7 @@ GameObject:
   - component: {fileID: 2607631888749555193}
   - component: {fileID: 738927401371903331}
   - component: {fileID: 3231110224996852061}
+  - component: {fileID: 4102837465910283741}
   m_Layer: 0
   m_Name: Player Cam
   m_TagString: Untagged
@@ -222,6 +223,21 @@ MonoBehaviour:
     Time: 0
     Smoothing: 0
     IgnoreY: 0
+--- !u!114 &4102837465910283741
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2654691723702293054}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c8f4e21a9b6d4a7e8f3c1d2e0a9b7c65, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CameraHitShake
+  _duration: 0.14
+  _strength: 0.2
+  _vibrato: 12
 --- !u!1 &4251590885425642950
 GameObject:
   m_ObjectHideFlags: 0
@@ -585,7 +601,7 @@ MonoBehaviour:
   _uiRoot: {fileID: 0}
   _buyButton: {fileID: 0}
   _buyButtonText: {fileID: 0}
-  _agentPrefab: {fileID: 0}
+  _botPrefab: {fileID: 0}
   _spawnPoint: {fileID: 0}
   _price: 10
 --- !u!1 &7295458352830880443

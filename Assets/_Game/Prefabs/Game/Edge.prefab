@@ -77,7 +77,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 47cc042d867355449aa50faba16b4e3f, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::AgentCliffJumpZone
+  m_EditorClassIdentifier: Assembly-CSharp::BotCliffJumpZone
   _edge: {fileID: 388901376892805126}
   _landing: {fileID: 8063540261165563454}
   _jumpSpeed: 10

@@ -38,7 +38,7 @@ public class QuestDrawer : PropertyDrawer
         height += GetPropertyHeight(property, "id");
         height += GetPropertyHeight(property, "title");
         height += GetPropertyHeight(property, "type");
-        if (GetQuestType(property) == QuestType.ReachPoint || GetQuestType(property) == QuestType.OwnAgents)
+        if (GetQuestType(property) == QuestType.ReachPoint || GetQuestType(property) == QuestType.OwnBots)
             height += GetPropertyHeight(property, "targetPoint");
 
         if (GetQuestType(property) == QuestType.DeliverItem)
@@ -59,7 +59,7 @@ public class QuestDrawer : PropertyDrawer
         DrawProperty(ref row, property.FindPropertyRelative("id"));
         DrawTitle(ref row, property.FindPropertyRelative("title"));
         DrawProperty(ref row, property.FindPropertyRelative("type"));
-        if (GetQuestType(property) == QuestType.ReachPoint || GetQuestType(property) == QuestType.OwnAgents)
+        if (GetQuestType(property) == QuestType.ReachPoint || GetQuestType(property) == QuestType.OwnBots)
             DrawProperty(ref row, property.FindPropertyRelative("targetPoint"));
 
         if (GetQuestType(property) == QuestType.DeliverItem)
@@ -88,7 +88,7 @@ public class QuestDrawer : PropertyDrawer
                 return new Color(0.4f, 0.62f, 0.95f, a);
             case QuestType.DeliverItem:
                 return new Color(0.42f, 0.78f, 0.52f, a);
-            case QuestType.OwnAgents:
+            case QuestType.OwnBots:
                 return new Color(0.92f, 0.68f, 0.35f, a);
             case QuestType.BreakBreakables:
                 return new Color(0.88f, 0.48f, 0.5f, a);
@@ -134,6 +134,8 @@ public class QuestSequenceStepDrawer : PropertyDrawer
 {
     const float Spacing = 2f;
     const float DialogueActionButtonWidth = 56f;
+    const float VMargin = 3f;
+    const float Pad = 5f;
     const string DialoguesFolder = "Assets/_Game/Content/Dialogues";
     const string DefaultDialogueTextTableCollection = "Localisation_main";
 
@@ -141,14 +143,19 @@ public class QuestSequenceStepDrawer : PropertyDrawer
     {
         EditorGUI.BeginProperty(position, label, property);
 
-        Rect row = new Rect(position.x, position.y, position.width, EditorGUIUtility.singleLineHeight);
         SerializedProperty type = property.FindPropertyRelative("type");
+        var stepType = (QuestSequenceStepType)type.enumValueIndex;
 
+        Rect box = new Rect(position.x, position.y + VMargin, position.width, position.height - VMargin * 2f);
+        DrawStepBackground(box, stepType);
+
+        Rect row = new Rect(box.x + Pad, box.y + Pad, box.width - Pad * 2f, EditorGUIUtility.singleLineHeight);
         EditorGUI.PropertyField(row, type);
 
         row.y += EditorGUIUtility.singleLineHeight + Spacing;
         SerializedProperty stepProp = GetStepProperty(property, type);
-        if ((QuestSequenceStepType)type.enumValueIndex == QuestSequenceStepType.Dialogue)
+        row.height = EditorGUI.GetPropertyHeight(stepProp, true);
+        if (stepType == QuestSequenceStepType.Dialogue)
             DrawDialogueDataRow(row, property, stepProp);
         else
             EditorGUI.PropertyField(row, stepProp, true);
@@ -158,7 +165,28 @@ public class QuestSequenceStepDrawer : PropertyDrawer
 
     public override float GetPropertyHeight(SerializedProperty property, GUIContent label)
     {
-        return EditorGUIUtility.singleLineHeight * 2f + Spacing;
+        SerializedProperty stepProp = GetStepProperty(property, property.FindPropertyRelative("type"));
+        float content = EditorGUIUtility.singleLineHeight + Spacing + EditorGUI.GetPropertyHeight(stepProp, true);
+        return VMargin * 2f + Pad * 2f + content;
+    }
+
+    /// <summary>Подложка с рамкой под шаг сиквенса, чтобы соседние шаги не слипались; оттенок по типу шага.</summary>
+    static void DrawStepBackground(Rect box, QuestSequenceStepType type)
+    {
+        float a = EditorGUIUtility.isProSkin ? 0.16f : 0.22f;
+        Color fill;
+        switch (type)
+        {
+            case QuestSequenceStepType.Cutscene: fill = new Color(0.6f, 0.5f, 0.9f, a); break;
+            case QuestSequenceStepType.Dialogue: fill = new Color(0.4f, 0.62f, 0.95f, a); break;
+            default: fill = new Color(0.55f, 0.55f, 0.58f, a * 0.8f); break;
+        }
+
+        EditorGUI.DrawRect(box, fill);
+
+        Color line = EditorGUIUtility.isProSkin ? new Color(0f, 0f, 0f, 0.35f) : new Color(0f, 0f, 0f, 0.18f);
+        EditorGUI.DrawRect(new Rect(box.x, box.y, box.width, 1f), line);
+        EditorGUI.DrawRect(new Rect(box.x, box.yMax - 1f, box.width, 1f), line);
     }
 
     static void DrawDialogueDataRow(Rect row, SerializedProperty stepProperty, SerializedProperty dialogueProp)
@@ -294,7 +322,7 @@ public class QuestSequenceStepDrawer : PropertyDrawer
         switch ((QuestSequenceStepType)type.enumValueIndex)
         {
             case QuestSequenceStepType.Cutscene:
-                return property.FindPropertyRelative("cutscenePrefab");
+                return property.FindPropertyRelative("cutsceneShots");
             case QuestSequenceStepType.Dialogue:
                 return property.FindPropertyRelative("dialogueData");
             case QuestSequenceStepType.Pause:
@@ -302,5 +330,34 @@ public class QuestSequenceStepDrawer : PropertyDrawer
             default:
                 return property.FindPropertyRelative("dialogueData");
         }
+    }
+}
+
+[CustomPropertyDrawer(typeof(CutsceneShot))]
+public class CutsceneShotDrawer : PropertyDrawer
+{
+    const float Spacing = 2f;
+
+    public override void OnGUI(Rect position, SerializedProperty property, GUIContent label)
+    {
+        EditorGUI.BeginProperty(position, label, property);
+
+        float width = position.width - Spacing * 3f;
+        Rect target = new Rect(position.x, position.y, width * 0.34f, position.height);
+        Rect duration = new Rect(target.xMax + Spacing, position.y, width * 0.12f, position.height);
+        Rect view = new Rect(duration.xMax + Spacing, position.y, width * 0.3f, position.height);
+        Rect transition = new Rect(view.xMax + Spacing, position.y, width * 0.24f, position.height);
+
+        EditorGUI.PropertyField(target, property.FindPropertyRelative("target"), GUIContent.none);
+        EditorGUI.PropertyField(duration, property.FindPropertyRelative("duration"), GUIContent.none);
+        EditorGUI.PropertyField(view, property.FindPropertyRelative("view"), GUIContent.none);
+        EditorGUI.PropertyField(transition, property.FindPropertyRelative("transition"), GUIContent.none);
+
+        EditorGUI.EndProperty();
+    }
+
+    public override float GetPropertyHeight(SerializedProperty property, GUIContent label)
+    {
+        return EditorGUIUtility.singleLineHeight;
     }
 }

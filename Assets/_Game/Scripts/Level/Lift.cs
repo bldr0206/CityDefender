@@ -14,7 +14,7 @@ using DG.Tweening;
 /// - <b>Move duration</b>, <b>Seat board / Exit tween</b> — длительности.
 /// - <b>Вход в кабину</b> — триггер-коллайдер Is Trigger на том же GameObject, что и этот компонент, либо на дочернем через <see cref="LiftCabinDetector"/>.
 ///   Учитывается только коллайдер игрока с тегом <b>Contact</b> (как у <see cref="PlayerContact"/>), обычно без своего Rigidbody. Слои Physics: триггер кабины и этот коллайдер пересекаются.
-/// - После остановки на этаже, если игрок в кабине без пассажиров — посадка агентов с этажа (<see cref="TryBeginBoardingForAgents"/>). Если с игроком едут агенты — они выходят только после того, как игрок покинет кабину (можно уехать обратно).
+/// - После остановки на этаже, если игрок в кабине без пассажиров — посадка ботов с этажа (<see cref="TryBeginBoardingForBots"/>). Если с игроком едут боты — они выходят только после того, как игрок покинет кабину (можно уехать обратно).
 /// - <b>Вызов с этажа</b> — коллайдеры с тегом <b>LiftTrigger</b> + <see cref="LiftTrigger"/> (низ/верх, <c>isUpTrigger</c>): игрок с тегом <b>Contact</b> через <see cref="PlayerContact"/>; только подъезд с другого этажа (<see cref="MoveDown"/> / <see cref="MoveUp"/>).
 /// - <b>В кабине</b> — кнопка UI на <see cref="MoveToOppositeFloor"/> (на противоположный этаж). При необходимости отдельно <see cref="MoveUp"/> / <see cref="MoveDown"/>.
 /// - Опционально <b>Cabin UI root</b> — как у <see cref="TraderNPC"/>: включается при входе Contact в кабину, выключается при выходе из объёма триггера.
@@ -40,7 +40,7 @@ public class Lift : MonoBehaviour
     [SerializeField] private float seatBoardTweenDuration = 0.45f;
     [SerializeField] private float exitTweenDuration = 0.4f;
 
-    readonly List<Agent> _passengers = new();
+    readonly List<Bot> _passengers = new();
     Tween _moveTween;
     bool _isMoving;
     bool _isAtTop;
@@ -128,7 +128,7 @@ public class Lift : MonoBehaviour
     {
         _playerInCabin = true;
         _rideStartedThisCabinSession = false;
-        TryBeginBoardingForAgents();
+        TryBeginBoardingForBots();
         ShowCabinUi();
     }
 
@@ -146,7 +146,7 @@ public class Lift : MonoBehaviour
         {
             _pendingPassengerExitOnPlayerLeave = false;
             ExitPassengersTweenedAtCurrentFloor();
-            TryBeginBoardingForAgents();
+            TryBeginBoardingForBots();
         }
 
         if (_rideStartedThisCabinSession)
@@ -171,28 +171,28 @@ public class Lift : MonoBehaviour
         _cabinUiRoot.SetActive(false);
     }
 
-    void TryBeginBoardingForAgents()
+    void TryBeginBoardingForBots()
     {
         if (passengerSeatPoints == null || passengerSeatPoints.Length == 0)
             return;
         if (!TryGetBoardingApproachWorld(out Vector3 approachWorld))
             return;
 
-        List<Agent> agents = SaveableRegistry.GetAll<Agent>();
+        List<Bot> bots = SaveableRegistry.GetAll<Bot>();
         int seatIndex = 0;
-        for (int i = 0; i < agents.Count && seatIndex < passengerSeatPoints.Length; i++)
+        for (int i = 0; i < bots.Count && seatIndex < passengerSeatPoints.Length; i++)
         {
-            Agent agent = agents[i];
-            if (agent == null || !agent.isActiveAndEnabled)
+            Bot bot = bots[i];
+            if (bot == null || !bot.isActiveAndEnabled)
                 continue;
-            if (agent.IsLiftPassenger)
+            if (bot.IsLiftPassenger)
                 continue;
-            if (agent.IsInCliffJump)
+            if (bot.IsInCliffJump)
                 continue;
-            if (agent.IsBoardingThisLift(this))
+            if (bot.IsBoardingThisLift(this))
                 continue;
 
-            agent.BeginLiftBoarding(
+            bot.BeginLiftBoarding(
                 this,
                 approachWorld,
                 passengerSeatPoints[seatIndex],
@@ -251,39 +251,39 @@ public class Lift : MonoBehaviour
     {
         _pendingPassengerExitOnPlayerLeave = false;
 
-        var boardedCopy = new List<Agent>(_passengers);
+        var boardedCopy = new List<Bot>(_passengers);
         _passengers.Clear();
 
         float exitDur = Mathf.Max(0.05f, exitTweenDuration);
         for (int i = 0; i < boardedCopy.Count; i++)
         {
-            Agent agent = boardedCopy[i];
-            if (agent == null)
+            Bot bot = boardedCopy[i];
+            if (bot == null)
                 continue;
 
             Transform exitPt = GetExitPointForCurrentFloor(i);
-            agent.ForceExitLiftWithoutRide(this, exitPt, exitDur);
+            bot.ForceExitLiftWithoutRide(this, exitPt, exitDur);
         }
 
         CancelPendingBoardingForThisLift();
 
-        List<Agent> agents = SaveableRegistry.GetAll<Agent>();
-        for (int i = 0; i < agents.Count; i++)
+        List<Bot> bots = SaveableRegistry.GetAll<Bot>();
+        for (int i = 0; i < bots.Count; i++)
         {
-            Agent agent = agents[i];
-            if (agent != null && agent.IsRidingOnLift(this))
-                agent.ForceExitLiftWithoutRide(this, GetExitPointForCurrentFloor(0), exitDur);
+            Bot bot = bots[i];
+            if (bot != null && bot.IsRidingOnLift(this))
+                bot.ForceExitLiftWithoutRide(this, GetExitPointForCurrentFloor(0), exitDur);
         }
     }
 
     void CancelPendingBoardingForThisLift()
     {
-        List<Agent> agents = SaveableRegistry.GetAll<Agent>();
-        for (int i = 0; i < agents.Count; i++)
+        List<Bot> bots = SaveableRegistry.GetAll<Bot>();
+        for (int i = 0; i < bots.Count; i++)
         {
-            Agent agent = agents[i];
-            if (agent != null)
-                agent.CancelLiftBoardingIfPendingFor(this);
+            Bot bot = bots[i];
+            if (bot != null)
+                bot.CancelLiftBoardingIfPendingFor(this);
         }
     }
 
@@ -312,7 +312,7 @@ public class Lift : MonoBehaviour
                 if (_playerInCabin)
                 {
                     if (!deferPassengerExit)
-                        TryBeginBoardingForAgents();
+                        TryBeginBoardingForBots();
                     ShowCabinUi();
                 }
             });
@@ -321,35 +321,35 @@ public class Lift : MonoBehaviour
     /// <summary> В начале движения платформы: отменить подход; mid-tween — перейти в local-твин к сиденью. </summary>
     void NotifyLiftDeparting()
     {
-        List<Agent> agents = SaveableRegistry.GetAll<Agent>();
-        for (int i = 0; i < agents.Count; i++)
+        List<Bot> bots = SaveableRegistry.GetAll<Bot>();
+        for (int i = 0; i < bots.Count; i++)
         {
-            Agent agent = agents[i];
-            if (agent != null)
-                agent.NotifyLiftDeparting(this);
+            Bot bot = bots[i];
+            if (bot != null)
+                bot.NotifyLiftDeparting(this);
         }
     }
 
-    public void RegisterPassenger(Agent agent)
+    public void RegisterPassenger(Bot bot)
     {
-        if (agent == null || _passengers.Contains(agent))
+        if (bot == null || _passengers.Contains(bot))
             return;
-        _passengers.Add(agent);
+        _passengers.Add(bot);
     }
 
     void ExitPassengersTweened(Transform[] exitPoints, Transform fallbackPoint)
     {
         for (int i = _passengers.Count - 1; i >= 0; i--)
         {
-            Agent agent = _passengers[i];
-            if (agent == null)
+            Bot bot = _passengers[i];
+            if (bot == null)
             {
                 _passengers.RemoveAt(i);
                 continue;
             }
 
             Transform exitPoint = GetPoint(exitPoints, i, fallbackPoint);
-            agent.BeginLiftExit(this, exitPoint, exitTweenDuration);
+            bot.BeginLiftExit(this, exitPoint, exitTweenDuration);
         }
 
         _passengers.Clear();

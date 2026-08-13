@@ -207,6 +207,56 @@ MonoBehaviour:
       \u0434\u043E\u0431\u0440\u0430\u0442\u044C\u0441\u044F \u0434\u043E CV"
     m_Metadata:
       m_Items: []
+  - m_Id: 7000000000000001
+    m_Localized: "\u0410\u0433\u0435\u043D\u0442\u044B"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7000000000000002
+    m_Localized: "\u041F\u043E\u043A\u0430 \u043D\u0435\u0442 \u0430\u0433\u0435\u043D\u0442\u043E\u0432
+      \u2014 \u043D\u0430\u0439\u043C\u0438\u0442\u0435 \u0430\u0433\u0435\u043D\u0442\u0430
+      \u0443 \u0442\u043E\u0440\u0433\u043E\u0432\u0446\u0430"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7000000000000003
+    m_Localized: "\u0417\u0430\u043A\u0440\u044B\u0442\u044C"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7000000000000004
+    m_Localized: "\u0410\u0433\u0435\u043D\u0442"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7000000000000005
+    m_Localized: "\u0423\u0440."
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7000000000000006
+    m_Localized: "\u0417\u0434\u043E\u0440\u043E\u0432\u044C\u0435"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7000000000000007
+    m_Localized: "\u041C\u0430\u0439\u043D\u0438\u043D\u0433"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7000000000000008
+    m_Localized: "\u0421\u043A\u043E\u0440\u043E\u0441\u0442\u044C \u0430\u0442\u0430\u043A\u0438"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7000000000000009
+    m_Localized: "\u0421\u043A\u043E\u0440\u043E\u0441\u0442\u044C \u0434\u043E\u0431\u044B\u0447\u0438"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7000000000000010
+    m_Localized: "\u042D\u043D\u0435\u0440\u0433\u0438\u044F"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7000000000000011
+    m_Localized: "\u0420\u0435\u0433\u0435\u043D \u0437\u0434\u043E\u0440\u043E\u0432\u044C\u044F"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7000000000000012
+    m_Localized: "\u0420\u0430\u0437\u043D\u043E\u0440\u0430\u0431\u043E\u0447\u0438\u0439"
+    m_Metadata:
+      m_Items: []
   references:
     version: 2
     RefIds: []
